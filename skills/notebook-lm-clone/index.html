@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Notebook AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f9fafb;
+      --sidebar-bg: #ffffff;
+      --border-color: #e5e7eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --msg-user: #eff6ff;
+      --msg-bot: #ffffff;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    /* Sidebar (Fuentes) */
+    .sidebar {
+      width: 320px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .sidebar-header h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .upload-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: white;
+      border: 1px dashed var(--text-muted);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .upload-btn:hover {
+      background-color: #f3f4f6;
+      border-color: var(--primary);
+    }
+
+    .sources-list {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .source-item {
+      background-color: var(--bg-color);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border-color);
+    }
+    .source-item svg {
+      width: 20px; height: 20px;
+      color: var(--primary);
+    }
+
+    /* Chat Area */
+    .main-chat {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .chat-header {
+      padding: 20px;
+      background-color: var(--sidebar-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-header h1 {
+      font-size: 1.3rem;
+    }
+
+    .toggle-sidebar {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-main);
+    }
+
+    .chat-messages {
+      flex-grow: 1;
+      padding: 30px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 15px 20px;
+      border-radius: 12px;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .msg-bot {
+      align-self: flex-start;
+      background-color: var(--msg-bot);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .msg-user {
+      align-self: flex-end;
+      background-color: var(--msg-user);
+      color: var(--primary);
+      border: 1px solid #dbeafe;
+    }
+
+    .citation {
+      display: block;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background-color: #f3f4f6;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .chat-input-container {
+      padding: 20px 30px;
+      background-color: var(--bg-color);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 10px;
+      background-color: white;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .chat-form input {
+      flex-grow: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      padding: 10px;
+      color: var(--text-main);
+    }
+
+    .chat-form button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .chat-form button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .chat-form button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: absolute;
+        left: -320px;
+        height: 100%;
+      }
+      .sidebar.open {
+        left: 0;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+      }
+      .toggle-sidebar {
+        display: block;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar: Knowledge Base -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>Fuentes (Documentos)</h2>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+        Sube documentos de texto (.txt) para que el modelo aprenda de ellos y responda a tus preguntas.
+      </p>
+      <input type="file" id="fileInput" accept=".txt" multiple style="display: none;">
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Subir Documento
+      </button>
+    </div>
+    <div class="sources-list" id="sourcesList">
+      <!-- Fuentes aparecerán aquí -->
+    </div>
+  </div>
+
+  <!-- Main Chat -->
+  <div class="main-chat">
+    <div class="chat-header">
+      <button class="toggle-sidebar" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <h1>Mi Asistente tipo NotebookLM</h1>
+      <div></div>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+      <div class="message msg-bot">
+        ¡Hola! Soy tu asistente de lectura inteligente. Sube tus archivos de texto en la barra lateral "Fuentes" y mi nivel de conocimiento se incrementará automáticamente. Luego, pregúntame lo que necesites saber sobre esos textos.
+      </div>
+    </div>
+
+    <div class="chat-input-container">
+      <form class="chat-form" id="chatForm">
+        <input type="text" id="userInput" placeholder="Haz una pregunta sobre tus documentos..." autocomplete="off">
+        <button type="submit" id="sendBtn">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Memoria del modelo simulado (Motor RAG en el navegador)
+    const knowledgeBase = [];
+
+    // Manejar subida de archivos de texto
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const files = e.target.files;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Evitar duplicados por nombre
+        if (knowledgeBase.some(doc => doc.name === file.name)) continue;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const content = evt.target.result;
+          
+          // Guardar en la base de conocimientos dividiendo el texto por párrafos
+          const paragraphs = content.split('\n').filter(p => p.trim().length > 20);
+          
+          knowledgeBase.push({
+            name: file.name,
+            paragraphs: paragraphs
+          });
+
+          updateSourcesUI(file.name);
+        };
+        reader.readAsText(file); // Leer el archivo localmente sin servidores externos
+      }
+    });
+
+    function updateSourcesUI(fileName) {
+      const list = document.getElementById('sourcesList');
+      const item = document.createElement('div');
+      item.className = 'source-item';
+      item.innerHTML = `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        ${fileName}
+      `;
+      list.appendChild(item);
+    }
+
+    // Lógica de la Interfaz del Chat
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+
+    chatForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const question = userInput.value.trim();
+      if (!question) return;
+
+      appendMessage('user', question);
+      userInput.value = '';
+
+      // Simular tiempo de procesamiento de la IA
+      setTimeout(() => {
+        generateResponse(question);
+      }, 800);
+    });
+
+    function appendMessage(sender, text, citation = null) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message msg-${sender}`;
+      msgDiv.innerText = text;
+
+      // Agregar la tarjeta de citación si el bot encontró una fuente
+      if (citation) {
+        const citeDiv = document.createElement('span');
+        citeDiv.className = 'citation';
+        citeDiv.innerText = `📄 Fuente: ${citation}`;
+        msgDiv.appendChild(citeDiv);
+      }
+
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+    }
+
+    // Motor Inteligente de búsqueda y respuesta (Simulador RAG)
+    function generateResponse(query) {
+      // Regla 1: Si no hay fuentes, pedir al usuario que suba documentos
+      if (knowledgeBase.length === 0) {
+        appendMessage('bot', "Aún no tengo información en mi memoria. Por favor, sube algunos documentos en la barra lateral izquierda para que pueda aprender de ellos.");
+        return;
+      }
+
+      // 1. Limpiar la pregunta para sacar palabras clave relevantes (ignorando conectores)
+      const stopWords = ['el', 'la', 'los', 'las', 'un', 'una', 'qué', 'que', 'de', 'del', 'en', 'para', 'por', 'con', 'es', 'son', 'como', 'cual', 'cuales'];
+      // Remover tildes y signos
+      const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?.,]/g, '');
+      const keywords = normalizedQuery.split(' ').filter(word => !stopWords.includes(word) && word.length > 2);
+
+      if (keywords.length === 0) {
+        appendMessage('bot', "No estoy seguro de qué me preguntas. Intenta usar palabras más específicas.");
+        return;
+      }
+
+      // 2. Buscar similitud en todos los párrafos de todos los documentos cargados
+      let bestMatch = null;
+      let maxScore = 0;
+
+      knowledgeBase.forEach(doc => {
+        doc.paragraphs.forEach(paragraph => {
+          let score = 0;
+          const pLower = paragraph.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          
+          keywords.forEach(kw => {
+            if (pLower.includes(kw)) score++; // Sumar puntos por coincidencias
+          });
+
+          // Si este párrafo tiene más coincidencias que los anteriores, lo guardamos como mejor respuesta
+          if (score > maxScore) {
+            maxScore = score;
+            bestMatch = { text: paragraph, source: doc.name };
+          }
+        });
+      });
+
+      // 3. Generar la respuesta final
+      if (maxScore > 0 && bestMatch) {
+        const responseText = `Basado en los documentos proporcionados, encontré esta información relevante:\n\n"${bestMatch.text}"`;
+        appendMessage('bot', responseText, bestMatch.source); // Se envía con la cita (citation)
+      } else {
+        appendMessage('bot', "He revisado detalladamente todos tus documentos, pero no encontré ninguna información que coincida con tu pregunta. Intenta formularla de otra manera o sube más fuentes relacionadas.");
+      }
+    }
+  </script>
+</body>
+</html>
