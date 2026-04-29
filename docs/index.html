@@ -3,367 +3,402 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Generador de Carrusel | Instagram & WhatsApp</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>Mi Notebook AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #2c3e50;
-      --accent: #d4af37;
-      --bg: #f8f9fa;
-      --text: #333;
+      --bg-color: #f9fafb;
+      --sidebar-bg: #ffffff;
+      --border-color: #e5e7eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --msg-user: #eff6ff;
+      --msg-bot: #ffffff;
     }
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: var(--primary);
-      margin-bottom: 5px;
-    }
-    p.subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 30px;
-    }
-    @media (max-width: 800px) {
-      .container { grid-template-columns: 1fr; }
-    }
-    .form-panel, .preview-panel {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: var(--primary);
-    }
-    input[type="text"], input[type="tel"] {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
+    
+    * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
     }
-    .slide-input {
-      background: #f9f9f9;
-      border: 1px solid #eee;
-      padding: 15px;
-      border-radius: 8px;
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    /* Sidebar (Fuentes) */
+    .sidebar {
+      width: 320px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .sidebar-header h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
       margin-bottom: 15px;
     }
-    .slide-input h3 {
-      margin-top: 0;
-      font-size: 1.1rem;
+
+    .upload-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: white;
+      border: 1px dashed var(--text-muted);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .upload-btn:hover {
+      background-color: #f3f4f6;
+      border-color: var(--primary);
+    }
+
+    .sources-list {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .source-item {
+      background-color: var(--bg-color);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border-color);
+    }
+    .source-item svg {
+      width: 20px; height: 20px;
       color: var(--primary);
     }
-    .btn {
+
+    /* Chat Area */
+    .main-chat {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .chat-header {
+      padding: 20px;
+      background-color: var(--sidebar-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-header h1 {
+      font-size: 1.3rem;
+    }
+
+    .toggle-sidebar {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-main);
+    }
+
+    .chat-messages {
+      flex-grow: 1;
+      padding: 30px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 15px 20px;
+      border-radius: 12px;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .msg-bot {
+      align-self: flex-start;
+      background-color: var(--msg-bot);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .msg-user {
+      align-self: flex-end;
+      background-color: var(--msg-user);
+      color: var(--primary);
+      border: 1px solid #dbeafe;
+    }
+
+    .citation {
       display: block;
-      width: 100%;
-      padding: 15px;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background-color: #f3f4f6;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .chat-input-container {
+      padding: 20px 30px;
+      background-color: var(--bg-color);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 10px;
+      background-color: white;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .chat-form input {
+      flex-grow: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      padding: 10px;
+      color: var(--text-main);
+    }
+
+    .chat-form button {
       background-color: var(--primary);
       color: white;
       border: none;
-      border-radius: 6px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-      margin-top: 20px;
-    }
-    .btn:hover { background-color: #1a252f; }
-    
-    .btn-whatsapp {
-      background-color: #25D366;
-      margin-top: 20px;
-    }
-    .btn-whatsapp:hover { background-color: #1ebd5a; }
-
-    /* Preview Canvas Area */
-    .preview-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-top: 20px;
-    }
-    .canvas-wrapper {
-      position: relative;
-      width: 100%;
-      padding-bottom: 100%; /* Square aspect ratio */
-      background: #eee;
+      padding: 10px 20px;
       border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
     }
-    canvas {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: contain;
+    .chat-form button:hover {
+      background-color: var(--primary-hover);
     }
     
-    .download-btn {
-      display: block;
-      text-align: center;
-      margin-top: 5px;
-      font-size: 0.85rem;
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: bold;
-      padding: 5px;
-      background: #eee;
-      border-radius: 4px;
+    .chat-form button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
     }
-    .download-btn:hover {
-      background: #e0e0e0;
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: absolute;
+        left: -320px;
+        height: 100%;
+      }
+      .sidebar.open {
+        left: 0;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+      }
+      .toggle-sidebar {
+        display: block;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
-  <h1>Creador de Carruseles</h1>
-  <p class="subtitle">Genera 8 diapositivas estéticas y envíalas por WhatsApp</p>
+  <!-- Sidebar: Knowledge Base -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>Fuentes (Documentos)</h2>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+        Sube documentos de texto (.txt) para que el modelo aprenda de ellos y responda a tus preguntas.
+      </p>
+      <input type="file" id="fileInput" accept=".txt" multiple style="display: none;">
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Subir Documento
+      </button>
+    </div>
+    <div class="sources-list" id="sourcesList">
+      <!-- Fuentes aparecerán aquí -->
+    </div>
+  </div>
 
-  <div class="container">
-    <!-- Form Panel -->
-    <div class="form-panel">
-      <h2>1. Datos Generales</h2>
-      <div class="form-group">
-        <label>Nombre de la Empresa (Arte/Marca)</label>
-        <input type="text" id="companyName" placeholder="Ej: Estudio Creativo" value="Estudio Creativo">
+  <!-- Main Chat -->
+  <div class="main-chat">
+    <div class="chat-header">
+      <button class="toggle-sidebar" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <h1>Mi Asistente tipo NotebookLM</h1>
+      <div></div>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+      <div class="message msg-bot">
+        ¡Hola! Soy tu asistente de lectura inteligente. Sube tus archivos de texto en la barra lateral "Fuentes" y mi nivel de conocimiento se incrementará automáticamente. Luego, pregúntame lo que necesites saber sobre esos textos.
       </div>
-      <div class="form-group">
-        <label>Número de WhatsApp Destino</label>
-        <input type="tel" id="whatsappNum" placeholder="Ej: 573502605543">
-      </div>
-
-      <h2>2. Diapositivas (Carga tus 8 fotos)</h2>
-      <div id="slides-container">
-        <!-- Generado por JS -->
-      </div>
-      
-      <button class="btn" onclick="generateCarousel()">Generar Carrusel</button>
     </div>
 
-    <!-- Preview Panel -->
-    <div class="preview-panel">
-      <h2>Vista Previa</h2>
-      <p style="font-size: 0.9rem; color: #666;">Las imágenes se generarán en formato cuadrado de alta calidad (1080x1080 píxeles) ideales para Instagram.</p>
-      
-      <div class="preview-grid" id="preview-grid">
-        <!-- Canvas previsualizaciones aparecerán aquí -->
-      </div>
-
-      <button class="btn btn-whatsapp" id="btn-wa" style="display:none;" onclick="sendToWhatsapp()">
-        Enviar Textos por WhatsApp
-      </button>
+    <div class="chat-input-container">
+      <form class="chat-form" id="chatForm">
+        <input type="text" id="userInput" placeholder="Haz una pregunta sobre tus documentos..." autocomplete="off">
+        <button type="submit" id="sendBtn">Enviar</button>
+      </form>
     </div>
   </div>
 
   <script>
-    // Construir los 8 bloques de input en el HTML dinámicamente
-    const container = document.getElementById('slides-container');
-    for(let i=1; i<=8; i++) {
-      container.innerHTML += `
-        <div class="slide-input">
-          <h3>Diapositiva ${i}</h3>
-          <div class="form-group">
-            <label>Subir Foto</label>
-            <input type="file" id="img${i}" accept="image/*">
-          </div>
-          <div class="form-group">
-            <label>Leyenda / Texto</label>
-            <input type="text" id="text${i}" placeholder="Escribe el mensaje de esta foto...">
-          </div>
-        </div>
-      `;
-    }
+    // Memoria del modelo simulado (Motor RAG en el navegador)
+    const knowledgeBase = [];
 
-    // Lógica para Generar las imágenes (Canvas)
-    async function generateCarousel() {
-      const companyName = document.getElementById('companyName').value || 'Mi Empresa';
-      const previewGrid = document.getElementById('preview-grid');
-      previewGrid.innerHTML = ''; // Limpiar grilla
-
-      for(let i=1; i<=8; i++) {
-        const fileInput = document.getElementById(`img${i}`);
-        const textInput = document.getElementById(`text${i}`).value;
+    // Manejar subida de archivos de texto
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const files = e.target.files;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         
-        // Contenedor individual
-        const wrapper = document.createElement('div');
-        
-        // Contenedor del Canvas
-        const canvasWrapper = document.createElement('div');
-        canvasWrapper.className = 'canvas-wrapper';
-        
-        const canvas = document.createElement('canvas');
-        // Tamaño oficial de Instagram
-        canvas.width = 1080;
-        canvas.height = 1080;
-        const ctx = canvas.getContext('2d');
+        // Evitar duplicados por nombre
+        if (knowledgeBase.some(doc => doc.name === file.name)) continue;
 
-        // Fondo por defecto
-        ctx.fillStyle = '#111';
-        ctx.fillRect(0, 0, 1080, 1080);
-
-        // Si el usuario subió una imagen, la dibujamos
-        if(fileInput.files && fileInput.files[0]) {
-          const imgUrl = URL.createObjectURL(fileInput.files[0]);
-          const img = await loadImage(imgUrl);
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const content = evt.target.result;
           
-          // Lógica para Object-Fit Cover
-          const scale = Math.max(1080 / img.width, 1080 / img.height);
-          const x = (1080 / 2) - (img.width / 2) * scale;
-          const y = (1080 / 2) - (img.height / 2) * scale;
-          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-        }
+          // Guardar en la base de conocimientos dividiendo el texto por párrafos
+          const paragraphs = content.split('\n').filter(p => p.trim().length > 20);
+          
+          knowledgeBase.push({
+            name: file.name,
+            paragraphs: paragraphs
+          });
 
-        // Gradiente oscuro en la parte inferior para que la leyenda sea legible
-        const grad = ctx.createLinearGradient(0, 500, 0, 1080);
-        grad.addColorStop(0, 'transparent');
-        grad.addColorStop(1, 'rgba(0,0,0,0.85)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 1080, 1080);
-
-        // Dibujar el nombre de la empresa con Letra Hermosa
-        ctx.font = 'italic bold 50px "Playfair Display"';
-        ctx.fillStyle = '#d4af37'; // Dorado
-        ctx.textAlign = 'center';
-        // Agregamos un poco de sombra para resaltar
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 10;
-        ctx.fillText(companyName, 1080 / 2, 100);
-        ctx.shadowBlur = 0; // Resetear sombra
-
-        // Dibujar el número de Slide
-        ctx.font = 'bold 30px Arial';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillText(`${i} / 8`, 1080 - 80, 70);
-
-        // Dibujar la leyenda / Texto
-        ctx.font = '45px Roboto';
-        ctx.fillStyle = '#ffffff';
-        // Función para saltos de línea automáticos
-        wrapText(ctx, textInput, 1080 / 2, 900, 900, 60);
-
-        canvasWrapper.appendChild(canvas);
-        wrapper.appendChild(canvasWrapper);
-
-        // Botón de descarga para este slide
-        const dLink = document.createElement('a');
-        dLink.className = 'download-btn';
-        dLink.innerText = `⬇ Descargar Slide ${i}`;
-        // Convertimos el canvas a imagen JPG
-        dLink.href = canvas.toDataURL('image/jpeg', 0.9);
-        dLink.download = `${companyName.replace(/ /g, '_')}_slide_${i}.jpg`;
-        wrapper.appendChild(dLink);
-
-        previewGrid.appendChild(wrapper);
+          updateSourcesUI(file.name);
+        };
+        reader.readAsText(file); // Leer el archivo localmente sin servidores externos
       }
+    });
 
-      // Mostrar el botón de WhatsApp cuando el carrusel esté listo
-      document.getElementById('btn-wa').style.display = 'block';
-      // Desplazar la vista al carrusel
-      document.querySelector('.preview-panel').scrollIntoView({ behavior: 'smooth' });
+    function updateSourcesUI(fileName) {
+      const list = document.getElementById('sourcesList');
+      const item = document.createElement('div');
+      item.className = 'source-item';
+      item.innerHTML = `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        ${fileName}
+      `;
+      list.appendChild(item);
     }
 
-    // Promesa para cargar la imagen en Canvas
-    function loadImage(url) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.src = url;
-      });
+    // Lógica de la Interfaz del Chat
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+
+    chatForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const question = userInput.value.trim();
+      if (!question) return;
+
+      appendMessage('user', question);
+      userInput.value = '';
+
+      // Simular tiempo de procesamiento de la IA
+      setTimeout(() => {
+        generateResponse(question);
+      }, 800);
+    });
+
+    function appendMessage(sender, text, citation = null) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message msg-${sender}`;
+      msgDiv.innerText = text;
+
+      // Agregar la tarjeta de citación si el bot encontró una fuente
+      if (citation) {
+        const citeDiv = document.createElement('span');
+        citeDiv.className = 'citation';
+        citeDiv.innerText = `📄 Fuente: ${citation}`;
+        msgDiv.appendChild(citeDiv);
+      }
+
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
     }
 
-    // Función para escribir texto con saltos de línea automáticos en Canvas
-    function wrapText(context, text, x, y, maxWidth, lineHeight) {
-      if(!text) return;
-      const words = text.split(' ');
-      let line = '';
-      let currentY = y;
-
-      for(let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = context.measureText(testLine);
-        const testWidth = metrics.width;
-        if (testWidth > maxWidth && n > 0) {
-          context.fillText(line, x, currentY);
-          line = words[n] + ' ';
-          currentY += lineHeight;
-        }
-        else {
-          line = testLine;
-        }
-      }
-      context.fillText(line, x, currentY);
-    }
-
-    // Enviar a WhatsApp
-    async function sendToWhatsapp() {
-      const phone = document.getElementById('whatsappNum').value;
-      const company = document.getElementById('companyName').value;
-      
-      let msgTexto = `Hola! Aquí tienes los textos para el carrusel de *${company}*:\n\n`;
-      let msgUrl = `Hola! Aquí tienes los textos para el carrusel de *${company}*:%0A%0A`;
-      
-      for(let i=1; i<=8; i++) {
-        const txt = document.getElementById(`text${i}`).value;
-        if(txt) {
-          msgTexto += `*Slide ${i}:* ${txt}\n`;
-          msgUrl += `*Slide ${i}:* ${txt}%0A`;
-        }
-      }
-
-      // Intentar usar Web Share API para enviar las imágenes y texto juntos (Funciona excelente en móviles)
-      try {
-        const canvases = document.querySelectorAll('canvas');
-        if (canvases.length > 0 && navigator.canShare) {
-           const filesArray = [];
-           for(let i=0; i<canvases.length; i++) {
-             const blob = await new Promise(resolve => canvases[i].toBlob(resolve, 'image/jpeg', 0.9));
-             const file = new File([blob], `slide_${i+1}.jpg`, { type: 'image/jpeg' });
-             filesArray.push(file);
-           }
-           
-           if (navigator.canShare({ files: filesArray })) {
-             await navigator.share({
-               files: filesArray,
-               title: 'Carrusel ' + company,
-               text: msgTexto
-             });
-             return; // Si fue exitoso compartiendo las imágenes, terminamos aquí
-           }
-        }
-      } catch (err) {
-        console.log("El navegador no soporta enviar archivos directamente:", err);
-      }
-
-      // Fallback: Si estamos en PC o el dispositivo no soporta enviar los archivos automáticamente
-      if(!phone) {
-        alert("Por favor ingresa un número de WhatsApp destino en la sección de Datos Generales.");
+    // Motor Inteligente de búsqueda y respuesta (Simulador RAG)
+    function generateResponse(query) {
+      // Regla 1: Si no hay fuentes, pedir al usuario que suba documentos
+      if (knowledgeBase.length === 0) {
+        appendMessage('bot', "Aún no tengo información en mi memoria. Por favor, sube algunos documentos en la barra lateral izquierda para que pueda aprender de ellos.");
         return;
       }
-      msgUrl += `%0A👉 _Nota: Tu dispositivo no soportó el envío automático de fotos. Por favor descarga las 8 imágenes generadas desde la página web y adjúntalas manualmente a esta conversación._`;
-      
-      window.open(`https://wa.me/${phone}?text=${msgUrl}`, '_blank');
+
+      // 1. Limpiar la pregunta para sacar palabras clave relevantes (ignorando conectores)
+      const stopWords = ['el', 'la', 'los', 'las', 'un', 'una', 'qué', 'que', 'de', 'del', 'en', 'para', 'por', 'con', 'es', 'son', 'como', 'cual', 'cuales'];
+      // Remover tildes y signos
+      const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?.,]/g, '');
+      const keywords = normalizedQuery.split(' ').filter(word => !stopWords.includes(word) && word.length > 2);
+
+      if (keywords.length === 0) {
+        appendMessage('bot', "No estoy seguro de qué me preguntas. Intenta usar palabras más específicas.");
+        return;
+      }
+
+      // 2. Buscar similitud en todos los párrafos de todos los documentos cargados
+      let bestMatch = null;
+      let maxScore = 0;
+
+      knowledgeBase.forEach(doc => {
+        doc.paragraphs.forEach(paragraph => {
+          let score = 0;
+          const pLower = paragraph.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          
+          keywords.forEach(kw => {
+            if (pLower.includes(kw)) score++; // Sumar puntos por coincidencias
+          });
+
+          // Si este párrafo tiene más coincidencias que los anteriores, lo guardamos como mejor respuesta
+          if (score > maxScore) {
+            maxScore = score;
+            bestMatch = { text: paragraph, source: doc.name };
+          }
+        });
+      });
+
+      // 3. Generar la respuesta final
+      if (maxScore > 0 && bestMatch) {
+        const responseText = `Basado en los documentos proporcionados, encontré esta información relevante:\n\n"${bestMatch.text}"`;
+        appendMessage('bot', responseText, bestMatch.source); // Se envía con la cita (citation)
+      } else {
+        appendMessage('bot', "He revisado detalladamente todos tus documentos, pero no encontré ninguna información que coincida con tu pregunta. Intenta formularla de otra manera o sube más fuentes relacionadas.");
+      }
     }
   </script>
 </body>
