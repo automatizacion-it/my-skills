@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Carrusel | Instagram & WhatsApp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --accent: #d4af37;
+      --bg: #f8f9fa;
+      --text: #333;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+    p.subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 800px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .form-panel, .preview-panel {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--primary);
+    }
+    input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .slide-input {
+      background: #f9f9f9;
+      border: 1px solid #eee;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .slide-input h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 20px;
+    }
+    .btn:hover { background-color: #1a252f; }
+    
+    .btn-whatsapp {
+      background-color: #25D366;
+      margin-top: 20px;
+    }
+    .btn-whatsapp:hover { background-color: #1ebd5a; }
+
+    /* Preview Canvas Area */
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%; /* Square aspect ratio */
+      background: #eee;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+    }
+    
+    .download-btn {
+      display: block;
+      text-align: center;
+      margin-top: 5px;
+      font-size: 0.85rem;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      padding: 5px;
+      background: #eee;
+      border-radius: 4px;
+    }
+    .download-btn:hover {
+      background: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Creador de Carruseles</h1>
+  <p class="subtitle">Genera 8 diapositivas estéticas y envíalas por WhatsApp</p>
+
+  <div class="container">
+    <!-- Form Panel -->
+    <div class="form-panel">
+      <h2>1. Datos Generales</h2>
+      <div class="form-group">
+        <label>Nombre de la Empresa (Arte/Marca)</label>
+        <input type="text" id="companyName" placeholder="Ej: Estudio Creativo" value="Estudio Creativo">
+      </div>
+      <div class="form-group">
+        <label>Número de WhatsApp Destino</label>
+        <input type="tel" id="whatsappNum" placeholder="Ej: 573502605543">
+      </div>
+
+      <h2>2. Diapositivas (Carga tus 8 fotos)</h2>
+      <div id="slides-container">
+        <!-- Generado por JS -->
+      </div>
+      
+      <button class="btn" onclick="generateCarousel()">Generar Carrusel</button>
+    </div>
+
+    <!-- Preview Panel -->
+    <div class="preview-panel">
+      <h2>Vista Previa</h2>
+      <p style="font-size: 0.9rem; color: #666;">Las imágenes se generarán en formato cuadrado de alta calidad (1080x1080 píxeles) ideales para Instagram.</p>
+      
+      <div class="preview-grid" id="preview-grid">
+        <!-- Canvas previsualizaciones aparecerán aquí -->
+      </div>
+
+      <button class="btn btn-whatsapp" id="btn-wa" style="display:none;" onclick="sendToWhatsapp()">
+        Enviar Textos por WhatsApp
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Construir los 8 bloques de input en el HTML dinámicamente
+    const container = document.getElementById('slides-container');
+    for(let i=1; i<=8; i++) {
+      container.innerHTML += `
+        <div class="slide-input">
+          <h3>Diapositiva ${i}</h3>
+          <div class="form-group">
+            <label>Subir Foto</label>
+            <input type="file" id="img${i}" accept="image/*">
+          </div>
+          <div class="form-group">
+            <label>Leyenda / Texto</label>
+            <input type="text" id="text${i}" placeholder="Escribe el mensaje de esta foto...">
+          </div>
+        </div>
+      `;
+    }
+
+    // Lógica para Generar las imágenes (Canvas)
+    async function generateCarousel() {
+      const companyName = document.getElementById('companyName').value || 'Mi Empresa';
+      const previewGrid = document.getElementById('preview-grid');
+      previewGrid.innerHTML = ''; // Limpiar grilla
+
+      for(let i=1; i<=8; i++) {
+        const fileInput = document.getElementById(`img${i}`);
+        const textInput = document.getElementById(`text${i}`).value;
+        
+        // Contenedor individual
+        const wrapper = document.createElement('div');
+        
+        // Contenedor del Canvas
+        const canvasWrapper = document.createElement('div');
+        canvasWrapper.className = 'canvas-wrapper';
+        
+        const canvas = document.createElement('canvas');
+        // Tamaño oficial de Instagram
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+
+        // Fondo por defecto
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, 1080, 1080);
+
+        // Si el usuario subió una imagen, la dibujamos
+        if(fileInput.files && fileInput.files[0]) {
+          const imgUrl = URL.createObjectURL(fileInput.files[0]);
+          const img = await loadImage(imgUrl);
+          
+          // Lógica para Object-Fit Cover
+          const scale = Math.max(1080 / img.width, 1080 / img.height);
+          const x = (1080 / 2) - (img.width / 2) * scale;
+          const y = (1080 / 2) - (img.height / 2) * scale;
+          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        }
+
+        // Gradiente oscuro en la parte inferior para que la leyenda sea legible
+        const grad = ctx.createLinearGradient(0, 500, 0, 1080);
+        grad.addColorStop(0, 'transparent');
+        grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1080, 1080);
+
+        // Dibujar el nombre de la empresa con Letra Hermosa
+        ctx.font = 'italic bold 50px "Playfair Display"';
+        ctx.fillStyle = '#d4af37'; // Dorado
+        ctx.textAlign = 'center';
+        // Agregamos un poco de sombra para resaltar
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 10;
+        ctx.fillText(companyName, 1080 / 2, 100);
+        ctx.shadowBlur = 0; // Resetear sombra
+
+        // Dibujar el número de Slide
+        ctx.font = 'bold 30px Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText(`${i} / 8`, 1080 - 80, 70);
+
+        // Dibujar la leyenda / Texto
+        ctx.font = '45px Roboto';
+        ctx.fillStyle = '#ffffff';
+        // Función para saltos de línea automáticos
+        wrapText(ctx, textInput, 1080 / 2, 900, 900, 60);
+
+        canvasWrapper.appendChild(canvas);
+        wrapper.appendChild(canvasWrapper);
+
+        // Botón de descarga para este slide
+        const dLink = document.createElement('a');
+        dLink.className = 'download-btn';
+        dLink.innerText = `⬇ Descargar Slide ${i}`;
+        // Convertimos el canvas a imagen JPG
+        dLink.href = canvas.toDataURL('image/jpeg', 0.9);
+        dLink.download = `${companyName.replace(/ /g, '_')}_slide_${i}.jpg`;
+        wrapper.appendChild(dLink);
+
+        previewGrid.appendChild(wrapper);
+      }
+
+      // Mostrar el botón de WhatsApp cuando el carrusel esté listo
+      document.getElementById('btn-wa').style.display = 'block';
+      // Desplazar la vista al carrusel
+      document.querySelector('.preview-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Promesa para cargar la imagen en Canvas
+    function loadImage(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = url;
+      });
+    }
+
+    // Función para escribir texto con saltos de línea automáticos en Canvas
+    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+      if(!text) return;
+      const words = text.split(' ');
+      let line = '';
+      let currentY = y;
+
+      for(let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = context.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+          context.fillText(line, x, currentY);
+          line = words[n] + ' ';
+          currentY += lineHeight;
+        }
+        else {
+          line = testLine;
+        }
+      }
+      context.fillText(line, x, currentY);
+    }
+
+    // Enviar a WhatsApp
+    function sendToWhatsapp() {
+      const phone = document.getElementById('whatsappNum').value;
+      if(!phone) {
+        alert("Por favor ingresa un número de WhatsApp destino en la sección de Datos Generales.");
+        return;
+      }
+
+      const company = document.getElementById('companyName').value;
+      // Codificar el mensaje para URL
+      let msg = `Hola! Aquí tienes los textos para el carrusel de *${company}*:%0A%0A`;
+      
+      for(let i=1; i<=8; i++) {
+        const txt = document.getElementById(`text${i}`).value;
+        if(txt) {
+          msg += `*Slide ${i}:* ${txt}%0A`;
+        }
+      }
+
+      msg += `%0A👉 _Recuerda descargar las 8 imágenes generadas desde la página web y adjuntarlas a esta conversación para publicarlas en Instagram._`;
+
+      // Redirigir a la API de WhatsApp
+      window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+    }
+  </script>
+</body>
+</html>
