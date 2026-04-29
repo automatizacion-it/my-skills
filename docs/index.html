@@ -1,361 +1,328 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coach de Vida en Bogotá | Alcanza tus metas</title>
-
-  <!-- Meta tags para Open Graph (Redes Sociales) -->
-  <meta property="og:title" content="Coach de Vida en Bogotá">
-  <meta property="og:description"
-    content="Recupera el control de tu vida y alcanza tus metas con sesiones personalizadas.">
-  <meta property="og:type" content="website">
-
-  <!-- Fuente Poppins de Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-
+  <title>Aesthetic Studio | Arte & Visión</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
   <style>
-    /* Variables de color y estilo */
     :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --text-main: #1f2937;
-      --text-light: #6b7280;
-      --bg-body: #e5e7eb;
-      --bg-container: #ffffff;
-      --bg-hero: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      --bg-alt: #f9fafb;
+      --bg: #0a0a0c;
+      --surface: #141416;
+      --surface-light: #202022;
+      --text: #f0f0f0;
+      --text-muted: #a0a0a0;
+      --accent: #d4af37;
+      --accent-hover: #b5952f;
+      --font-serif: 'Playfair Display', serif;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      font-family: 'Poppins', sans-serif;
-      background-color: var(--bg-body);
-      margin: 0;
-      padding: 0;
-      color: var(--text-main);
-      -webkit-font-smoothing: antialiased;
+      font-family: var(--font-sans);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
     }
 
-    /* Contenedor principal Mobile-First (Max 480px) */
+    /* Contenedor mobile-first pero elegante */
     .container {
-      max-width: 480px;
+      max-width: 500px;
       margin: 0 auto;
-      background-color: var(--bg-container);
+      background-color: var(--bg);
       min-height: 100vh;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
+      position: relative;
+    }
+
+    /* Overlay artístico (blur / noise) */
+    .noise {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+      pointer-events: none;
+      z-index: 10;
     }
 
     section {
-      padding: 40px 24px;
+      padding: 60px 30px;
     }
 
-    /* 1. Hero Section */
+    h1, h2, h3 {
+      font-family: var(--font-serif);
+      font-weight: 400;
+    }
+
+    /* Header / Hero */
     .hero {
       text-align: center;
-      background: var(--bg-hero);
-      padding-top: 48px;
+      padding-top: 80px;
+      padding-bottom: 60px;
+      position: relative;
     }
 
-    .brand {
-      font-weight: 700;
-      font-size: 1.125rem;
-      color: var(--primary);
-      margin-bottom: 32px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+    .hero-subtitle {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--accent);
+      margin-bottom: 16px;
     }
 
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      line-height: 1.2;
-      margin: 0 0 16px 0;
-      letter-spacing: -0.02em;
+    .hero h1 {
+      font-size: 3rem;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      background: linear-gradient(to right, #fff, #a0a0a0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .subheadline {
+    .hero p {
+      color: var(--text-muted);
+      margin-bottom: 40px;
       font-size: 1.05rem;
-      color: var(--text-light);
-      margin: 0 0 32px 0;
-      line-height: 1.5;
     }
 
-    /* Botón CTA (Común) */
-    .cta-btn {
-      display: flex;
+    /* Galería 3 Fotos */
+    .gallery {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .gallery-item {
+      width: 100%;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.7s ease, filter 0.5s ease;
+      filter: grayscale(20%) contrast(1.1);
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.05);
+      filter: grayscale(0%) contrast(1.2);
+    }
+
+    .gallery-1 { aspect-ratio: 4/5; }
+    .gallery-2 { aspect-ratio: 3/2; }
+    .gallery-3 { aspect-ratio: 4/5; }
+
+    /* Premio Section */
+    .prize-card {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 8px;
+      padding: 40px 24px;
+      text-align: center;
+      margin: 40px 0;
+      position: relative;
+      overflow: hidden;
+      z-index: 20;
+    }
+
+    .prize-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; width: 50%; height: 100%;
+      background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.1), transparent);
+      transform: skewX(-25deg);
+      animation: shine 6s infinite;
+    }
+
+    @keyframes shine {
+      0% { left: -100%; }
+      20% { left: 200%; }
+      100% { left: 200%; }
+    }
+
+    .prize-icon {
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .prize-card h2 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+      color: var(--accent);
+    }
+
+    .prize-card p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* QR Section */
+    .qr-section {
+      text-align: center;
+      padding: 40px 20px;
+      background-color: var(--surface);
+      border-radius: 8px;
+      margin: 20px 0 40px 0;
+      z-index: 20;
+      position: relative;
+    }
+
+    .qr-container {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      display: inline-block;
+      margin: 20px 0;
+    }
+
+    .qr-container img {
+      display: block;
+      width: 180px;
+      height: 180px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       width: 100%;
-      background-color: var(--primary);
-      color: #ffffff;
+      padding: 18px 24px;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       text-decoration: none;
-      font-weight: 600;
-      font-size: 1.125rem;
-      height: 56px;
-      border-radius: 12px;
-      transition: background-color 0.2s, transform 0.1s;
-      box-sizing: border-box;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-      border: none;
+      border-radius: 4px;
+      transition: all 0.3s ease;
       cursor: pointer;
+      box-sizing: border-box;
+      border: none;
+      z-index: 20;
+      position: relative;
     }
 
-    .cta-btn:active {
-      transform: scale(0.98);
+    .btn-primary {
+      background-color: var(--accent);
+      color: var(--bg);
+      box-shadow: 0 10px 20px rgba(212, 175, 55, 0.15);
     }
 
-    /* 2. Propuesta de Valor */
-    .benefits {
-      background-color: var(--bg-container);
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
     }
 
-    .benefit-item {
-      display: flex;
-      align-items: flex-start;
-      margin-bottom: 28px;
-      gap: 16px;
-    }
-
-    .benefit-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .benefit-icon {
-      width: 48px;
-      height: 48px;
-      background-color: #eff6ff;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--primary);
-    }
-
-    .benefit-text h3 {
-      margin: 0 0 4px 0;
-      font-size: 1.125rem;
-      font-weight: 600;
-    }
-
-    .benefit-text p {
-      margin: 0;
-      color: var(--text-light);
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-
-    /* 3. Prueba Social */
-    .testimonials {
-      background-color: var(--bg-alt);
-      text-align: center;
-    }
-
-    .testimonials h2 {
-      font-size: 1.5rem;
-      margin: 0 0 24px 0;
-    }
-
-    .testimonial-card {
-      background: var(--bg-container);
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      margin-bottom: 16px;
-      text-align: left;
-    }
-
-    .testimonial-card p {
-      font-style: italic;
-      margin: 0 0 16px 0;
-      line-height: 1.5;
-      color: var(--text-main);
-    }
-
-    .testimonial-author {
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: var(--primary);
-    }
-
-    /* 4. CTA Secundario */
-    .secondary-cta {
-      text-align: center;
-      background-color: var(--bg-container);
-      padding-bottom: 48px;
-    }
-
-    .secondary-cta h2 {
-      font-size: 1.5rem;
-      margin: 0 0 12px 0;
-    }
-
-    .whatsapp-btn {
+    .btn-whatsapp {
       background-color: #25D366;
-      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
-      gap: 8px;
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(37, 211, 102, 0.15);
+      gap: 12px;
     }
 
-    /* 5. Footer */
+    .btn-whatsapp:hover {
+      background-color: #1ebd5a;
+      transform: translateY(-2px);
+    }
+
     footer {
       text-align: center;
-      padding: 32px 24px;
-      color: var(--text-light);
-      font-size: 0.875rem;
-      border-top: 1px solid #e5e7eb;
-      margin-top: auto;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
     }
 
-    .social-links {
-      margin-top: 16px;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-    }
-
-    .social-links a {
-      color: var(--text-light);
-      transition: color 0.2s;
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.3), transparent);
+      margin: 20px 0;
     }
   </style>
 </head>
-
 <body>
+  <div class="noise"></div>
+  
   <div class="container">
-
-    <!-- Sección 1: Hero -->
+    
+    <!-- Hero Section -->
     <section class="hero">
-      <div class="brand">
-        <!-- Ícono de brújula -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-        </svg>
-        Tu Coach Bogotá
-      </div>
-      <h1>Desbloquea tu Potencial y Toma el Control de tu Vida</h1>
-      <p class="subheadline">Sesiones personalizadas en Bogotá para superar bloqueos mentales, ganar claridad y diseñar
-        la vida que realmente mereces.</p>
-
-      <a href="#contacto" class="cta-btn">Agendar mi Sesión Inicial</a>
+      <div class="hero-subtitle">Maison d'Art</div>
+      <h1>Estudio<br>Creativo</h1>
+      <p>Transformamos visiones en obras maestras. Descubre la esencia de la creatividad pura.</p>
+      
+      <a href="#contacto" class="btn btn-primary">Descubrir Más</a>
     </section>
 
-    <!-- Sección 2: Propuesta de valor -->
-    <section class="benefits">
-      <div class="benefit-item">
-        <div class="benefit-icon">
-          <!-- Ícono de bombilla -->
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18h6" />
-            <path d="M10 22h4" />
-            <path
-              d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.41.56 2.63 1.49 3.49.77.77 1.24 1.53 1.42 2.52" />
-          </svg>
-        </div>
-        <div class="benefit-text">
-          <h3>Claridad Mental Inmediata</h3>
-          <p>Identifica exactamente qué te está frenando y crea un plan de acción viable paso a paso.</p>
-        </div>
-      </div>
+    <div class="divider"></div>
 
-      <div class="benefit-item">
-        <div class="benefit-icon">
-          <!-- Ícono de tendencia -->
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-            <polyline points="16 7 22 7 22 13" />
-          </svg>
+    <!-- Gallery Section (3 Fotos) -->
+    <section style="padding-top: 20px; padding-bottom: 20px;">
+      <div class="gallery">
+        <div class="gallery-item gallery-1">
+          <img src="img1.png" alt="Exhibición artística 1">
         </div>
-        <div class="benefit-text">
-          <h3>Hábitos Positivos</h3>
-          <p>Reemplaza rutinas destructivas por hábitos que potencien tu energía y motivación diaria.</p>
+        <div class="gallery-item gallery-2">
+          <img src="img2.png" alt="Obra de arte moderna">
         </div>
-      </div>
-
-      <div class="benefit-item">
-        <div class="benefit-icon">
-          <!-- Ícono de mapa -->
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-            <line x1="9" y1="3" x2="9" y2="18" />
-            <line x1="15" y1="6" x2="15" y2="21" />
-          </svg>
-        </div>
-        <div class="benefit-text">
-          <h3>Acompañamiento Local</h3>
-          <p>Sesiones presenciales en Bogotá o virtuales, 100% adaptadas a tu ritmo de vida.</p>
+        <div class="gallery-item gallery-3">
+          <img src="img3.png" alt="Espacio de estudio elegante">
         </div>
       </div>
     </section>
 
-    <!-- Sección 3: Prueba social -->
-    <section class="testimonials">
-      <h2>Transformaciones Reales</h2>
-
-      <div class="testimonial-card">
-        <p>"Estaba estancada en mi carrera. En solo tres sesiones logré organizar mis prioridades y dar el salto
-          profesional que necesitaba. ¡Recomendadísimo!"</p>
-        <div class="testimonial-author">— María C. (Chapinero)</div>
-      </div>
-
-      <div class="testimonial-card">
-        <p>"Las herramientas que aprendí me ayudaron a manejar mi ansiedad y mejorar mis relaciones. El mejor espacio de
-          crecimiento personal en la ciudad."</p>
-        <div class="testimonial-author">— Andrés F. (Usaquén)</div>
+    <!-- Premio Sorpresa -->
+    <section style="padding-top: 20px;">
+      <div class="prize-card">
+        <div class="prize-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <h2>¡Atención!</h2>
+        <p>¿Serás tú nuestro <strong>prospecto #35</strong>? Escríbenos ahora y, si eres el afortunado, recibirás un premio exclusivo de colección directamente de nuestro estudio.</p>
       </div>
     </section>
 
-    <!-- Sección 4: CTA Secundario / Contacto -->
-    <section class="secondary-cta" id="contacto">
-      <h2>¿Listo para empezar?</h2>
-      <p style="margin-bottom: 24px; color: var(--text-light); line-height: 1.5;">
-        Escríbeme por WhatsApp y agendemos una llamada gratuita de 15 minutos para conocernos y ver cómo puedo ayudarte.
+    <!-- QR & Contact Section -->
+    <section class="qr-section" id="contacto">
+      <h3>Conecta con Nosotros</h3>
+      <p style="margin-top: 10px; color: var(--text-muted); font-size: 0.9rem;">
+        Escanea el código QR o presiona el botón para reclamar tu oportunidad.
       </p>
+      
+      <div class="qr-container">
+        <!-- Código QR generado apuntando al número 3502605543 -->
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=0a0a0c&bgcolor=ffffff&data=https://wa.me/573502605543?text=Hola%2C%20quiero%20descubrir%20su%20arte.%20%C2%BFSoy%20el%20prospecto%20numero%2035%3F" alt="QR Code WhatsApp">
+      </div>
 
-      <!-- Reemplaza el número de teléfono en el enlace (57 es el código de Colombia) -->
-      <a href="https://wa.me/573502605543?text=Hola,%20quisiera%20más%20información%20sobre%20las%20sesiones%20de%20coaching"
-        class="cta-btn whatsapp-btn" target="_blank" rel="noopener noreferrer">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path
-            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+      <a href="https://wa.me/573502605543?text=Hola,%20quiero%20descubrir%20su%20arte.%20¿Soy%20el%20prospecto%20numero%2035?" class="btn btn-whatsapp" target="_blank" rel="noopener noreferrer">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
-        Contactar por WhatsApp
+        Escribir al 350 260 5543
       </a>
     </section>
 
-    <!-- Sección 5: Footer -->
     <footer>
-      <p>© 2026 Tu Coach Bogotá. Todos los derechos reservados.</p>
-
-      <div class="social-links">
-        <a href="#" aria-label="Instagram">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-          </svg>
-        </a>
-        <a href="#" aria-label="LinkedIn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-            <rect x="2" y="9" width="4" height="12" />
-            <circle cx="4" cy="4" r="2" />
-          </svg>
-        </a>
-      </div>
+      <p>© 2026 Estudio Creativo. Elevando el arte a otro nivel.</p>
     </footer>
   </div>
 </body>
-
 </html>
