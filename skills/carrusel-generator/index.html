@@ -317,28 +317,53 @@
     }
 
     // Enviar a WhatsApp
-    function sendToWhatsapp() {
+    async function sendToWhatsapp() {
       const phone = document.getElementById('whatsappNum').value;
-      if(!phone) {
-        alert("Por favor ingresa un número de WhatsApp destino en la sección de Datos Generales.");
-        return;
-      }
-
       const company = document.getElementById('companyName').value;
-      // Codificar el mensaje para URL
-      let msg = `Hola! Aquí tienes los textos para el carrusel de *${company}*:%0A%0A`;
+      
+      let msgTexto = `Hola! Aquí tienes los textos para el carrusel de *${company}*:\n\n`;
+      let msgUrl = `Hola! Aquí tienes los textos para el carrusel de *${company}*:%0A%0A`;
       
       for(let i=1; i<=8; i++) {
         const txt = document.getElementById(`text${i}`).value;
         if(txt) {
-          msg += `*Slide ${i}:* ${txt}%0A`;
+          msgTexto += `*Slide ${i}:* ${txt}\n`;
+          msgUrl += `*Slide ${i}:* ${txt}%0A`;
         }
       }
 
-      msg += `%0A👉 _Recuerda descargar las 8 imágenes generadas desde la página web y adjuntarlas a esta conversación para publicarlas en Instagram._`;
+      // Intentar usar Web Share API para enviar las imágenes y texto juntos (Funciona excelente en móviles)
+      try {
+        const canvases = document.querySelectorAll('canvas');
+        if (canvases.length > 0 && navigator.canShare) {
+           const filesArray = [];
+           for(let i=0; i<canvases.length; i++) {
+             const blob = await new Promise(resolve => canvases[i].toBlob(resolve, 'image/jpeg', 0.9));
+             const file = new File([blob], `slide_${i+1}.jpg`, { type: 'image/jpeg' });
+             filesArray.push(file);
+           }
+           
+           if (navigator.canShare({ files: filesArray })) {
+             await navigator.share({
+               files: filesArray,
+               title: 'Carrusel ' + company,
+               text: msgTexto
+             });
+             return; // Si fue exitoso compartiendo las imágenes, terminamos aquí
+           }
+        }
+      } catch (err) {
+        console.log("El navegador no soporta enviar archivos directamente:", err);
+      }
 
-      // Redirigir a la API de WhatsApp
-      window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+      // Fallback: Si estamos en PC o el dispositivo no soporta enviar los archivos automáticamente
+      if(!phone) {
+        alert("Por favor ingresa un número de WhatsApp destino en la sección de Datos Generales.");
+        return;
+      }
+      msgUrl += `%0A👉 _Nota: Tu dispositivo no soportó el envío automático de fotos. Por favor descarga las 8 imágenes generadas desde la página web y adjúntalas manualmente a esta conversación._`;
+      
+      window.open(`https://wa.me/${phone}?text=${msgUrl}`, '_blank');
     }
   </script>
 </body>
