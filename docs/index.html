@@ -3,356 +3,330 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Empanadas Doña Panchita | Raspe y Gane</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chewy&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
-  
+  <title>La Gran Encuesta de WhatsApp | Gana $100.000</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #e63946; /* Rojo apetitoso */
-      --secondary: #ffb703; /* Amarillo dorado */
-      --accent: #fb8500; /* Naranja */
-      --bg: #fff8f0; /* Fondo crema */
-      --text: #2b2d42;
+      --uribe-color: #0033a0;
+      --petro-color: #8a2be2;
+      --fajardo-color: #2e8b57;
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --text-main: #2c3e50;
     }
-
-    * {
-      box-sizing: border-box;
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
       margin: 0;
       padding: 0;
-    }
-
-    body {
-      font-family: 'Nunito', sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      overflow-x: hidden;
-      background-image: radial-gradient(#ffe0b2 20%, transparent 20%),
-      radial-gradient(#ffe0b2 20%, transparent 20%);
-      background-color: var(--bg);
-      background-position: 0 0, 25px 25px;
-      background-size: 50px 50px;
     }
-
-    .container {
-      max-width: 500px;
-      width: 100%;
-      background: white;
-      min-height: 100vh;
-      box-shadow: 0 0 30px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-
-    /* Imagen Hero */
-    .hero {
-      width: 100%;
-      height: 220px;
-      position: relative;
-      background-color: var(--primary);
-      overflow: hidden;
-    }
-
-    .hero img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.85;
-      mix-blend-mode: multiply;
-    }
-
-    .hero-content {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+    .header {
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
       color: white;
+      width: 100%;
       text-align: center;
-      z-index: 2;
+      padding: 40px 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      box-sizing: border-box;
     }
-
-    .hero-content h1 {
-      font-family: 'Chewy', cursive;
-      font-size: 3rem;
-      letter-spacing: 1px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    .header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+      font-size: 2.5rem;
       margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
-
-    .hero-content p {
+    .header .prize {
+      display: inline-block;
+      background-color: #ffd700;
+      color: #b21f1f;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-weight: bold;
       font-size: 1.2rem;
-      font-weight: 800;
-      color: var(--secondary);
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
-      margin-top: 5px;
+      margin-top: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
-
-    /* Tarjeta Raspa y Gana */
-    .promo-card {
-      background: white;
-      border-radius: 20px;
-      padding: 30px 20px;
-      text-align: center;
-      width: 90%;
-      margin-top: -30px;
-      position: relative;
-      z-index: 10;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-      border: 4px dashed var(--secondary);
+    .container {
+      max-width: 800px;
+      width: 95%;
+      margin: 0 auto 50px auto;
     }
-
-    .promo-card h2 {
-      color: var(--primary);
-      font-family: 'Chewy', cursive;
-      font-size: 2.2rem;
-      margin-bottom: 10px;
+    .candidates {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
-
-    .instructions {
-      font-size: 1.05rem;
-      color: #666;
-      margin-bottom: 25px;
-      font-weight: 600;
-      line-height: 1.4;
-    }
-
-    /* Canvas / Scratch Area */
-    .scratch-wrapper {
-      position: relative;
-      width: 300px;
-      height: 160px;
-      margin: 0 auto;
+    .candidate-card {
+      background-color: var(--card-bg);
       border-radius: 15px;
       overflow: hidden;
-      box-shadow: inset 0 0 15px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.1);
-      border: 3px solid var(--accent);
-      background-color: #fff;
-    }
-
-    .scratch-reveal {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
-      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-      padding: 10px;
-    }
-
-    .scratch-reveal .prize-title {
-      font-size: 1.1rem;
-      font-weight: 800;
-      color: var(--primary);
-      text-transform: uppercase;
-    }
-
-    .scratch-reveal .code {
-      font-family: 'Chewy', cursive;
-      font-size: 2.4rem;
-      color: var(--text);
-      letter-spacing: 2px;
-      background: white;
-      padding: 5px 20px;
-      border-radius: 10px;
-      margin-top: 10px;
-      border: 2px dashed var(--primary);
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-
-    canvas {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 2;
+      padding: 20px;
+      position: relative;
       cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-left: 8px solid #ccc;
     }
-
-    /* Botón WhatsApp */
-    .whatsapp-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #25D366;
-      color: white;
-      text-decoration: none;
-      font-weight: 800;
-      font-size: 1.2rem;
-      padding: 16px 32px;
-      border-radius: 50px;
-      margin-top: 30px;
-      transition: all 0.3s ease;
-      box-shadow: 0 6px 15px rgba(37, 211, 102, 0.3);
-      width: 90%;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .whatsapp-btn:hover {
+    .candidate-card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
-      background-color: #1ebd5a;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     }
-
-    .whatsapp-btn svg {
-      margin-right: 12px;
+    .candidate-card.uribe { border-color: var(--uribe-color); }
+    .candidate-card.petro { border-color: var(--petro-color); }
+    .candidate-card.fajardo { border-color: var(--fajardo-color); }
+    
+    .avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: white;
+      margin-right: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      z-index: 2;
     }
-
-    footer {
-      margin-top: auto;
-      padding: 30px 20px;
+    .uribe .avatar { background-color: var(--uribe-color); }
+    .petro .avatar { background-color: var(--petro-color); }
+    .fajardo .avatar { background-color: var(--fajardo-color); }
+    
+    .info {
+      flex-grow: 1;
+      z-index: 2;
+    }
+    .info h2 {
+      font-family: 'Montserrat', sans-serif;
+      margin: 0 0 5px 0;
+      font-size: 1.5rem;
+    }
+    .info p {
+      margin: 0;
+      color: #7f8c8d;
+      font-size: 1rem;
+    }
+    
+    .vote-bar-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      opacity: 0.15;
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+    }
+    .uribe .vote-bar-container { background-color: var(--uribe-color); }
+    .petro .vote-bar-container { background-color: var(--petro-color); }
+    .fajardo .vote-bar-container { background-color: var(--fajardo-color); }
+    
+    .vote-count {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+      font-size: 2rem;
+      z-index: 2;
+      display: none;
+      color: #2c3e50;
+    }
+    
+    .form-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      margin-top: 30px;
+      display: none;
+    }
+    .form-container h3 {
+      font-family: 'Montserrat', sans-serif;
+      color: #b21f1f;
+      margin-top: 0;
+    }
+    input {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: 'Roboto', sans-serif;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background-color: #1a2a6c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background-color 0.2s;
+    }
+    .btn:hover { background-color: #121d4a; }
+    
+    .success-msg {
       text-align: center;
-      color: #888;
-      font-size: 0.9rem;
-      font-weight: 600;
+      color: #27ae60;
+      font-weight: bold;
+      font-size: 1.2rem;
+      display: none;
+      margin-top: 20px;
+    }
+
+    @media(max-width: 600px) {
+      .candidate-card { flex-direction: column; text-align: center; padding: 30px 20px; }
+      .avatar { margin: 0 0 15px 0; width: 80px; height: 80px; font-size: 2rem; }
+      .vote-count { margin-top: 15px; }
+      .header h1 { font-size: 2rem; }
     }
   </style>
 </head>
 <body>
 
+  <div class="header">
+    <h1>La Gran Encuesta</h1>
+    <div class="prize">¡Vota y Participa por $100.000 COP!</div>
+  </div>
+
   <div class="container">
-    
-    <!-- Hero con Imagen Generada -->
-    <div class="hero">
-      <img src="empanadas.png" alt="Empanadas Doña Panchita">
-      <div class="hero-content">
-        <h1>Doña Panchita</h1>
-        <p>El Sabor de la Tradición 🥟</p>
-      </div>
-    </div>
+    <p style="text-align: center; font-size: 1.2rem; margin-bottom: 30px; line-height: 1.5;">
+      Toca la foto de tu candidato para registrar tu voto y ver los resultados en tiempo real. Al finalizar, ingresa tus datos para participar en el sorteo.
+    </p>
 
-    <!-- Contenedor del Juego -->
-    <div class="promo-card">
-      <h2>¡RASPE Y GANE!</h2>
-      <p class="instructions">Usa tu dedo o el mouse para raspar la tarjeta dorada y descubre tu premio oculto.</p>
-      
-      <!-- Zona de raspar -->
-      <div class="scratch-wrapper">
-        <div class="scratch-reveal">
-          <div class="prize-title">¡Ganaste Empanada Gratis!</div>
-          <div class="code">PANCHITA35</div>
+    <div class="candidates" id="candidatesList">
+      <div class="candidate-card uribe" onclick="vote('uribe')">
+        <div class="vote-bar-container" id="bar-uribe"></div>
+        <div class="avatar">AU</div>
+        <div class="info">
+          <h2>Álvaro Uribe Vélez</h2>
+          <p>Centro Democrático</p>
         </div>
-        <canvas id="scratch-canvas" width="300" height="160"></canvas>
+        <div class="vote-count" id="count-uribe">0%</div>
       </div>
 
-      <p style="margin-top: 25px; font-size: 0.95rem; color: #777; font-weight: 600;">
-        Toma captura a tu premio y envíala por WhatsApp para reclamar.
-      </p>
+      <div class="candidate-card petro" onclick="vote('petro')">
+        <div class="vote-bar-container" id="bar-petro"></div>
+        <div class="avatar">GP</div>
+        <div class="info">
+          <h2>Gustavo Petro</h2>
+          <p>Pacto Histórico</p>
+        </div>
+        <div class="vote-count" id="count-petro">0%</div>
+      </div>
 
-      <a href="https://wa.me/573502605543?text=Hola%20Doña%20Panchita,%20¡raspé%20y%20gané!%20Mi%20código%20es%20PANCHITA35" class="whatsapp-btn" target="_blank" rel="noopener noreferrer">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-        </svg>
-        Reclamar Premio
-      </a>
+      <div class="candidate-card fajardo" onclick="vote('fajardo')">
+        <div class="vote-bar-container" id="bar-fajardo"></div>
+        <div class="avatar">SF</div>
+        <div class="info">
+          <h2>Sergio Fajardo</h2>
+          <p>Coalición Esperanza</p>
+        </div>
+        <div class="vote-count" id="count-fajardo">0%</div>
+      </div>
     </div>
 
-    <footer>
-      <p>© 2026 Empanadas Doña Panchita. Todos los derechos reservados.</p>
-    </footer>
-
+    <div class="form-container" id="registrationForm">
+      <h3>¡Tu voto ha sido registrado con éxito!</h3>
+      <p>Para entrar al sorteo de los <strong>$100.000 COP</strong>, déjanos tu número de WhatsApp. El ganador será contactado directamente.</p>
+      <input type="tel" id="phone" placeholder="Tu número de celular / WhatsApp (Ej: 300 123 4567)">
+      <button class="btn" onclick="submitForm()">Participar en el Sorteo</button>
+      <div class="success-msg" id="successMsg">¡Gracias! Estás participando oficialmente. Guarda el número de nuestro WhatsApp.</div>
+    </div>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      const canvas = document.getElementById('scratch-canvas');
-      const ctx = canvas.getContext('2d');
-      let isDrawing = false;
+    // Initial mock data simulating real-time votes
+    let votes = {
+      uribe: 15420,
+      petro: 16850,
+      fajardo: 11230
+    };
+    
+    let hasVoted = false;
 
-      let brushRadius = 20;
-
-      // Llenar el canvas con una textura dorada brillante simulando pintura raspable
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#ffd700'); // Oro
-      gradient.addColorStop(0.5, '#ffea70'); // Oro claro
-      gradient.addColorStop(1, '#daa520'); // Goldenrod
+    function vote(candidate) {
+      if (hasVoted) return;
+      hasVoted = true;
       
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Add user vote
+      votes[candidate]++;
+      
+      // Calculate totals
+      const total = votes.uribe + votes.petro + votes.fajardo;
+      
+      // Animate and Update UI
+      updateUI('uribe', total);
+      updateUI('petro', total);
+      updateUI('fajardo', total);
+      
+      // Show registration form smoothly
+      setTimeout(() => {
+        const form = document.getElementById('registrationForm');
+        form.style.display = 'block';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }, 800);
+    }
 
-      // Dibujar texto "RASPE AQUÍ" repetido para darle textura
-      ctx.font = '900 28px Nunito';
-      ctx.fillStyle = 'rgba(184, 134, 11, 0.4)'; // Letras sutiles
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('RASPE AQUÍ', canvas.width / 2, canvas.height / 2 - 20);
-      ctx.fillText('RASPE AQUÍ', canvas.width / 2, canvas.height / 2 + 20);
-
-      // Efecto de pincel borrador
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = brushRadius * 2;
-
-      // Obtener posición del mouse/dedo adaptada a la escala de pantalla
-      function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        
-        // Coordenadas relativas
-        let clientX = e.clientX;
-        let clientY = e.clientY;
-
-        if (e.touches && e.touches.length > 0) {
-          clientX = e.touches[0].clientX;
-          clientY = e.touches[0].clientY;
+    function updateUI(id, total) {
+      const percentage = ((votes[id] / total) * 100).toFixed(1);
+      
+      const bar = document.getElementById('bar-' + id);
+      const count = document.getElementById('count-' + id);
+      
+      // Remove hover effect class
+      document.querySelector('.' + id).style.cursor = 'default';
+      
+      bar.style.width = percentage + '%';
+      count.style.display = 'block';
+      
+      // Counter animation
+      let current = 0;
+      const target = parseFloat(percentage);
+      const step = target / 40; // frames
+      
+      const interval = setInterval(() => {
+        current += step;
+        if(current >= target) {
+          count.innerText = percentage + '%';
+          clearInterval(interval);
+        } else {
+          count.innerText = current.toFixed(1) + '%';
         }
+      }, 25);
+    }
 
-        // Ajustar a las dimensiones internas del canvas
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-
-        return {
-          x: (clientX - rect.left) * scaleX,
-          y: (clientY - rect.top) * scaleY
-        };
+    function submitForm() {
+      const phone = document.getElementById('phone').value;
+      if(phone.replace(/\D/g,'').length < 10) {
+        alert("Por favor ingresa un número válido de 10 dígitos.");
+        return;
       }
-
-      function startScratch(e) {
-        isDrawing = true;
-        const pos = getPos(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-        
-        // Evita el scroll o comportamiento default mientras se raspa (si es touch)
-        if(e.type === 'touchstart') e.preventDefault();
-      }
-
-      function scratch(e) {
-        if (!isDrawing) return;
-        const pos = getPos(e);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-        
-        // Evita el scroll
-        if(e.type === 'touchmove') e.preventDefault();
-      }
-
-      function stopScratch() {
-        isDrawing = false;
-      }
-
-      // Eventos para Mouse
-      canvas.addEventListener('mousedown', startScratch);
-      canvas.addEventListener('mousemove', scratch);
-      canvas.addEventListener('mouseup', stopScratch);
-      canvas.addEventListener('mouseleave', stopScratch);
-
-      // Eventos para Touch (Móviles)
-      canvas.addEventListener('touchstart', startScratch, { passive: false });
-      canvas.addEventListener('touchmove', scratch, { passive: false });
-      canvas.addEventListener('touchend', stopScratch);
-      canvas.addEventListener('touchcancel', stopScratch);
-    });
+      document.getElementById('successMsg').style.display = 'block';
+      document.getElementById('phone').disabled = true;
+      document.querySelector('.btn').disabled = true;
+      document.querySelector('.btn').style.opacity = '0.5';
+      
+      // Optional: Since it's a static site, you can redirect them to a real WhatsApp chat
+      // setTimeout(() => {
+      //   window.location.href = "https://wa.me/57XXXXXXXXXX?text=Hola,%20ya%20voté%20en%20la%20encuesta%20y%20quiero%20participar%20por%20los%20$100.000";
+      // }, 2000);
+    }
   </script>
 </body>
 </html>
