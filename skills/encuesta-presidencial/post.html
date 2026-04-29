@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Post para Redes Sociales | La Gran Encuesta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #333; /* Fondo oscuro de la pantalla de la compu */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    
+    /* El contenedor exacto de 1080x1080, formato cuadrado para Instagram/WhatsApp */
+    .post {
+      width: 1080px;
+      height: 1080px;
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: 'Roboto', sans-serif;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    
+    .tag {
+      background: white;
+      color: #b21f1f;
+      font-weight: bold;
+      font-size: 35px;
+      padding: 15px 40px;
+      border-radius: 50px;
+      margin-bottom: 20px;
+      font-family: 'Montserrat', sans-serif;
+      text-transform: uppercase;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .prize {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 160px;
+      color: #ffd700;
+      text-shadow: 8px 8px 0px rgba(0,0,0,0.3);
+      margin: 0;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 45px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      margin-top: 30px;
+      margin-bottom: 70px;
+      text-align: center;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    }
+
+    .qr-container {
+      background: white;
+      padding: 35px;
+      border-radius: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .qr-container img {
+      width: 350px;
+      height: 350px;
+    }
+
+    .qr-text {
+      color: #b21f1f;
+      font-weight: bold;
+      font-size: 42px;
+      margin-top: 25px;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .candidates {
+      display: flex;
+      gap: 40px;
+      margin-top: 80px;
+    }
+
+    .circle {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: white;
+      font-size: 45px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 8px solid #ffd700;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+      font-family: 'Montserrat', sans-serif;
+    }
+    
+    .c-uribe { color: #0033a0; }
+    .c-petro { color: #8a2be2; }
+    .c-fajardo { color: #2e8b57; }
+    
+    .help-text {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #999;
+      font-size: 16px;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div class="help-text">Toma un screenshot (captura de pantalla) a este cuadro para subirlo a Instagram/WhatsApp.</div>
+
+  <div class="post">
+    
+    <div class="tag">¡Sorteo Flash!</div>
+    <h1 class="prize">$100.000<br>PESOS</h1>
+    <div class="subtitle">La Gran Encuesta de WhatsApp</div>
+    
+    <div class="qr-container">
+      <!-- Este código QR apunta temporalmente a Google. Cuando tengas tu link de GitHub Pages, 
+           reemplaza "https://google.com" en la URL de abajo con tu link real. -->
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&color=1a2a6c&data=https://tu-usuario.github.io/tu-repo/" alt="Código QR Encuesta">
+      <div class="qr-text">ESCANEA Y VOTA</div>
+    </div>
+
+    <div class="candidates">
+      <div class="circle c-uribe">AU</div>
+      <div class="circle c-petro">GP</div>
+      <div class="circle c-fajardo">SF</div>
+    </div>
+
+  </div>
+</body>
+</html>
