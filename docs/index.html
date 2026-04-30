@@ -400,16 +400,57 @@
 
     // Motor Inteligente de búsqueda y respuesta (Simulador RAG)
     function generateResponse(query) {
-      // Regla 1: Si no hay fuentes, pedir al usuario que suba documentos
       if (knowledgeBase.length === 0) {
         appendMessage('bot', "Aún no tengo información en mi memoria. Por favor, sube algunos documentos en la barra lateral izquierda para que pueda aprender de ellos.");
         return;
       }
 
-      // 1. Limpiar la pregunta para sacar palabras clave relevantes (ignorando conectores)
-      const stopWords = ['el', 'la', 'los', 'las', 'un', 'una', 'qué', 'que', 'de', 'del', 'en', 'para', 'por', 'con', 'es', 'son', 'como', 'cual', 'cuales'];
-      // Remover tildes y signos
       const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?.,]/g, '');
+      
+      // HABILIDAD ESPECIAL 1: Detección de Personajes (Análisis de Entidades)
+      if (normalizedQuery.includes('personaje') || normalizedQuery.includes('protagonista') || normalizedQuery.includes('quienes son')) {
+        const nameCounts = {};
+        knowledgeBase.forEach(doc => {
+          doc.paragraphs.forEach(p => {
+            // Buscar palabras capitalizadas que no estén justo después de un punto (posibles nombres propios)
+            const matches = p.match(/(?<!^|\.\s+)[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+/g);
+            if (matches) {
+              matches.forEach(m => {
+                const lower = m.toLowerCase();
+                const stop = ['el', 'la', 'los', 'las', 'un', 'una', 'y', 'o', 'pero', 'si', 'no', 'que', 'de', 'en', 'a', 'para', 'su', 'sus'];
+                if (!stop.includes(lower) && m.length > 2) {
+                  nameCounts[m] = (nameCounts[m] || 0) + 1;
+                }
+              });
+            }
+          });
+        });
+        
+        // Filtrar y ordenar los nombres más frecuentes
+        const topCharacters = Object.entries(nameCounts)
+          .filter(e => e[1] > 1) // Que aparezcan más de una vez
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(e => e[0]);
+          
+        if (topCharacters.length > 0) {
+          appendMessage('bot', `Parece que preguntas por los personajes. Al analizar lingüísticamente el libro, los nombres más importantes y frecuentes son:\n\n• ${topCharacters.join('\n• ')}`, knowledgeBase[0].name);
+          return;
+        }
+      }
+
+      // HABILIDAD ESPECIAL 2: Resumen del Documento
+      if (normalizedQuery.includes('resumen') || normalizedQuery.includes('de que trata') || normalizedQuery.includes('sinopsis')) {
+        const firstDoc = knowledgeBase[0];
+        // Tomar los primeros párrafos del documento como resumen introductorio
+        const intro = firstDoc.paragraphs.slice(0, 3).join('\n\n');
+        appendMessage('bot', `Aquí tienes un extracto introductorio que resume el inicio de la historia:\n\n"${intro}..."`, firstDoc.name);
+        return;
+      }
+
+      // BÚSQUEDA GENERAL DE CONTEXTO
+      // 1. Limpiar la pregunta para sacar palabras clave relevantes
+      const stopWords = ['el', 'la', 'los', 'las', 'un', 'una', 'qué', 'que', 'de', 'del', 'en', 'para', 'por', 'con', 'es', 'son', 'como', 'cual', 'cuales'];
       const keywords = normalizedQuery.split(' ').filter(word => !stopWords.includes(word) && word.length > 2);
 
       if (keywords.length === 0) {
@@ -417,31 +458,36 @@
         return;
       }
 
-      // 2. Buscar similitud en todos los párrafos de todos los documentos cargados
+      // 2. Buscar similitud (Contexto ampliado)
       let bestMatch = null;
       let maxScore = 0;
 
       knowledgeBase.forEach(doc => {
-        doc.paragraphs.forEach(paragraph => {
+        for (let i = 0; i < doc.paragraphs.length; i++) {
+          const paragraph = doc.paragraphs[i];
           let score = 0;
           const pLower = paragraph.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           
           keywords.forEach(kw => {
-            if (pLower.includes(kw)) score++; // Sumar puntos por coincidencias
+            if (pLower.includes(kw)) score++;
           });
 
-          // Si este párrafo tiene más coincidencias que los anteriores, lo guardamos como mejor respuesta
           if (score > maxScore) {
             maxScore = score;
-            bestMatch = { text: paragraph, source: doc.name };
+            // Guardar el párrafo actual más un poco de contexto (párrafo anterior y siguiente para mayor lectura)
+            const prev = i > 0 ? doc.paragraphs[i-1] : '';
+            const next = i < doc.paragraphs.length - 1 ? doc.paragraphs[i+1] : '';
+            const combinedContext = [prev, paragraph, next].filter(p => p).join('\n\n');
+            
+            bestMatch = { text: combinedContext, source: doc.name };
           }
-        });
+        }
       });
 
       // 3. Generar la respuesta final
       if (maxScore > 0 && bestMatch) {
-        const responseText = `Basado en los documentos proporcionados, encontré esta información relevante:\n\n"${bestMatch.text}"`;
-        appendMessage('bot', responseText, bestMatch.source); // Se envía con la cita (citation)
+        const responseText = `Encontré este fragmento relevante (con contexto ampliado):\n\n"${bestMatch.text}"`;
+        appendMessage('bot', responseText, bestMatch.source);
       } else {
         appendMessage('bot', "He revisado detalladamente todos tus documentos, pero no encontré ninguna información que coincida con tu pregunta. Intenta formularla de otra manera o sube más fuentes relacionadas.");
       }
