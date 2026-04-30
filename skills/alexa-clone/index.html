@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente de Voz IA - Sandbox</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --glow: #38bdf8;
+      --text: #f8fafc;
+    }
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Roboto', sans-serif;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5rem;
+      color: var(--glow);
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+      margin-bottom: 50px;
+      text-align: center;
+    }
+
+    /* Orb (Microphone Button) */
+    .orb-container {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .orb {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #7dd3fc 0%, #0ea5e9 100%);
+      box-shadow: 0 0 20px #0ea5e9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+      transition: all 0.3s ease;
+    }
+
+    .orb svg {
+      width: 40px;
+      height: 40px;
+      color: white;
+    }
+
+    .orb:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px #38bdf8;
+    }
+
+    /* Animation rings for listening */
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--glow);
+      width: 100%;
+      height: 100%;
+      top: 0; left: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .listening .orb {
+      background: radial-gradient(circle, #fca5a5 0%, #ef4444 100%);
+      box-shadow: 0 0 30px #ef4444;
+    }
+    
+    .listening .ring:nth-child(2) {
+      animation: ripple 1.5s infinite;
+      border-color: #ef4444;
+    }
+    .listening .ring:nth-child(3) {
+      animation: ripple 1.5s infinite;
+      animation-delay: 0.5s;
+      border-color: #ef4444;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    /* Transcript Box */
+    .transcript-box {
+      margin-top: 50px;
+      width: 90%;
+      max-width: 600px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 80px;
+      text-align: center;
+      font-size: 1.2rem;
+      backdrop-filter: blur(5px);
+    }
+
+    .status {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    /* Log Box for Intents/MQTT Simulation */
+    .log-box {
+      margin-top: 20px;
+      width: 90%;
+      max-width: 600px;
+      background: #000;
+      color: #10b981;
+      font-family: monospace;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      min-height: 100px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>S.I.A.<br><span style="font-size: 1rem; color: #94a3b8; font-family: Roboto;">Sistema Inteligente Autónomo (Sandbox MQTT)</span></h1>
+
+  <div class="orb-container" id="orbBtn">
+    <div class="orb">
+      <!-- Icono de Micrófono -->
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+    </div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+  </div>
+
+  <div class="transcript-box">
+    <div class="status" id="statusText">Presiona el orbe para hablar</div>
+    <div id="transcriptText">Esperando comando...</div>
+  </div>
+
+  <div class="log-box" id="systemLog">
+    > Sistema Frontend Iniciado. Esperando permisos de micrófono...
+  </div>
+
+  <script>
+    const orbBtn = document.getElementById('orbBtn');
+    const statusText = document.getElementById('statusText');
+    const transcriptText = document.getElementById('transcriptText');
+    const systemLog = document.getElementById('systemLog');
+
+    // 1. Verificación de permisos y capacidades
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      statusText.innerText = "Error: Tu navegador Chrome/Edge actual no soporta la API de Voz Nativa.";
+      statusText.style.color = "red";
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = false; // Se detiene al terminar de hablar la oración
+      recognition.interimResults = true; // Va escribiendo a medida que hablas
+
+      let isListening = false;
+
+      // Evento del botón central
+      orbBtn.addEventListener('click', () => {
+        if (!isListening) {
+          try {
+            recognition.start(); // Esto pedirá permiso al micrófono la primera vez
+            orbBtn.classList.add('listening');
+            statusText.innerText = "Escuchando...";
+            transcriptText.innerText = "";
+            isListening = true;
+          } catch(e) {
+            console.error("No se pudo iniciar:", e);
+          }
+        } else {
+          recognition.stop();
+        }
+      });
+
+      // Recibir transcripción del micrófono en tiempo real
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        transcriptText.innerText = finalTranscript || interimTranscript;
+
+        // Si la oración terminó y es final, se la enviamos a nuestras "Skills"
+        if (finalTranscript) {
+          ejecutarHabilidad(finalTranscript);
+        }
+      };
+
+      // Manejo de finalización y errores
+      recognition.onerror = (event) => {
+        statusText.innerText = "Error de voz: " + event.error;
+        orbBtn.classList.remove('listening');
+        isListening = false;
+      };
+
+      recognition.onend = () => {
+        statusText.innerText = "Procesando...";
+        orbBtn.classList.remove('listening');
+        isListening = false;
+        setTimeout(() => {
+          statusText.innerText = "Presiona el orbe para hablar";
+        }, 2000);
+      };
+    }
+
+    // ======================================================================
+    // 2. CEREBRO Y ENRUTADOR DE HABILIDADES (AQUÍ VAN TUS INTENTS)
+    // ======================================================================
+    function logMessage(msg) {
+      systemLog.innerHTML += `<br>> ${msg}`;
+      systemLog.scrollTop = systemLog.scrollHeight;
+    }
+
+    function ejecutarHabilidad(texto) {
+      const comando = texto.toLowerCase();
+      logMessage(`Analizando comando: "${comando}"`);
+
+      // === SKILL 1: Domótica Básica (Ejemplo de Control de Luces) ===
+      if (comando.includes('encender') || comando.includes('prende')) {
+        if (comando.includes('luz') || comando.includes('luces')) {
+          enviarComandoMQTT('casa/sala/luces', 'ON');
+          responderVoz('Encendiendo las luces de la sala.');
+          return;
+        }
+      }
+
+      if (comando.includes('apagar') || comando.includes('apaga')) {
+        if (comando.includes('luz') || comando.includes('luces')) {
+          enviarComandoMQTT('casa/sala/luces', 'OFF');
+          responderVoz('Apagando las luces.');
+          return;
+        }
+      }
+
+      // === SKILL 2: Ejemplo de Consulta (Lectura desde backend futuro) ===
+      if (comando.includes('temperatura') || comando.includes('clima')) {
+        // En el futuro, aquí leerás el último mensaje MQTT recibido de tus sensores
+        responderVoz('La temperatura actual reportada por el sensor es de 24 grados.');
+        return;
+      }
+
+      // Si no entiende el comando, avisa
+      responderVoz('Lo siento, no tengo una habilidad programada para ese comando todavía.');
+    }
+
+    // ======================================================================
+    // 3. CAPA DE COMUNICACIÓN (MQTT)
+    // ======================================================================
+    function enviarComandoMQTT(topic, payload) {
+      // AQUÍ ESTÁ EL SANDBOX: A futuro reemplazaremos este log con la librería MQTT.js
+      // que se conectará vía WebSockets a tu Broker (ej. Mosquitto).
+      logMessage(`[MQTT PUBLISH] Topic: <span style="color:yellow">${topic}</span> | Payload: <span style="color:yellow">${payload}</span>`);
+      
+      // Feedback visual adicional
+      transcriptText.innerText = `Enviando paquete MQTT a: ${topic}...`;
+      transcriptText.style.color = "#10b981";
+      setTimeout(() => { transcriptText.style.color = "var(--text)"; }, 2000);
+    }
+
+    // ======================================================================
+    // 4. RESPUESTA DE VOZ (Texto a Voz del Navegador)
+    // ======================================================================
+    function responderVoz(mensaje) {
+      logMessage(`[VOZ] Asistente dice: "${mensaje}"`);
+      // Usamos la API nativa de Síntesis de Voz del navegador
+      const speech = new SpeechSynthesisUtterance(mensaje);
+      speech.lang = 'es-ES';
+      speech.rate = 1.0;  // Velocidad
+      speech.pitch = 1.0; // Tono
+      window.speechSynthesis.speak(speech);
+    }
+
+  </script>
+</body>
+</html>
