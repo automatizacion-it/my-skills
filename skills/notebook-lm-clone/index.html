@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Notebook AI</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Librerías para procesar PDF y Word -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
   <style>
     :root {
       --bg-color: #f9fafb;
@@ -239,9 +242,9 @@
     <div class="sidebar-header">
       <h2>Fuentes (Documentos)</h2>
       <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
-        Sube documentos de texto (.txt) para que el modelo aprenda de ellos y responda a tus preguntas.
+        Sube documentos (.txt, .pdf, .docx) para que el modelo aprenda de ellos y responda a tus preguntas.
       </p>
-      <input type="file" id="fileInput" accept=".txt" multiple style="display: none;">
+      <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" multiple style="display: none;">
       <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Subir Documento
@@ -277,9 +280,32 @@
   <script>
     // Memoria del modelo simulado (Motor RAG en el navegador)
     const knowledgeBase = [];
+    
+    // Configurar el worker de PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-    // Manejar subida de archivos de texto
-    document.getElementById('fileInput').addEventListener('change', function(e) {
+    // Funciones para extraer texto
+    async function extractTextFromPDF(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = "";
+      for(let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const strings = content.items.map(item => item.str);
+          text += strings.join(" ") + "\n";
+      }
+      return text;
+    }
+
+    async function extractTextFromWord(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+      return result.value;
+    }
+
+    // Manejar subida de archivos
+    document.getElementById('fileInput').addEventListener('change', async function(e) {
       const files = e.target.files;
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -287,10 +313,26 @@
         // Evitar duplicados por nombre
         if (knowledgeBase.some(doc => doc.name === file.name)) continue;
 
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const content = evt.target.result;
-          
+        let content = "";
+        
+        try {
+          // Mostrar que está cargando
+          const tempId = 'loading-' + Date.now() + i;
+          updateSourcesUI(file.name + " (Procesando...)", tempId);
+
+          if (file.name.toLowerCase().endsWith('.pdf')) {
+            content = await extractTextFromPDF(file);
+          } else if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
+            content = await extractTextFromWord(file);
+          } else {
+            // Asumir que es TXT
+            content = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (evt) => resolve(evt.target.result);
+              reader.readAsText(file);
+            });
+          }
+
           // Guardar en la base de conocimientos dividiendo el texto por párrafos
           const paragraphs = content.split('\n').filter(p => p.trim().length > 20);
           
@@ -299,19 +341,23 @@
             paragraphs: paragraphs
           });
 
-          updateSourcesUI(file.name);
-        };
-        reader.readAsText(file); // Leer el archivo localmente sin servidores externos
+          // Actualizar UI quitando el (Procesando...)
+          document.getElementById(tempId).innerText = file.name;
+
+        } catch (error) {
+          console.error("Error leyendo archivo:", file.name, error);
+          alert("Hubo un error procesando el archivo: " + file.name);
+        }
       }
     });
 
-    function updateSourcesUI(fileName) {
+    function updateSourcesUI(fileName, id = '') {
       const list = document.getElementById('sourcesList');
       const item = document.createElement('div');
       item.className = 'source-item';
       item.innerHTML = `
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-        ${fileName}
+        <span id="${id}">${fileName}</span>
       `;
       list.appendChild(item);
     }
