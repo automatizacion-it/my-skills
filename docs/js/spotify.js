@@ -1,28 +1,80 @@
-// Lógica de Spotify Web API (Implicit Grant Flow)
+// Lógica de Spotify Web API (Authorization Code with PKCE Flow)
 
 let spotifyAccessToken = null;
 
-// Extraer el token de la URL si venimos redirigidos desde Spotify
-function chequearTokenSpotify() {
-  const hash = window.location.hash;
-  if (hash) {
-    const tokenParams = new URLSearchParams(hash.substring(1));
-    const token = tokenParams.get('access_token');
-    if (token) {
-      spotifyAccessToken = token;
-      // Limpiar la URL para que no quede el token expuesto
-      window.history.pushState("", document.title, window.location.pathname + window.location.search);
-      setTimeout(() => {
-        if(typeof logMessage === 'function') logMessage("✅ Cuenta de Spotify conectada correctamente.");
-      }, 1000);
-      return true;
+// Funciones utilitarias para PKCE
+function generateRandomString(length) {
+  let text = '';
+  let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+}
+
+async function generateCodeChallenge(codeVerifier) {
+  function base64encode(string) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(string)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+
+  const encoder = new TextEncoder();
+  const data = encoder.encode(codeVerifier);
+  const digest = await window.crypto.subtle.digest('SHA-256', data);
+  return base64encode(digest);
+}
+
+// Intercambiar el código por un token de acceso
+async function chequearTokenSpotify() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  
+  if (code) {
+    const codeVerifier = localStorage.getItem('code_verifier');
+    const clientId = localStorage.getItem('spotifyClientId');
+    const redirectUri = window.location.origin + window.location.pathname;
+    
+    try {
+      if(typeof logMessage === 'function') logMessage("⏳ Autenticando con Spotify...");
+      
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          grant_type: 'authorization_code',
+          code: code,
+          redirect_uri: redirectUri,
+          code_verifier: codeVerifier,
+        })
+      });
+      
+      const data = await response.json();
+      if (data.access_token) {
+        spotifyAccessToken = data.access_token;
+        // Limpiar la URL para que no quede el código expuesto
+        window.history.pushState("", document.title, window.location.pathname);
+        setTimeout(() => {
+          if(typeof logMessage === 'function') logMessage("✅ Cuenta de Spotify conectada correctamente.");
+        }, 1000);
+        return true;
+      } else {
+        console.error("Error obteniendo token:", data);
+        if(typeof logMessage === 'function') logMessage("❌ Error autenticando con Spotify.");
+      }
+    } catch(e) {
+      console.error("Error exchanging code:", e);
     }
   }
   return false;
 }
 
-// Iniciar proceso de autenticación
-function conectarSpotify() {
+// Iniciar proceso de autenticación con PKCE
+async function conectarSpotify() {
   const clientId = document.getElementById('spotifyClientId').value.trim();
   if (!clientId) {
     alert("Debes ingresar tu Client ID de Spotify primero.");
@@ -32,17 +84,29 @@ function conectarSpotify() {
   // Guardamos el Client ID en localStorage
   localStorage.setItem('spotifyClientId', clientId);
   
-  // URL actual de GitHub Pages (o localhost) sin query params
-  const redirectUri = window.location.origin + window.location.pathname;
+  // Generar y guardar el code_verifier
+  const codeVerifier = generateRandomString(128);
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+  localStorage.setItem('code_verifier', codeVerifier);
   
+  // URL actual sin query params
+  const redirectUri = window.location.origin + window.location.pathname;
   const scope = 'user-modify-playback-state user-read-playback-state';
-  const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+  
+  const args = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    scope: scope,
+    redirect_uri: redirectUri,
+    code_challenge_method: 'S256',
+    code_challenge: codeChallenge
+  });
   
   // Redirigir a Spotify
-  window.location.href = authUrl;
+  window.location.href = 'https://accounts.spotify.com/authorize?' + args.toString();
 }
 
-// Cargar Client ID guardado
+// Cargar al iniciar la página
 window.addEventListener('load', () => {
   const savedClientId = localStorage.getItem('spotifyClientId');
   if (savedClientId) {
