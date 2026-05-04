@@ -82,10 +82,35 @@ function logMessage(msg) {
 
 // Cargar configuración guardada
 window.onload = () => {
+  // Rellenar menú desplegable
+  const dropdown = document.getElementById('intentDropdown');
+  if (dropdown && typeof intents !== 'undefined') {
+    intents.forEach(intent => {
+      const option = document.createElement('option');
+      option.value = intent.name;
+      option.textContent = intent.description || intent.name;
+      dropdown.appendChild(option);
+    });
+    
+    dropdown.addEventListener('change', (e) => {
+      if (e.target.value) {
+        const selectedIntent = intents.find(i => i.name === e.target.value);
+        if (selectedIntent) {
+          logMessage(`Ejecutando desde menú: [${selectedIntent.name}]`);
+          selectedIntent.action();
+        }
+        dropdown.value = ""; // Reset
+      }
+    });
+  }
+
   if(localStorage.getItem('assistantName')) {
     const name = localStorage.getItem('assistantName');
     document.getElementById('assistantName').value = name;
     document.getElementById('displayName').innerText = name;
+  } else {
+    document.getElementById('assistantName').value = 'SCALL';
+    document.getElementById('displayName').innerText = 'SCALL';
   }
   if(localStorage.getItem('assistantApiKey')) {
     document.getElementById('assistantApiKey').value = localStorage.getItem('assistantApiKey');
@@ -93,7 +118,7 @@ window.onload = () => {
 };
 
 function saveAssistantConfig() {
-  const name = document.getElementById('assistantName').value.trim() || 'S.I.A.';
+  const name = document.getElementById('assistantName').value.trim() || 'SCALL';
   const key = document.getElementById('assistantApiKey').value.trim();
   
   localStorage.setItem('assistantName', name);
@@ -109,7 +134,7 @@ function saveAssistantConfig() {
 async function ejecutarHabilidad(texto) {
   logMessage(`Usuario dijo: "${texto}"`);
   const apiKey = localStorage.getItem('assistantApiKey');
-  const name = localStorage.getItem('assistantName') || 'S.I.A.';
+  const name = localStorage.getItem('assistantName') || 'SCALL';
 
   // === SI HAY API KEY, USAMOS LA IA PROFUNDA (GEMINI) ===
   if (apiKey) {

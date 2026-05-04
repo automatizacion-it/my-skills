@@ -10,7 +10,7 @@
 <body>
   <button class="settings-btn" onclick="document.getElementById('configModal').style.display='flex'">⚙️ Configurar Cerebro IA</button>
 
-  <h1><span id="displayName">S.I.A.</span><br><span style="font-size: 1rem; color: #94a3b8; font-family: Roboto;">Asistente Autónomo (Sandbox MQTT)</span></h1>
+  <h1><span id="displayName">SCALL</span><br><span style="font-size: 1rem; color: #94a3b8; font-family: Roboto;">Asistente Autónomo (Sandbox MQTT)</span></h1>
 
   <!-- Modal Configuración -->
   <div class="modal-overlay" id="configModal">
@@ -19,7 +19,7 @@
       <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">Conecta tu asistente a Gemini 1.5 para darle inteligencia infinita (conversacional) y capacidad de controlar dispositivos físicos.</p>
       
       <label style="font-size: 0.8rem; color: #cbd5e1;">¿Cómo quieres llamar a tu Asistente?</label>
-      <input type="text" id="assistantName" placeholder="Ej: Jarvis, Cortana, Panchita">
+      <input type="text" id="assistantName" placeholder="Ej: SCALL, Jarvis, Cortana">
       
       <label style="font-size: 0.8rem; color: #cbd5e1;">Gemini API Key</label>
       <input type="password" id="assistantApiKey" placeholder="Pega tu API Key de Google Studio">
@@ -45,6 +45,12 @@
   <div class="transcript-box">
     <div class="status" id="statusText">Presiona el orbe para hablar</div>
     <div id="transcriptText">Esperando comando...</div>
+  </div>
+
+  <div style="margin-top: 20px; width: 90%; max-width: 600px; text-align: center;">
+    <select id="intentDropdown" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-family: 'Roboto', sans-serif;">
+      <option value="">-- Ver comandos disponibles --</option>
+    </select>
   </div>
 
   <div class="log-box" id="systemLog">
