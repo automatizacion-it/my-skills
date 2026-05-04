@@ -196,7 +196,7 @@ MENSAJE DEL USUARIO: "${texto}"`;
     for (let intent of intents) {
       if (intent.match(comando)) {
         logMessage(`Intent local detectado: [${intent.name}]`);
-        intent.action();
+        intent.action(comando);
         intentEncontrado = true;
         break; // Detener la búsqueda tras encontrar la primera coincidencia
       }

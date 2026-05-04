@@ -120,41 +120,82 @@ const intents = [
     }
   },
   {
-    name: "musica_play",
-    description: "Reproducir música (Ej: 'Pon música')",
-    match: (c) => c.includes('pon música') || c.includes('reproducir música') || c.includes('pon algo de música'),
-    action: () => {
-      if (typeof spotifyAccessToken !== 'undefined' && spotifyAccessToken) {
-        reproducirSpotify();
-      } else {
-        enviarComandoMQTT('casa/audio', 'PLAY');
-        responderVoz('Reproduciendo música simulada. Conecta Spotify para control real.');
+    name: "musica_play_query",
+    description: "Poner una canción o artista (Ej: 'Pon Bad Bunny', 'Pon reggaetón')",
+    match: (c) => {
+      const triggers = ['pon ', 'reproduce ', 'busca ', 'quiero escuchar ', 'ponme '];
+      const musicWords = ['música', 'canción', 'song', 'audio', 'tema'];
+      // Si incluye un trigger Y NO es solo "pon música" genérico
+      return triggers.some(t => c.startsWith(t)) && !musicWords.every(w => c.includes(w) && c.replace(w,'').trim().length < 5);
+    },
+    action: (comando) => {
+      // Extraer lo que sigue después del trigger
+      const triggers = ['quiero escuchar ', 'reproduce ', 'busca ', 'ponme ', 'pon '];
+      let query = comando;
+      for (const t of triggers) {
+        if (comando.startsWith(t)) { query = comando.slice(t.length); break; }
       }
+      // Limpiar palabras genéricas
+      query = query.replace(/\b(música|una canción|algo de|por favor)\b/gi, '').trim();
+      if (typeof reproducirMusica === 'function') {
+        reproducirMusica(query || 'música popular');
+      }
+    }
+  },
+  {
+    name: "musica_play",
+    description: "Reproducir música genérica (Ej: 'Pon música')",
+    match: (c) => c.includes('pon música') || c.includes('reproducir música') || c.includes('pon algo de música') || c === 'música',
+    action: () => {
+      if (typeof reproducirMusica === 'function') reproducirMusica('música popular');
     }
   },
   {
     name: "musica_stop",
-    description: "Pausar música (Ej: 'Detén la música')",
-    match: (c) => c.includes('detén la música') || c.includes('parar música') || c.includes('apaga la música') || c.includes('pausa'),
+    description: "Pausar música (Ej: 'Detén la música', 'Pausa')",
+    match: (c) => c.includes('detén') || c.includes('parar música') || c.includes('apaga la música') || c.includes('pausa') || c.includes('detener'),
     action: () => {
-      if (typeof spotifyAccessToken !== 'undefined' && spotifyAccessToken) {
-        pausarSpotify();
-      } else {
-        enviarComandoMQTT('casa/audio', 'STOP');
-        responderVoz('Música detenida.');
-      }
+      if (typeof pausarMusica === 'function') pausarMusica();
+    }
+  },
+  {
+    name: "musica_reanudar",
+    description: "Reanudar música (Ej: 'Continúa la música')",
+    match: (c) => c.includes('continúa') || c.includes('reanuda') || c.includes('sigue la música'),
+    action: () => {
+      if (typeof reanudarMusica === 'function') reanudarMusica();
     }
   },
   {
     name: "musica_next",
-    description: "Siguiente canción (Ej: 'Pon otra')",
-    match: (c) => c.includes('siguiente canción') || c.includes('pon otra') || c.includes('cambia de canción'),
+    description: "Siguiente canción (Ej: 'Pon otra', 'Siguiente')",
+    match: (c) => c.includes('siguiente') || c.includes('pon otra') || c.includes('cambia de canción') || c.includes('otra canción'),
     action: () => {
-      if (typeof spotifyAccessToken !== 'undefined' && spotifyAccessToken) {
-        siguienteSpotify();
-      } else {
-        responderVoz('Conecta tu cuenta de Spotify para saltar de canción.');
-      }
+      if (typeof siguienteMusica === 'function') siguienteMusica();
+    }
+  },
+  {
+    name: "musica_anterior",
+    description: "Canción anterior (Ej: 'Canción anterior')",
+    match: (c) => c.includes('anterior') || c.includes('la de antes') || c.includes('vuelve a la'),
+    action: () => {
+      if (typeof anteriorMusica === 'function') anteriorMusica();
+    }
+  },
+  {
+    name: "musica_volumen_subir",
+    description: "Subir volumen (Ej: 'Sube el volumen')",
+    match: (c) => (c.includes('sube') || c.includes('aumenta') || c.includes('más volumen')) && c.includes('volumen'),
+    action: () => {
+      if (typeof subirVolumen === 'function') subirVolumen();
+    }
+  },
+  {
+    name: "musica_volumen_bajar",
+    description: "Bajar volumen (Ej: 'Baja el volumen')",
+    match: (c) => (c.includes('baja') || c.includes('reduce') || c.includes('menos volumen')) && c.includes('volumen'),
+    action: () => {
+      if (typeof bajarVolumen === 'function') bajarVolumen();
     }
   },
   {

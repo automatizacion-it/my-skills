@@ -1,273 +1,193 @@
 // =====================================================================
-// SPOTIFY WEB API — Authorization Code with PKCE Flow
-// CORRECCIONES:
-//   1. Token persistido en localStorage (sobrevive recargas)
-//   2. chequearTokenSpotify() ahora espera a que el DOM esté listo
-//   3. reproducirSpotify() busca y activa un dispositivo si no hay ninguno activo
-//   4. Indicador visual del estado de conexión en el log
-//   5. Redirect URI normalizado para evitar mismatch con Spotify Developer
+// MÓDULO DE MÚSICA — YouTube iframe API (reemplaza Spotify)
+// Gratis, sin Premium, sin OAuth.
 // =====================================================================
 
-let spotifyAccessToken = localStorage.getItem('spotifyToken') || null;
+let ytPlayer = null;
+let ytReady = false;
+let ytQueue = [];
+let ytQueueIndex = 0;
+let ytBuscando = false;
 
 // ─────────────────────────────────────────────
-// Utilidades PKCE
+// Cargar la API de YouTube iframe
 // ─────────────────────────────────────────────
-function generateRandomString(length) {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let text = '';
-  for (let i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-}
+(function cargarYouTubeAPI() {
+  if (document.getElementById('yt-iframe-api')) return;
+  const tag = document.createElement('script');
+  tag.id = 'yt-iframe-api';
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
 
-async function generateCodeChallenge(codeVerifier) {
-  function base64encode(buffer) {
-    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-  const data = new TextEncoder().encode(codeVerifier);
-  const digest = await window.crypto.subtle.digest('SHA-256', data);
-  return base64encode(digest);
-}
+// Callback global requerido por YouTube
+window.onYouTubeIframeAPIReady = function () {
+  if (!document.getElementById('yt-player-container')) {
+    const div = document.createElement('div');
+    div.id = 'yt-player-container';
+    div.style.cssText = [
+      'position:fixed', 'bottom:16px', 'right:16px',
+      'width:300px', 'height:170px', 'border-radius:14px',
+      'overflow:hidden', 'box-shadow:0 8px 32px rgba(0,0,0,0.6)',
+      'z-index:9999', 'display:none', 'background:#000'
+    ].join(';');
 
-// ─────────────────────────────────────────────
-// Redirect URI — siempre sin query string ni hash
-// ─────────────────────────────────────────────
-function getRedirectUri() {
-  return window.location.origin + window.location.pathname;
-}
+    const inner = document.createElement('div');
+    inner.id = 'yt-player';
+    div.appendChild(inner);
 
-// ─────────────────────────────────────────────
-// INICIO DE SESIÓN: redirige a Spotify
-// ─────────────────────────────────────────────
-async function conectarSpotify() {
-  const clientId = document.getElementById('spotifyClientId').value.trim();
-  if (!clientId) {
-    alert("Ingresa tu Client ID de Spotify primero.");
-    return;
-  }
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = '✕';
+    closeBtn.style.cssText = [
+      'position:absolute', 'top:6px', 'right:8px',
+      'background:rgba(0,0,0,0.7)', 'color:white', 'border:none',
+      'border-radius:50%', 'width:24px', 'height:24px',
+      'cursor:pointer', 'font-size:13px', 'z-index:10000',
+      'display:flex', 'align-items:center', 'justify-content:center'
+    ].join(';');
+    closeBtn.onclick = () => { div.style.display = 'none'; };
+    div.appendChild(closeBtn);
 
-  localStorage.setItem('spotifyClientId', clientId);
-
-  const codeVerifier = generateRandomString(128);
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
-  localStorage.setItem('code_verifier', codeVerifier);
-
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: clientId,
-    scope: 'user-modify-playback-state user-read-playback-state streaming',
-    redirect_uri: getRedirectUri(),
-    code_challenge_method: 'S256',
-    code_challenge: codeChallenge,
-  });
-
-  window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
-}
-
-// ─────────────────────────────────────────────
-// CALLBACK: canjear código por token
-// ─────────────────────────────────────────────
-async function chequearTokenSpotify() {
-  // Si ya tenemos token guardado, usarlo directamente
-  if (spotifyAccessToken) {
-    _logSafe("✅ Spotify ya conectado (sesión guardada).");
-    return true;
+    document.body.appendChild(div);
   }
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  if (!code) return false;
-
-  const codeVerifier = localStorage.getItem('code_verifier');
-  const clientId = localStorage.getItem('spotifyClientId');
-
-  if (!codeVerifier || !clientId) {
-    _logSafe("❌ Faltan datos para completar la autenticación de Spotify.");
-    return false;
-  }
-
-  _logSafe("⏳ Autenticando con Spotify...");
-
-  try {
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: getRedirectUri(),
-        code_verifier: codeVerifier,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.access_token) {
-      spotifyAccessToken = data.access_token;
-      localStorage.setItem('spotifyToken', spotifyAccessToken);  // ← CORRECCIÓN 1: persistir token
-
-      // Limpiar URL para que el code no quede expuesto
-      window.history.replaceState({}, document.title, window.location.pathname);
-      _logSafe("✅ Spotify conectado correctamente. ¡Ya puedes dar comandos de música!");
-      return true;
-    } else {
-      console.error("Error de token Spotify:", data);
-      _logSafe(`❌ Error Spotify: ${data.error_description || data.error || 'respuesta inesperada'}`);
-    }
-  } catch (e) {
-    console.error("Error de red al autenticar Spotify:", e);
-    _logSafe("❌ No se pudo conectar a Spotify (error de red).");
-  }
-  return false;
-}
-
-// ─────────────────────────────────────────────
-// Llamada genérica a la API de Spotify
-// ─────────────────────────────────────────────
-async function llamadaSpotify(endpoint, metodo = 'PUT', body = null) {
-  if (!spotifyAccessToken) {
-    _vozSafe("Debes vincular tu cuenta de Spotify primero desde la configuración.");
-    return false;
-  }
-
-  const config = {
-    method: metodo,
-    headers: {
-      'Authorization': `Bearer ${spotifyAccessToken}`,
-      'Content-Type': 'application/json',
-    },
-  };
-  if (body) config.body = JSON.stringify(body);
-
-  try {
-    const response = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, config);
-
-    if (response.status === 401) {
-      spotifyAccessToken = null;
-      localStorage.removeItem('spotifyToken');
-      _vozSafe("Tu sesión de Spotify ha expirado. Conéctala de nuevo desde ajustes.");
-      return false;
-    }
-
-    if (response.status === 403) {
-      _vozSafe("Spotify Premium es necesario para controlar la reproducción de forma remota.");
-      return false;
-    }
-
-    // 404 = no hay dispositivo activo → intentar activar uno automáticamente
-    if (response.status === 404) {
-      _logSafe("⚠️ Sin dispositivo Spotify activo. Buscando uno disponible...");
-      const activated = await activarDispositivoSpotify();
-      if (activated) {
-        // Reintentar el comando original
-        return await llamadaSpotify(endpoint, metodo, body);
-      } else {
-        _vozSafe("Abre la app de Spotify en tu teléfono o computador para poder controlarla desde aquí.");
-        return false;
+  ytPlayer = new YT.Player('yt-player', {
+    height: '170',
+    width: '300',
+    playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1 },
+    events: {
+      onReady: () => {
+        ytReady = true;
+        _logSafe("🎵 Motor de música YouTube listo.");
+      },
+      onStateChange: (event) => {
+        if (event.data === YT.PlayerState.ENDED && ytQueue.length > 1) {
+          ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
+          ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
+        }
       }
     }
-
-    return response.status >= 200 && response.status < 300;
-  } catch (err) {
-    console.error("Error llamada Spotify:", err);
-    _logSafe("❌ Error de red al comunicarse con Spotify.");
-    return false;
-  }
-}
+  });
+};
 
 // ─────────────────────────────────────────────
-// Buscar y activar un dispositivo disponible
+// Buscar en YouTube (sin API key, vía proxy CORS)
 // ─────────────────────────────────────────────
-async function activarDispositivoSpotify() {
+async function buscarEnYouTube(query) {
+  const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' audio')}`;
+  const proxyUrl  = `https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`;
+
   try {
-    const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
-      headers: { 'Authorization': `Bearer ${spotifyAccessToken}` },
-    });
+    const res  = await fetch(proxyUrl);
     const data = await res.json();
-    const dispositivos = data.devices || [];
-
-    if (dispositivos.length === 0) return false;
-
-    // Preferir el que ya esté activo; si no, tomar el primero
-    const dispositivo = dispositivos.find(d => d.is_active) || dispositivos[0];
-    _logSafe(`📱 Activando dispositivo: ${dispositivo.name}`);
-
-    await fetch('https://api.spotify.com/v1/me/player', {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${spotifyAccessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ device_ids: [dispositivo.id], play: false }),
-    });
-
-    // Dar tiempo a Spotify para que active el dispositivo
-    await new Promise(r => setTimeout(r, 1000));
-    return true;
+    const matches = data.contents.match(/"videoId":"([a-zA-Z0-9_-]{11})"/g);
+    if (!matches) return null;
+    return [...new Set(matches.map(m => m.replace(/"videoId":"|"/g, '')))].slice(0, 5);
   } catch (e) {
-    console.error("Error activando dispositivo:", e);
-    return false;
+    console.error("Error buscando YouTube:", e);
+    return null;
   }
 }
 
 // ─────────────────────────────────────────────
 // Comandos públicos
 // ─────────────────────────────────────────────
-async function reproducirSpotify() {
-  _logSafe("[SPOTIFY] Reproduciendo...");
-  const exito = await llamadaSpotify('play');
-  if (exito) _vozSafe("Reproduciendo música en Spotify.");
+async function reproducirMusica(query = '') {
+  if (!ytReady) {
+    _vozSafe("El motor de música todavía está cargando, espera un momento.");
+    return;
+  }
+  if (ytBuscando) return;
+  ytBuscando = true;
+
+  const busqueda = query.trim() || 'música popular';
+  _logSafe(`🔍 Buscando: "${busqueda}"`);
+  _vozSafe(`Buscando ${busqueda}...`);
+
+  const ids = await buscarEnYouTube(busqueda);
+  ytBuscando = false;
+
+  if (!ids || ids.length === 0) {
+    _vozSafe("No encontré resultados. Intenta con otro nombre de canción o artista.");
+    return;
+  }
+
+  ytQueue      = ids;
+  ytQueueIndex = 0;
+
+  document.getElementById('yt-player-container').style.display = 'block';
+  ytPlayer.loadVideoById(ytQueue[0]);
+  _logSafe(`▶️ Reproduciendo: https://youtu.be/${ytQueue[0]}`);
+  setTimeout(() => _vozSafe(`Reproduciendo ${busqueda}.`), 800);
 }
 
-async function pausarSpotify() {
-  _logSafe("[SPOTIFY] Pausando...");
-  const exito = await llamadaSpotify('pause');
-  if (exito) _vozSafe("Música pausada.");
+function pausarMusica() {
+  if (!ytPlayer || !ytReady) return;
+  ytPlayer.pauseVideo();
+  _logSafe("[MÚSICA] Pausada.");
+  _vozSafe("Música pausada.");
 }
 
-async function siguienteSpotify() {
-  _logSafe("[SPOTIFY] Siguiente canción...");
-  const exito = await llamadaSpotify('next', 'POST');
-  if (exito) _vozSafe("Siguiente canción.");
+function reanudarMusica() {
+  if (!ytPlayer || !ytReady) return;
+  ytPlayer.playVideo();
+  _logSafe("[MÚSICA] Reanudando.");
+  _vozSafe("Reanudando música.");
 }
 
-async function anteriorSpotify() {
-  _logSafe("[SPOTIFY] Canción anterior...");
-  const exito = await llamadaSpotify('previous', 'POST');
-  if (exito) _vozSafe("Canción anterior.");
+function siguienteMusica() {
+  if (!ytPlayer || !ytReady || ytQueue.length === 0) {
+    _vozSafe("Pide una canción primero.");
+    return;
+  }
+  ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
+  ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
+  _logSafe(`⏭ Siguiente: ${ytQueue[ytQueueIndex]}`);
+  _vozSafe("Siguiente canción.");
+}
+
+function anteriorMusica() {
+  if (!ytPlayer || !ytReady || ytQueue.length === 0) return;
+  ytQueueIndex = (ytQueueIndex - 1 + ytQueue.length) % ytQueue.length;
+  ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
+  _logSafe(`⏮ Anterior: ${ytQueue[ytQueueIndex]}`);
+  _vozSafe("Canción anterior.");
+}
+
+function detenerMusica() {
+  if (!ytPlayer || !ytReady) return;
+  ytPlayer.stopVideo();
+  document.getElementById('yt-player-container').style.display = 'none';
+  ytQueue = [];
+  _logSafe("[MÚSICA] Detenida.");
+  _vozSafe("Música detenida.");
+}
+
+function subirVolumen() {
+  if (!ytPlayer || !ytReady) return;
+  const vol = Math.min(100, ytPlayer.getVolume() + 20);
+  ytPlayer.setVolume(vol);
+  _vozSafe(`Volumen al ${vol} por ciento.`);
+}
+
+function bajarVolumen() {
+  if (!ytPlayer || !ytReady) return;
+  const vol = Math.max(0, ytPlayer.getVolume() - 20);
+  ytPlayer.setVolume(vol);
+  _vozSafe(`Volumen al ${vol} por ciento.`);
 }
 
 // ─────────────────────────────────────────────
-// Helpers internos — funcionan aunque app.js no haya cargado
+// Helpers internos
 // ─────────────────────────────────────────────
 function _logSafe(msg) {
-  if (typeof logMessage === 'function') {
-    logMessage(msg);
-  } else {
-    console.log(msg);
-  }
+  typeof logMessage === 'function' ? logMessage(msg) : console.log(msg);
 }
-
 function _vozSafe(msg) {
-  if (typeof responderVoz === 'function') {
-    responderVoz(msg);
-  } else {
-    console.warn("[VOZ no lista]", msg);
-  }
+  typeof responderVoz === 'function' ? responderVoz(msg) : console.warn("[VOZ]", msg);
 }
 
-// ─────────────────────────────────────────────
-// Inicialización: restaurar Client ID + canjear código si hay uno en la URL
-// ─────────────────────────────────────────────
-window.addEventListener('load', () => {
-  const savedClientId = localStorage.getItem('spotifyClientId');
-  const input = document.getElementById('spotifyClientId');
-  if (savedClientId && input) input.value = savedClientId;
-
-  // Esperar un tick para que logMessage de app.js esté disponible
-  setTimeout(() => chequearTokenSpotify(), 300);
-});
+// Alias de compatibilidad con intents.js (no hay que tocar intents.js)
+function reproducirSpotify() { reproducirMusica(); }
+function pausarSpotify()     { pausarMusica(); }
+function siguienteSpotify()  { siguienteMusica(); }
