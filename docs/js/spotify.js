@@ -1,26 +1,26 @@
 // =====================================================================
-// MÓDULO DE MÚSICA — YouTube iframe API (reemplaza Spotify)
-// Gratis, sin Premium, sin OAuth.
+// MÓDULO DE MÚSICA — YouTube Data API v3 + iframe Player
 // =====================================================================
 
-let ytPlayer = null;
-let ytReady = false;
-let ytQueue = [];
+const YT_API_KEY = 'AIzaSyBUekBHuF5-mFIAyfm3DjxUCcm76Sl24kQ';
+
+let ytPlayer     = null;
+let ytReady      = false;
+let ytQueue      = [];
 let ytQueueIndex = 0;
-let ytBuscando = false;
+let ytBuscando   = false;
 
 // ─────────────────────────────────────────────
-// Cargar la API de YouTube iframe
+// Cargar YouTube iframe API
 // ─────────────────────────────────────────────
 (function cargarYouTubeAPI() {
   if (document.getElementById('yt-iframe-api')) return;
   const tag = document.createElement('script');
-  tag.id = 'yt-iframe-api';
-  tag.src = 'https://www.youtube.com/iframe_api';
+  tag.id    = 'yt-iframe-api';
+  tag.src   = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(tag);
 })();
 
-// Callback global requerido por YouTube
 window.onYouTubeIframeAPIReady = function () {
   if (!document.getElementById('yt-player-container')) {
     const div = document.createElement('div');
@@ -36,32 +36,31 @@ window.onYouTubeIframeAPIReady = function () {
     inner.id = 'yt-player';
     div.appendChild(inner);
 
-    const closeBtn = document.createElement('button');
-    closeBtn.innerText = '✕';
-    closeBtn.style.cssText = [
+    const btn = document.createElement('button');
+    btn.innerText = '✕';
+    btn.style.cssText = [
       'position:absolute', 'top:6px', 'right:8px',
-      'background:rgba(0,0,0,0.7)', 'color:white', 'border:none',
+      'background:rgba(0,0,0,0.7)', 'color:#fff', 'border:none',
       'border-radius:50%', 'width:24px', 'height:24px',
       'cursor:pointer', 'font-size:13px', 'z-index:10000',
-      'display:flex', 'align-items:center', 'justify-content:center'
+      'line-height:24px', 'text-align:center'
     ].join(';');
-    closeBtn.onclick = () => { div.style.display = 'none'; };
-    div.appendChild(closeBtn);
+    btn.onclick = () => { div.style.display = 'none'; };
+    div.appendChild(btn);
 
     document.body.appendChild(div);
   }
 
   ytPlayer = new YT.Player('yt-player', {
-    height: '170',
-    width: '300',
+    height: '170', width: '300',
     playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1 },
     events: {
       onReady: () => {
         ytReady = true;
-        _logSafe("🎵 Motor de música YouTube listo.");
+        _logSafe('🎵 Motor de música YouTube listo.');
       },
-      onStateChange: (event) => {
-        if (event.data === YT.PlayerState.ENDED && ytQueue.length > 1) {
+      onStateChange: (e) => {
+        if (e.data === YT.PlayerState.ENDED && ytQueue.length > 1) {
           ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
           ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
         }
@@ -71,20 +70,34 @@ window.onYouTubeIframeAPIReady = function () {
 };
 
 // ─────────────────────────────────────────────
-// Buscar en YouTube (sin API key, vía proxy CORS)
+// Buscar con YouTube Data API v3
 // ─────────────────────────────────────────────
 async function buscarEnYouTube(query) {
-  const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' audio')}`;
-  const proxyUrl  = `https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`;
+  const url = `https://www.googleapis.com/youtube/v3/search?` +
+    `part=snippet&type=video&maxResults=5` +
+    `&q=${encodeURIComponent(query)}&key=${YT_API_KEY}`;
+
+  _logSafe(`📡 Llamando API: ${url.split('&key')[0]}...`);
 
   try {
-    const res  = await fetch(proxyUrl);
+    const res  = await fetch(url);
     const data = await res.json();
-    const matches = data.contents.match(/"videoId":"([a-zA-Z0-9_-]{11})"/g);
-    if (!matches) return null;
-    return [...new Set(matches.map(m => m.replace(/"videoId":"|"/g, '')))].slice(0, 5);
+
+    // Log del error exacto para diagnóstico
+    if (data.error) {
+      _logSafe(`❌ Error API YouTube [${data.error.code}]: ${data.error.message}`);
+      if (data.error.code === 403) {
+        _logSafe('⚠️ La YouTube Data API v3 no está habilitada en este proyecto. Ve a Google Cloud → Biblioteca → habilita "YouTube Data API v3".');
+      }
+      return null;
+    }
+
+    const ids = (data.items || []).map(i => i.id.videoId).filter(Boolean);
+    _logSafe(`✅ Resultados encontrados: ${ids.length} videos.`);
+    return ids.length ? ids : null;
+
   } catch (e) {
-    console.error("Error buscando YouTube:", e);
+    _logSafe(`❌ Error de red: ${e.message}`);
     return null;
   }
 }
@@ -94,7 +107,7 @@ async function buscarEnYouTube(query) {
 // ─────────────────────────────────────────────
 async function reproducirMusica(query = '') {
   if (!ytReady) {
-    _vozSafe("El motor de música todavía está cargando, espera un momento.");
+    _vozSafe('El motor de música todavía está cargando, espera un momento.');
     return;
   }
   if (ytBuscando) return;
@@ -107,8 +120,8 @@ async function reproducirMusica(query = '') {
   const ids = await buscarEnYouTube(busqueda);
   ytBuscando = false;
 
-  if (!ids || ids.length === 0) {
-    _vozSafe("No encontré resultados. Intenta con otro nombre de canción o artista.");
+  if (!ids) {
+    _vozSafe('No encontré resultados. Revisa el log del sistema para más detalles.');
     return;
   }
 
@@ -124,26 +137,26 @@ async function reproducirMusica(query = '') {
 function pausarMusica() {
   if (!ytPlayer || !ytReady) return;
   ytPlayer.pauseVideo();
-  _logSafe("[MÚSICA] Pausada.");
-  _vozSafe("Música pausada.");
+  _logSafe('[MÚSICA] Pausada.');
+  _vozSafe('Música pausada.');
 }
 
 function reanudarMusica() {
   if (!ytPlayer || !ytReady) return;
   ytPlayer.playVideo();
-  _logSafe("[MÚSICA] Reanudando.");
-  _vozSafe("Reanudando música.");
+  _logSafe('[MÚSICA] Reanudando.');
+  _vozSafe('Reanudando música.');
 }
 
 function siguienteMusica() {
   if (!ytPlayer || !ytReady || ytQueue.length === 0) {
-    _vozSafe("Pide una canción primero.");
+    _vozSafe('Pide una canción primero.');
     return;
   }
   ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
   ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
   _logSafe(`⏭ Siguiente: ${ytQueue[ytQueueIndex]}`);
-  _vozSafe("Siguiente canción.");
+  _vozSafe('Siguiente canción.');
 }
 
 function anteriorMusica() {
@@ -151,7 +164,7 @@ function anteriorMusica() {
   ytQueueIndex = (ytQueueIndex - 1 + ytQueue.length) % ytQueue.length;
   ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
   _logSafe(`⏮ Anterior: ${ytQueue[ytQueueIndex]}`);
-  _vozSafe("Canción anterior.");
+  _vozSafe('Canción anterior.');
 }
 
 function detenerMusica() {
@@ -159,8 +172,8 @@ function detenerMusica() {
   ytPlayer.stopVideo();
   document.getElementById('yt-player-container').style.display = 'none';
   ytQueue = [];
-  _logSafe("[MÚSICA] Detenida.");
-  _vozSafe("Música detenida.");
+  _logSafe('[MÚSICA] Detenida.');
+  _vozSafe('Música detenida.');
 }
 
 function subirVolumen() {
@@ -177,17 +190,15 @@ function bajarVolumen() {
   _vozSafe(`Volumen al ${vol} por ciento.`);
 }
 
-// ─────────────────────────────────────────────
-// Helpers internos
-// ─────────────────────────────────────────────
+// Helpers
 function _logSafe(msg) {
   typeof logMessage === 'function' ? logMessage(msg) : console.log(msg);
 }
 function _vozSafe(msg) {
-  typeof responderVoz === 'function' ? responderVoz(msg) : console.warn("[VOZ]", msg);
+  typeof responderVoz === 'function' ? responderVoz(msg) : console.warn('[VOZ]', msg);
 }
 
-// Alias de compatibilidad con intents.js (no hay que tocar intents.js)
+// Alias compatibilidad
 function reproducirSpotify() { reproducirMusica(); }
 function pausarSpotify()     { pausarMusica(); }
 function siguienteSpotify()  { siguienteMusica(); }
