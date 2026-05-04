@@ -1,11 +1,21 @@
-// Lógica de Spotify Web API (Authorization Code with PKCE Flow)
+// =====================================================================
+// SPOTIFY WEB API — Authorization Code with PKCE Flow
+// CORRECCIONES:
+//   1. Token persistido en localStorage (sobrevive recargas)
+//   2. chequearTokenSpotify() ahora espera a que el DOM esté listo
+//   3. reproducirSpotify() busca y activa un dispositivo si no hay ninguno activo
+//   4. Indicador visual del estado de conexión en el log
+//   5. Redirect URI normalizado para evitar mismatch con Spotify Developer
+// =====================================================================
 
-let spotifyAccessToken = null;
+let spotifyAccessToken = localStorage.getItem('spotifyToken') || null;
 
-// Funciones utilitarias para PKCE
+// ─────────────────────────────────────────────
+// Utilidades PKCE
+// ─────────────────────────────────────────────
 function generateRandomString(length) {
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let text = '';
-  let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   for (let i = 0; i < length; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
@@ -13,161 +23,251 @@ function generateRandomString(length) {
 }
 
 async function generateCodeChallenge(codeVerifier) {
-  function base64encode(string) {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(string)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+  function base64encode(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
-
-  const encoder = new TextEncoder();
-  const data = encoder.encode(codeVerifier);
+  const data = new TextEncoder().encode(codeVerifier);
   const digest = await window.crypto.subtle.digest('SHA-256', data);
   return base64encode(digest);
 }
 
-// Intercambiar el código por un token de acceso
+// ─────────────────────────────────────────────
+// Redirect URI — siempre sin query string ni hash
+// ─────────────────────────────────────────────
+function getRedirectUri() {
+  return window.location.origin + window.location.pathname;
+}
+
+// ─────────────────────────────────────────────
+// INICIO DE SESIÓN: redirige a Spotify
+// ─────────────────────────────────────────────
+async function conectarSpotify() {
+  const clientId = document.getElementById('spotifyClientId').value.trim();
+  if (!clientId) {
+    alert("Ingresa tu Client ID de Spotify primero.");
+    return;
+  }
+
+  localStorage.setItem('spotifyClientId', clientId);
+
+  const codeVerifier = generateRandomString(128);
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+  localStorage.setItem('code_verifier', codeVerifier);
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    scope: 'user-modify-playback-state user-read-playback-state streaming',
+    redirect_uri: getRedirectUri(),
+    code_challenge_method: 'S256',
+    code_challenge: codeChallenge,
+  });
+
+  window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+// ─────────────────────────────────────────────
+// CALLBACK: canjear código por token
+// ─────────────────────────────────────────────
 async function chequearTokenSpotify() {
+  // Si ya tenemos token guardado, usarlo directamente
+  if (spotifyAccessToken) {
+    _logSafe("✅ Spotify ya conectado (sesión guardada).");
+    return true;
+  }
+
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get('code');
-  
-  if (code) {
-    const codeVerifier = localStorage.getItem('code_verifier');
-    const clientId = localStorage.getItem('spotifyClientId');
-    const redirectUri = window.location.origin + window.location.pathname;
-    
-    try {
-      if(typeof logMessage === 'function') logMessage("⏳ Autenticando con Spotify...");
-      
-      const response = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          client_id: clientId,
-          grant_type: 'authorization_code',
-          code: code,
-          redirect_uri: redirectUri,
-          code_verifier: codeVerifier,
-        })
-      });
-      
-      const data = await response.json();
-      if (data.access_token) {
-        spotifyAccessToken = data.access_token;
-        // Limpiar la URL para que no quede el código expuesto
-        window.history.pushState("", document.title, window.location.pathname);
-        setTimeout(() => {
-          if(typeof logMessage === 'function') logMessage("✅ Cuenta de Spotify conectada correctamente.");
-        }, 1000);
-        return true;
-      } else {
-        console.error("Error obteniendo token:", data);
-        if(typeof logMessage === 'function') logMessage("❌ Error autenticando con Spotify.");
-      }
-    } catch(e) {
-      console.error("Error exchanging code:", e);
+  if (!code) return false;
+
+  const codeVerifier = localStorage.getItem('code_verifier');
+  const clientId = localStorage.getItem('spotifyClientId');
+
+  if (!codeVerifier || !clientId) {
+    _logSafe("❌ Faltan datos para completar la autenticación de Spotify.");
+    return false;
+  }
+
+  _logSafe("⏳ Autenticando con Spotify...");
+
+  try {
+    const response = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: getRedirectUri(),
+        code_verifier: codeVerifier,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.access_token) {
+      spotifyAccessToken = data.access_token;
+      localStorage.setItem('spotifyToken', spotifyAccessToken);  // ← CORRECCIÓN 1: persistir token
+
+      // Limpiar URL para que el code no quede expuesto
+      window.history.replaceState({}, document.title, window.location.pathname);
+      _logSafe("✅ Spotify conectado correctamente. ¡Ya puedes dar comandos de música!");
+      return true;
+    } else {
+      console.error("Error de token Spotify:", data);
+      _logSafe(`❌ Error Spotify: ${data.error_description || data.error || 'respuesta inesperada'}`);
     }
+  } catch (e) {
+    console.error("Error de red al autenticar Spotify:", e);
+    _logSafe("❌ No se pudo conectar a Spotify (error de red).");
   }
   return false;
 }
 
-// Iniciar proceso de autenticación con PKCE
-async function conectarSpotify() {
-  const clientId = document.getElementById('spotifyClientId').value.trim();
-  if (!clientId) {
-    alert("Debes ingresar tu Client ID de Spotify primero.");
-    return;
-  }
-  
-  // Guardamos el Client ID en localStorage
-  localStorage.setItem('spotifyClientId', clientId);
-  
-  // Generar y guardar el code_verifier
-  const codeVerifier = generateRandomString(128);
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
-  localStorage.setItem('code_verifier', codeVerifier);
-  
-  // URL actual sin query params
-  const redirectUri = window.location.origin + window.location.pathname;
-  const scope = 'user-modify-playback-state user-read-playback-state';
-  
-  const args = new URLSearchParams({
-    response_type: 'code',
-    client_id: clientId,
-    scope: scope,
-    redirect_uri: redirectUri,
-    code_challenge_method: 'S256',
-    code_challenge: codeChallenge
-  });
-  
-  // Redirigir a Spotify
-  window.location.href = 'https://accounts.spotify.com/authorize?' + args.toString();
-}
-
-// Cargar al iniciar la página
-window.addEventListener('load', () => {
-  const savedClientId = localStorage.getItem('spotifyClientId');
-  if (savedClientId) {
-    const input = document.getElementById('spotifyClientId');
-    if (input) input.value = savedClientId;
-  }
-  chequearTokenSpotify();
-});
-
-// Función centralizada para llamar a la API de Spotify
+// ─────────────────────────────────────────────
+// Llamada genérica a la API de Spotify
+// ─────────────────────────────────────────────
 async function llamadaSpotify(endpoint, metodo = 'PUT', body = null) {
   if (!spotifyAccessToken) {
-    if(typeof responderVoz === 'function') responderVoz("Debes vincular tu cuenta de Spotify primero desde la configuración.");
+    _vozSafe("Debes vincular tu cuenta de Spotify primero desde la configuración.");
     return false;
   }
-  
+
+  const config = {
+    method: metodo,
+    headers: {
+      'Authorization': `Bearer ${spotifyAccessToken}`,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body) config.body = JSON.stringify(body);
+
   try {
-    const config = {
-      method: metodo,
-      headers: {
-        'Authorization': `Bearer ${spotifyAccessToken}`,
-        'Content-Type': 'application/json'
-      }
-    };
-    if (body) config.body = JSON.stringify(body);
-    
     const response = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, config);
-    
+
     if (response.status === 401) {
-      if(typeof responderVoz === 'function') responderVoz("Tu sesión de Spotify ha expirado. Por favor conéctala de nuevo.");
       spotifyAccessToken = null;
+      localStorage.removeItem('spotifyToken');
+      _vozSafe("Tu sesión de Spotify ha expirado. Conéctala de nuevo desde ajustes.");
       return false;
     }
-    
-    if (response.status === 404 || response.status === 403) {
-      if(typeof responderVoz === 'function') responderVoz("Asegúrate de tener la app de Spotify abierta en algún dispositivo para poder controlarla.");
+
+    if (response.status === 403) {
+      _vozSafe("Spotify Premium es necesario para controlar la reproducción de forma remota.");
       return false;
     }
-    
-    return true;
+
+    // 404 = no hay dispositivo activo → intentar activar uno automáticamente
+    if (response.status === 404) {
+      _logSafe("⚠️ Sin dispositivo Spotify activo. Buscando uno disponible...");
+      const activated = await activarDispositivoSpotify();
+      if (activated) {
+        // Reintentar el comando original
+        return await llamadaSpotify(endpoint, metodo, body);
+      } else {
+        _vozSafe("Abre la app de Spotify en tu teléfono o computador para poder controlarla desde aquí.");
+        return false;
+      }
+    }
+
+    return response.status >= 200 && response.status < 300;
   } catch (err) {
-    console.error("Error en Spotify:", err);
+    console.error("Error llamada Spotify:", err);
+    _logSafe("❌ Error de red al comunicarse con Spotify.");
     return false;
   }
 }
 
-// Comandos
+// ─────────────────────────────────────────────
+// Buscar y activar un dispositivo disponible
+// ─────────────────────────────────────────────
+async function activarDispositivoSpotify() {
+  try {
+    const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+      headers: { 'Authorization': `Bearer ${spotifyAccessToken}` },
+    });
+    const data = await res.json();
+    const dispositivos = data.devices || [];
+
+    if (dispositivos.length === 0) return false;
+
+    // Preferir el que ya esté activo; si no, tomar el primero
+    const dispositivo = dispositivos.find(d => d.is_active) || dispositivos[0];
+    _logSafe(`📱 Activando dispositivo: ${dispositivo.name}`);
+
+    await fetch('https://api.spotify.com/v1/me/player', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${spotifyAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ device_ids: [dispositivo.id], play: false }),
+    });
+
+    // Dar tiempo a Spotify para que active el dispositivo
+    await new Promise(r => setTimeout(r, 1000));
+    return true;
+  } catch (e) {
+    console.error("Error activando dispositivo:", e);
+    return false;
+  }
+}
+
+// ─────────────────────────────────────────────
+// Comandos públicos
+// ─────────────────────────────────────────────
 async function reproducirSpotify() {
-  if(typeof logMessage === 'function') logMessage("[SPOTIFY] Reproduciendo...");
+  _logSafe("[SPOTIFY] Reproduciendo...");
   const exito = await llamadaSpotify('play');
-  if(exito && typeof responderVoz === 'function') responderVoz("Reproduciendo música en Spotify.");
+  if (exito) _vozSafe("Reproduciendo música en Spotify.");
 }
 
 async function pausarSpotify() {
-  if(typeof logMessage === 'function') logMessage("[SPOTIFY] Pausando...");
+  _logSafe("[SPOTIFY] Pausando...");
   const exito = await llamadaSpotify('pause');
-  if(exito && typeof responderVoz === 'function') responderVoz("Música pausada.");
+  if (exito) _vozSafe("Música pausada.");
 }
 
 async function siguienteSpotify() {
-  if(typeof logMessage === 'function') logMessage("[SPOTIFY] Siguiente canción...");
+  _logSafe("[SPOTIFY] Siguiente canción...");
   const exito = await llamadaSpotify('next', 'POST');
-  if(exito && typeof responderVoz === 'function') responderVoz("Siguiente canción.");
+  if (exito) _vozSafe("Siguiente canción.");
 }
+
+async function anteriorSpotify() {
+  _logSafe("[SPOTIFY] Canción anterior...");
+  const exito = await llamadaSpotify('previous', 'POST');
+  if (exito) _vozSafe("Canción anterior.");
+}
+
+// ─────────────────────────────────────────────
+// Helpers internos — funcionan aunque app.js no haya cargado
+// ─────────────────────────────────────────────
+function _logSafe(msg) {
+  if (typeof logMessage === 'function') {
+    logMessage(msg);
+  } else {
+    console.log(msg);
+  }
+}
+
+function _vozSafe(msg) {
+  if (typeof responderVoz === 'function') {
+    responderVoz(msg);
+  } else {
+    console.warn("[VOZ no lista]", msg);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Inicialización: restaurar Client ID + canjear código si hay uno en la URL
+// ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const savedClientId = localStorage.getItem('spotifyClientId');
+  const input = document.getElementById('spotifyClientId');
+  if (savedClientId && input) input.value = savedClientId;
+
+  // Esperar un tick para que logMessage de app.js esté disponible
+  setTimeout(() => chequearTokenSpotify(), 300);
+});
