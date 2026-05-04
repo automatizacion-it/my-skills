@@ -110,16 +110,35 @@ const intents = [
     name: "musica_play",
     match: (c) => c.includes('pon música') || c.includes('reproducir música') || c.includes('pon algo de música'),
     action: () => {
-      enviarComandoMQTT('casa/audio', 'PLAY');
-      responderVoz('Reproduciendo tu lista de música favorita en el sistema de audio.');
+      if (typeof spotifyAccessToken !== 'undefined' && spotifyAccessToken) {
+        reproducirSpotify();
+      } else {
+        enviarComandoMQTT('casa/audio', 'PLAY');
+        responderVoz('Reproduciendo música simulada. Conecta Spotify para control real.');
+      }
     }
   },
   {
     name: "musica_stop",
     match: (c) => c.includes('detén la música') || c.includes('parar música') || c.includes('apaga la música') || c.includes('pausa'),
     action: () => {
-      enviarComandoMQTT('casa/audio', 'STOP');
-      responderVoz('Música detenida.');
+      if (typeof spotifyAccessToken !== 'undefined' && spotifyAccessToken) {
+        pausarSpotify();
+      } else {
+        enviarComandoMQTT('casa/audio', 'STOP');
+        responderVoz('Música detenida.');
+      }
+    }
+  },
+  {
+    name: "musica_next",
+    match: (c) => c.includes('siguiente canción') || c.includes('pon otra') || c.includes('cambia de canción'),
+    action: () => {
+      if (typeof spotifyAccessToken !== 'undefined' && spotifyAccessToken) {
+        siguienteSpotify();
+      } else {
+        responderVoz('Conecta tu cuenta de Spotify para saltar de canción.');
+      }
     }
   },
   {
