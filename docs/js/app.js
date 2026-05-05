@@ -85,11 +85,15 @@ function showCommandToggle(message = 'Acción recibida') {
   toggleAction.checked = true;
   toggleStateText.innerText = 'Activado';
   commandToggle.classList.remove('hidden');
+  commandToggle.style.display = 'flex';
+  logMessage('[TOGGLE UI] Visible');
 }
 
 function hideCommandToggle() {
   if (!commandToggle) return;
   commandToggle.classList.add('hidden');
+  commandToggle.style.display = 'none';
+  logMessage('[TOGGLE UI] Oculto');
 }
 
 if (toggleAction) {
@@ -166,7 +170,7 @@ function saveAssistantConfig() {
 }
 
 async function ejecutarHabilidad(texto) {
-  showCommandToggle('Acción lista');
+  showCommandToggle(`Comando: ${texto}`);
   logMessage(`Usuario dijo: "${texto}"`);
   const apiKey = localStorage.getItem('assistantApiKey');
   const name = localStorage.getItem('assistantName') || 'SCALL';
