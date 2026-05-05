@@ -6,7 +6,7 @@
 
 body {
   margin: 0;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -14,7 +14,9 @@ body {
   background-color: var(--bg);
   color: var(--text);
   font-family: 'Roboto', sans-serif;
-  overflow: hidden;
+  overflow-y: auto;
+  padding: 20px 0 40px;
+  box-sizing: border-box;
 }
 
 h1 {
@@ -22,7 +24,8 @@ h1 {
   font-size: 2.5rem;
   color: var(--glow);
   text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-  margin-bottom: 50px;
+  margin-bottom: 20px;
+  margin-top: 10px;
   text-align: center;
 }
 
@@ -95,7 +98,7 @@ h1 {
 
 /* Transcript Box */
 .transcript-box {
-  margin-top: 50px;
+  margin-top: 24px;
   width: 90%;
   max-width: 600px;
   background: rgba(255,255,255,0.05);
@@ -302,11 +305,14 @@ h1 {
 .settings-btn:hover { background: rgba(255,255,255,0.2); }
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100;
+  background: rgba(0,0,0,0.8); display: none; justify-content: center;
+  align-items: flex-start; padding-top: 40px; z-index: 100;
+  overflow-y: auto; box-sizing: border-box;
 }
 .modal {
-  background: #1e293b; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; color: white;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  background: #1e293b; padding: 25px; border-radius: 12px;
+  max-width: 420px; width: 90%; color: white;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-bottom: 40px;
 }
 .modal h3 { margin-top: 0; color: var(--glow); }
 .modal input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: white; box-sizing: border-box; }

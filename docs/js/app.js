@@ -24,6 +24,64 @@ function isKeyPreConfigured() {
   return !!(window.APP_CONFIG && window.APP_CONFIG.geminiApiKey && window.APP_CONFIG.geminiApiKey.trim() !== '');
 }
 
+// ======================================================================
+// MQTT REAL — Conexión al broker vía WebSockets (MQTT.js)
+// Configurar en el modal o via GitHub Secrets:
+//   mqttHost, mqttPort, mqttUser, mqttPassword
+// ======================================================================
+let mqttClient = null;
+
+function getMqttConfig() {
+  const cfg = window.APP_CONFIG || {};
+  return {
+    host:     cfg.mqttHost     || localStorage.getItem('mqttHost')     || '',
+    port:     cfg.mqttPort     || localStorage.getItem('mqttPort')     || '8884',
+    user:     cfg.mqttUser     || localStorage.getItem('mqttUser')     || '',
+    password: cfg.mqttPassword || localStorage.getItem('mqttPassword') || ''
+  };
+}
+
+function conectarMQTT() {
+  if (typeof mqtt === 'undefined') {
+    logMessage('[MQTT] ⚠️ Librería MQTT.js no cargada. Modo simulación activo.');
+    return;
+  }
+  const { host, port, user, password } = getMqttConfig();
+  if (!host) {
+    logMessage('[MQTT] ℹ️ Sin broker configurado. Usando simulación local.');
+    return;
+  }
+
+  const url = `wss://${host}:${port}/mqtt`;
+  logMessage(`[MQTT] Conectando a ${host}:${port}...`);
+
+  mqttClient = mqtt.connect(url, {
+    clientId: 'scall_browser_' + Math.random().toString(16).substr(2, 8),
+    username: user,
+    password: password,
+    clean: true,
+    reconnectPeriod: 5000
+  });
+
+  mqttClient.on('connect', () => {
+    logMessage('[MQTT] ✅ Conectado al broker. ESP32 listo para recibir comandos.');
+    statusText.innerText = 'MQTT Conectado';
+    statusText.style.color = '#10b981';
+    setTimeout(() => {
+      statusText.innerText = 'Presiona el orbe para hablar';
+      statusText.style.color = '';
+    }, 3000);
+  });
+
+  mqttClient.on('error', (err) => {
+    logMessage(`[MQTT] ❌ Error: ${err.message}`);
+  });
+
+  mqttClient.on('offline', () => {
+    logMessage('[MQTT] ⚠️ Broker desconectado. Reconectando...');
+  });
+}
+
 // ===== ESTADO DE ACTIVIDADES PARA EL TOGGLE =====
 let activityState = {
   musicPlaying: false,
@@ -250,19 +308,26 @@ window.onload = () => {
   } else if(localStorage.getItem('assistantApiKey')) {
     document.getElementById('assistantApiKey').value = localStorage.getItem('assistantApiKey');
   }
+  // Cargar campos MQTT guardados
+  const savedHost = localStorage.getItem('mqttHost');
+  if (savedHost) {
+    document.getElementById('mqttHost').value = savedHost;
+    document.getElementById('mqttUser').value     = localStorage.getItem('mqttUser') || '';
+    document.getElementById('mqttPassword').value = localStorage.getItem('mqttPassword') || '';
+  }
+
   hideCommandToggle();
 
-  // Preparar listeners del toggle después de un pequeño delay
-  setTimeout(() => {
-    prepareToggleListener();
-  }, 100);
+  // Preparar listeners del toggle
+  setTimeout(() => { prepareToggleListener(); }, 100);
 
-  // Prueba inmediata del toggle
+  // Conectar MQTT si hay broker configurado
+  setTimeout(() => { conectarMQTT(); }, 500);
+
+  // Prueba del toggle
   setTimeout(() => {
-    console.log('Probando toggle inmediato');
-    showCommandToggle('Prueba de toggle');
-    // No ocultar automáticamente
-  }, 2000);
+    showCommandToggle('Sistema listo');
+  }, 1500);
 };
 
 function saveAssistantConfig() {
@@ -273,7 +338,6 @@ function saveAssistantConfig() {
   document.getElementById('displayName').innerText = name;
   
   if (isKeyPreConfigured()) {
-    // La key viene de GitHub Secrets — no es necesario guardarla en localStorage
     logMessage('[CONFIG] API Key precargada desde configuración segura (GitHub Secrets)');
     alert(`Asistente configurado como "${name}". La IA usa una clave de servidor segura.`);
   } else if (key) {
@@ -281,6 +345,23 @@ function saveAssistantConfig() {
     alert(`¡IA Avanzada activada! El asistente se llama ${name}.`);
   }
   document.getElementById('configModal').style.display = 'none';
+}
+
+function guardarYConectarMQTT() {
+  const host     = document.getElementById('mqttHost').value.trim();
+  const user     = document.getElementById('mqttUser').value.trim();
+  const password = document.getElementById('mqttPassword').value.trim();
+
+  if (!host) { alert('Ingresa el host del broker MQTT.'); return; }
+
+  localStorage.setItem('mqttHost',     host);
+  localStorage.setItem('mqttUser',     user);
+  localStorage.setItem('mqttPassword', password);
+
+  // Desconectar cliente anterior si existe
+  if (mqttClient) { try { mqttClient.end(true); } catch(e) {} }
+  logMessage(`[MQTT] Guardando config y conectando a ${host}...`);
+  conectarMQTT();
 }
 
 async function ejecutarHabilidad(texto) {
@@ -366,25 +447,31 @@ MENSAJE DEL USUARIO: "${texto}"`;
 }
 
 // ======================================================================
-// 3. CAPA DE COMUNICACIÓN (MQTT)
+// 3. CAPA DE COMUNICACIÓN MQTT — Real + Simulación
 // ======================================================================
 function enviarComandoMQTT(topic, payload) {
-  // AQUÍ ESTÁ EL SANDBOX: A futuro reemplazaremos este log con la librería MQTT.js
-  // que se conectará vía WebSockets a tu Broker (ej. Mosquitto).
-  logMessage(`[MQTT PUBLISH] Topic: <span style="color:yellow">${topic}</span> | Payload: <span style="color:yellow">${payload}</span>`);
-  
+  if (mqttClient && mqttClient.connected) {
+    // MQTT REAL → ESP32
+    mqttClient.publish(topic, payload, { qos: 1 }, (err) => {
+      if (err) {
+        logMessage(`[MQTT] ❌ Error publicando: ${err.message}`);
+      } else {
+        logMessage(`[MQTT] 📡 Enviado → Topic: <span style="color:yellow">${topic}</span> | Payload: <span style="color:yellow">${payload}</span>`);
+      }
+    });
+  } else {
+    // SIMULACIÓN local (sin broker)
+    logMessage(`[MQTT SIM] Topic: <span style="color:yellow">${topic}</span> | Payload: <span style="color:yellow">${payload}</span>`);
+  }
+
   // Actualizar estado del toggle según el comando
-  if (topic.includes('luces')) {
-    updateActivityState('lightsOn', payload === 'ON');
-  }
-  if (topic.includes('tv')) {
-    updateActivityState('tvOn', payload === 'ON');
-  }
-  
-  // Feedback visual adicional
-  transcriptText.innerText = `Enviando paquete MQTT a: ${topic}...`;
-  transcriptText.style.color = "#10b981";
-  setTimeout(() => { transcriptText.style.color = "var(--text)"; }, 2000);
+  if (topic.includes('luces')) updateActivityState('lightsOn', payload === 'ON');
+  if (topic.includes('tv'))    updateActivityState('tvOn', payload === 'ON');
+
+  // Feedback visual
+  transcriptText.innerText = `Enviando: ${topic} → ${payload}`;
+  transcriptText.style.color = '#10b981';
+  setTimeout(() => { transcriptText.style.color = 'var(--text)'; }, 2000);
 }
 
 // ======================================================================

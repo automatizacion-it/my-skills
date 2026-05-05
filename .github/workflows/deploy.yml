@@ -34,19 +34,22 @@ jobs:
         run: |
           cat > docs/js/config.js << 'HEREDOC_END'
           // ⚠️ ARCHIVO GENERADO AUTOMÁTICAMENTE POR GITHUB ACTIONS
-          // NO editar manualmente — NO subir al repositorio con keys reales
-          // En local, este archivo está en .gitignore
           window.APP_CONFIG = {
-            geminiApiKey: "GEMINI_KEY_PLACEHOLDER",
-            spotifyClientId: "SPOTIFY_ID_PLACEHOLDER"
+            geminiApiKey:  "GEMINI_KEY_PLACEHOLDER",
+            spotifyClientId: "SPOTIFY_ID_PLACEHOLDER",
+            mqttHost:     "MQTT_HOST_PLACEHOLDER",
+            mqttUser:     "MQTT_USER_PLACEHOLDER",
+            mqttPassword: "MQTT_PASS_PLACEHOLDER"
           };
           HEREDOC_END
 
-          # Reemplazar placeholders con los secretos reales
-          sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_API_KEY }}|g" docs/js/config.js
-          sed -i "s|SPOTIFY_ID_PLACEHOLDER|${{ secrets.SPOTIFY_CLIENT_ID }}|g" docs/js/config.js
+          sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_API_KEY }}|g"     docs/js/config.js
+          sed -i "s|SPOTIFY_ID_PLACEHOLDER|${{ secrets.SPOTIFY_CLIENT_ID }}|g"  docs/js/config.js
+          sed -i "s|MQTT_HOST_PLACEHOLDER|${{ secrets.MQTT_HOST }}|g"           docs/js/config.js
+          sed -i "s|MQTT_USER_PLACEHOLDER|${{ secrets.MQTT_USER }}|g"           docs/js/config.js
+          sed -i "s|MQTT_PASS_PLACEHOLDER|${{ secrets.MQTT_PASSWORD }}|g"       docs/js/config.js
 
-          echo "✅ config.js generado correctamente (keys no mostradas en logs)"
+          echo "✅ config.js con MQTT y AI secrets generado correctamente"
 
       - name: 🔍 Verificar estructura (sin mostrar keys)
         run: |

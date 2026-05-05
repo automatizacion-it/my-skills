@@ -24,6 +24,14 @@
       
       <label style="font-size: 0.8rem; color: #cbd5e1;">Gemini API Key</label>
       <input type="password" id="assistantApiKey" placeholder="Pega tu API Key de Google Studio">
+
+      <label style="font-size: 0.8rem; color: #38bdf8; margin-top: 10px; display: block;">🌐 Broker MQTT (ESP32)</label>
+      <input type="text" id="mqttHost" placeholder="Ej: abc123.s1.eu.hivemq.cloud">
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="mqttUser" placeholder="Usuario MQTT" style="flex:1;">
+        <input type="password" id="mqttPassword" placeholder="Contraseña MQTT" style="flex:1;">
+      </div>
+      <button onclick="guardarYConectarMQTT()" style="background: #0ea5e9; color: white; margin-bottom: 15px;">⚡ Conectar ESP32 vía MQTT</button>
       
       <label style="font-size: 0.8rem; color: #1db954; margin-top: 10px; display: block;">Spotify Client ID</label>
       <input type="text" id="spotifyClientId" placeholder="Pega tu Client ID de Spotify Developer">
@@ -62,6 +70,8 @@
   </div>
 
   <!-- Scripts -->
+  <!-- MQTT.js vía CDN (WebSocket support) -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <!-- config.js: generado por GitHub Actions (production) o configurado local (gitignored) -->
   <script src="js/config.js"></script>
   <script src="js/spotify.js"></script>
