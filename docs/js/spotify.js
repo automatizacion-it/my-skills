@@ -132,6 +132,11 @@ async function reproducirMusica(query = '') {
   ytPlayer.loadVideoById(ytQueue[0]);
   _logSafe(`▶️ Reproduciendo: https://youtu.be/${ytQueue[0]}`);
   setTimeout(() => _vozSafe(`Reproduciendo ${busqueda}.`), 800);
+  
+  // Actualizar estado en el toggle
+  if (typeof updateActivityState === 'function') {
+    updateActivityState('musicPlaying', true);
+  }
 }
 
 function pausarMusica() {
@@ -139,6 +144,11 @@ function pausarMusica() {
   ytPlayer.pauseVideo();
   _logSafe('[MÚSICA] Pausada.');
   _vozSafe('Música pausada.');
+  
+  // Actualizar estado en el toggle
+  if (typeof updateActivityState === 'function') {
+    updateActivityState('musicPlaying', false);
+  }
 }
 
 function reanudarMusica() {
@@ -146,6 +156,11 @@ function reanudarMusica() {
   ytPlayer.playVideo();
   _logSafe('[MÚSICA] Reanudando.');
   _vozSafe('Reanudando música.');
+  
+  // Actualizar estado en el toggle
+  if (typeof updateActivityState === 'function') {
+    updateActivityState('musicPlaying', true);
+  }
 }
 
 function siguienteMusica() {

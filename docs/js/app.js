@@ -3,6 +3,34 @@ const statusText = document.getElementById('statusText');
 const transcriptText = document.getElementById('transcriptText');
 const systemLog = document.getElementById('systemLog');
 
+// ===== ESTADO DE ACTIVIDADES PARA EL TOGGLE =====
+let activityState = {
+  musicPlaying: false,
+  lightsOn: false,
+  tvOn: false,
+  currentCommand: ''
+};
+
+function updateActivityState(type, value) {
+  activityState[type] = value;
+  updateToggleDisplay();
+}
+
+function updateToggleDisplay() {
+  const { commandToggle, toggleLabel, toggleStateText } = getToggleElements();
+  if (!commandToggle) return;
+
+  let status = [];
+  if (activityState.musicPlaying) status.push('🎵 Música ON');
+  if (activityState.lightsOn) status.push('💡 Luces ON');
+  if (activityState.tvOn) status.push('📺 TV ON');
+  if (activityState.currentCommand) status.push(`↳ ${activityState.currentCommand}`);
+
+  const displayText = status.length > 0 ? status.join(' | ') : 'Sistema activo';
+  if (toggleLabel) toggleLabel.innerText = displayText;
+  if (toggleStateText) toggleStateText.innerText = status.length > 0 ? 'Activo' : 'Inactivo';
+}
+
 function getToggleElements() {
   let commandToggle = document.getElementById('commandToggle');
   if (!commandToggle) {
@@ -107,14 +135,16 @@ function showCommandToggle(message = 'Acción recibida') {
     console.error('Faltan elementos del toggle');
     return;
   }
-  toggleLabel.innerText = message;
+  
+  activityState.currentCommand = message;
+  updateToggleDisplay();
+  
   toggleAction.checked = true;
-  toggleStateText.innerText = 'Activado';
   commandToggle.classList.remove('hidden');
   commandToggle.style.display = 'flex';
   console.log('Toggle mostrado');
   logMessage('[TOGGLE UI] Visible');
-}
+}}
 
 function hideCommandToggle() {
   const { commandToggle } = getToggleElements();
@@ -311,11 +341,19 @@ function enviarComandoMQTT(topic, payload) {
   // que se conectará vía WebSockets a tu Broker (ej. Mosquitto).
   logMessage(`[MQTT PUBLISH] Topic: <span style="color:yellow">${topic}</span> | Payload: <span style="color:yellow">${payload}</span>`);
   
+  // Actualizar estado del toggle según el comando
+  if (topic.includes('luces')) {
+    updateActivityState('lightsOn', payload === 'ON');
+  }
+  if (topic.includes('tv')) {
+    updateActivityState('tvOn', payload === 'ON');
+  }
+  
   // Feedback visual adicional
   transcriptText.innerText = `Enviando paquete MQTT a: ${topic}...`;
   transcriptText.style.color = "#10b981";
   setTimeout(() => { transcriptText.style.color = "var(--text)"; }, 2000);
-}
+}}
 
 // ======================================================================
 // 4. RESPUESTA DE VOZ (Texto a Voz del Navegador)
