@@ -144,7 +144,7 @@ function showCommandToggle(message = 'Acción recibida') {
   commandToggle.style.display = 'flex';
   console.log('Toggle mostrado');
   logMessage('[TOGGLE UI] Visible');
-}}
+}
 
 function hideCommandToggle() {
   const { commandToggle } = getToggleElements();
@@ -353,7 +353,7 @@ function enviarComandoMQTT(topic, payload) {
   transcriptText.innerText = `Enviando paquete MQTT a: ${topic}...`;
   transcriptText.style.color = "#10b981";
   setTimeout(() => { transcriptText.style.color = "var(--text)"; }, 2000);
-}}
+}
 
 // ======================================================================
 // 4. RESPUESTA DE VOZ (Texto a Voz del Navegador)
