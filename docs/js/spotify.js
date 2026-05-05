@@ -2,7 +2,14 @@
 // MÓDULO DE MÚSICA — YouTube Data API v3 + iframe Player
 // =====================================================================
 
-const YT_API_KEY = 'AIzaSyBUekBHuF5-mFIAyfm3DjxUCcm76Sl24kQ';
+// ⚠️ La API Key de YouTube NO está hardcodeada aquí.
+// Se lee desde window.APP_CONFIG.youtubeApiKey (GitHub Secrets)
+// o desde localStorage como fallback (modal de configuración).
+function getYtApiKey() {
+  const fromConfig = window.APP_CONFIG && window.APP_CONFIG.youtubeApiKey;
+  if (fromConfig && fromConfig.trim() !== '') return fromConfig.trim();
+  return localStorage.getItem('youtubeApiKey') || '';
+}
 
 let ytPlayer     = null;
 let ytReady      = false;
@@ -72,9 +79,16 @@ window.onYouTubeIframeAPIReady = function () {
 // Buscar con YouTube Data API v3
 // ─────────────────────────────────────────────
 async function buscarEnYouTube(query) {
+  const apiKey = getYtApiKey();
+  if (!apiKey) {
+    _logSafe('⚠️ YouTube API Key no configurada. Agrégala en ⚙️ o en config.js');
+    _vozSafe('No tengo configurada la clave de YouTube para buscar música.');
+    return null;
+  }
+
   const url = `https://www.googleapis.com/youtube/v3/search?` +
     `part=snippet&type=video&maxResults=5` +
-    `&q=${encodeURIComponent(query)}&key=${YT_API_KEY}`;
+    `&q=${encodeURIComponent(query)}&key=${apiKey}`;
 
   _logSafe(`📡 Llamando API: ${url.split('&key')[0]}...`);
 
