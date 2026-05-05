@@ -26,7 +26,7 @@ window.onYouTubeIframeAPIReady = function () {
     const div = document.createElement('div');
     div.id = 'yt-player-container';
     div.style.cssText = [
-      'position:fixed', 'bottom:20px', 'left:330px',
+      'position:fixed', 'top:20px', 'right:20px',
       'width:320px', 'height:180px', 'border-radius:14px',
       'overflow:hidden', 'box-shadow:0 8px 32px rgba(0,0,0,0.6)',
       'z-index:9999', 'display:none', 'background:#000'
