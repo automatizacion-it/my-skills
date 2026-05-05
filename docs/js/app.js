@@ -179,14 +179,6 @@ function prepareToggleListener() {
   });
 }
 
-prepareToggleListener();
-
-// Función global para pruebas
-window.testToggle = function(msg) {
-  console.log('Función testToggle llamada');
-  showCommandToggle(msg || 'Prueba desde consola');
-};
-
 function logMessage(msg) {
   systemLog.innerHTML += `<br>> ${msg}`;
   systemLog.scrollTop = systemLog.scrollHeight;
@@ -228,6 +220,11 @@ window.onload = () => {
     document.getElementById('assistantApiKey').value = localStorage.getItem('assistantApiKey');
   }
   hideCommandToggle();
+
+  // Preparar listeners del toggle después de un pequeño delay
+  setTimeout(() => {
+    prepareToggleListener();
+  }, 100);
 
   // Prueba inmediata del toggle
   setTimeout(() => {
