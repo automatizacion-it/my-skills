@@ -2,6 +2,10 @@ const orbBtn = document.getElementById('orbBtn');
 const statusText = document.getElementById('statusText');
 const transcriptText = document.getElementById('transcriptText');
 const systemLog = document.getElementById('systemLog');
+const commandToggle = document.getElementById('commandToggle');
+const toggleAction = document.getElementById('toggleAction');
+const toggleLabel = document.getElementById('toggleLabel');
+const toggleStateText = document.getElementById('toggleStateText');
 
 // 1. Verificación de permisos y capacidades
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -75,6 +79,35 @@ if (!SpeechRecognition) {
 // ======================================================================
 // 2. CEREBRO Y ENRUTADOR DE HABILIDADES (IA PROFUNDA + INTENTS)
 // ======================================================================
+function showCommandToggle(message = 'Acción recibida') {
+  if (!commandToggle || !toggleAction || !toggleLabel || !toggleStateText) return;
+  toggleLabel.innerText = message;
+  toggleAction.checked = true;
+  toggleStateText.innerText = 'Activado';
+  commandToggle.classList.remove('hidden');
+}
+
+function hideCommandToggle() {
+  if (!commandToggle) return;
+  commandToggle.classList.add('hidden');
+}
+
+if (toggleAction) {
+  toggleAction.addEventListener('change', () => {
+    const checked = toggleAction.checked;
+    if (toggleStateText) {
+      toggleStateText.innerText = checked ? 'Activado' : 'Desactivado';
+    }
+    logMessage(`[TOGGLE] ${checked ? 'Activado' : 'Desactivado'}`);
+    if (!checked && typeof pausarMusica === 'function') {
+      pausarMusica();
+    }
+    if (checked && typeof reanudarMusica === 'function') {
+      reanudarMusica();
+    }
+  });
+}
+
 function logMessage(msg) {
   systemLog.innerHTML += `<br>> ${msg}`;
   systemLog.scrollTop = systemLog.scrollHeight;
@@ -115,6 +148,7 @@ window.onload = () => {
   if(localStorage.getItem('assistantApiKey')) {
     document.getElementById('assistantApiKey').value = localStorage.getItem('assistantApiKey');
   }
+  hideCommandToggle();
 };
 
 function saveAssistantConfig() {
@@ -132,6 +166,7 @@ function saveAssistantConfig() {
 }
 
 async function ejecutarHabilidad(texto) {
+  showCommandToggle('Acción lista');
   logMessage(`Usuario dijo: "${texto}"`);
   const apiKey = localStorage.getItem('assistantApiKey');
   const name = localStorage.getItem('assistantName') || 'SCALL';
