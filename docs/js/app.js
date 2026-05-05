@@ -2,10 +2,27 @@ const orbBtn = document.getElementById('orbBtn');
 const statusText = document.getElementById('statusText');
 const transcriptText = document.getElementById('transcriptText');
 const systemLog = document.getElementById('systemLog');
-const commandToggle = document.getElementById('commandToggle');
-const toggleAction = document.getElementById('toggleAction');
-const toggleLabel = document.getElementById('toggleLabel');
-const toggleStateText = document.getElementById('toggleStateText');
+
+function getToggleElements() {
+  let commandToggle = document.getElementById('commandToggle');
+  if (!commandToggle) {
+    commandToggle = document.createElement('div');
+    commandToggle.id = 'commandToggle';
+    commandToggle.className = 'command-toggle hidden';
+    commandToggle.innerHTML = `
+      <span id="toggleLabel">Acción recibida</span>
+      <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
+        <input type="checkbox" id="toggleAction" checked>
+        <span id="toggleStateText">Activado</span>
+      </label>
+    `;
+    document.body.appendChild(commandToggle);
+  }
+  const toggleAction = document.getElementById('toggleAction');
+  const toggleLabel = document.getElementById('toggleLabel');
+  const toggleStateText = document.getElementById('toggleStateText');
+  return { commandToggle, toggleAction, toggleLabel, toggleStateText };
+}
 
 // 1. Verificación de permisos y capacidades
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -80,6 +97,7 @@ if (!SpeechRecognition) {
 // 2. CEREBRO Y ENRUTADOR DE HABILIDADES (IA PROFUNDA + INTENTS)
 // ======================================================================
 function showCommandToggle(message = 'Acción recibida') {
+  const { commandToggle, toggleAction, toggleLabel, toggleStateText } = getToggleElements();
   if (!commandToggle || !toggleAction || !toggleLabel || !toggleStateText) return;
   toggleLabel.innerText = message;
   toggleAction.checked = true;
@@ -90,13 +108,16 @@ function showCommandToggle(message = 'Acción recibida') {
 }
 
 function hideCommandToggle() {
+  const { commandToggle } = getToggleElements();
   if (!commandToggle) return;
   commandToggle.classList.add('hidden');
   commandToggle.style.display = 'none';
   logMessage('[TOGGLE UI] Oculto');
 }
 
-if (toggleAction) {
+function prepareToggleListener() {
+  const { toggleAction, toggleStateText } = getToggleElements();
+  if (!toggleAction) return;
   toggleAction.addEventListener('change', () => {
     const checked = toggleAction.checked;
     if (toggleStateText) {
@@ -111,6 +132,8 @@ if (toggleAction) {
     }
   });
 }
+
+prepareToggleListener();
 
 function logMessage(msg) {
   systemLog.innerHTML += `<br>> ${msg}`;
