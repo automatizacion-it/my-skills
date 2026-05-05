@@ -48,9 +48,10 @@
     <div id="transcriptText">Esperando comando...</div>
   </div>
 
-  <div style="margin-top: 20px; width: 90%; max-width: 600px; text-align: center;">
-    <select id="intentDropdown" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-family: 'Roboto', sans-serif;">
-      <option value="">-- Ver comandos disponibles --</option>
+  <div class="intent-dropdown-wrapper">
+    <label class="intent-dropdown-label">🎙️ Comandos disponibles</label>
+    <select id="intentDropdown" class="intent-dropdown">
+      <option value="">-- Seleccionar comando --</option>
     </select>
   </div>
 
@@ -61,6 +62,8 @@
   </div>
 
   <!-- Scripts -->
+  <!-- config.js: generado por GitHub Actions (production) o configurado local (gitignored) -->
+  <script src="js/config.js"></script>
   <script src="js/spotify.js"></script>
   <script src="js/intents.js"></script>
   <script src="js/app.js"></script>

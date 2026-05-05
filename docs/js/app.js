@@ -3,6 +3,27 @@ const statusText = document.getElementById('statusText');
 const transcriptText = document.getElementById('transcriptText');
 const systemLog = document.getElementById('systemLog');
 
+// ======================================================================
+// CAPA DE SEGURIDAD: Leer claves desde APP_CONFIG (GitHub Secrets)
+// o bien desde localStorage (introducidas por el usuario en el modal)
+// Prioridad: APP_CONFIG > localStorage
+// ======================================================================
+function getApiKey() {
+  const fromConfig = window.APP_CONFIG && window.APP_CONFIG.geminiApiKey;
+  if (fromConfig && fromConfig.trim() !== '') return fromConfig.trim();
+  return localStorage.getItem('assistantApiKey') || '';
+}
+
+function getSpotifyClientId() {
+  const fromConfig = window.APP_CONFIG && window.APP_CONFIG.spotifyClientId;
+  if (fromConfig && fromConfig.trim() !== '') return fromConfig.trim();
+  return localStorage.getItem('spotifyClientId') || '';
+}
+
+function isKeyPreConfigured() {
+  return !!(window.APP_CONFIG && window.APP_CONFIG.geminiApiKey && window.APP_CONFIG.geminiApiKey.trim() !== '');
+}
+
 // ===== ESTADO DE ACTIVIDADES PARA EL TOGGLE =====
 let activityState = {
   musicPlaying: false,
@@ -216,7 +237,17 @@ window.onload = () => {
     document.getElementById('assistantName').value = 'SCALL';
     document.getElementById('displayName').innerText = 'SCALL';
   }
-  if(localStorage.getItem('assistantApiKey')) {
+
+  // Mostrar estado de la API Key en el modal
+  const apiKeyInput = document.getElementById('assistantApiKey');
+  if (isKeyPreConfigured()) {
+    apiKeyInput.value = '••••••••••••••••••••';
+    apiKeyInput.disabled = true;
+    apiKeyInput.placeholder = 'API Key cargada desde servidor seguro (GitHub Secrets)';
+    apiKeyInput.style.color = '#10b981';
+    apiKeyInput.style.borderColor = '#10b981';
+    logMessage('[SEGURIDAD] ✅ API Key cargada desde GitHub Secrets');
+  } else if(localStorage.getItem('assistantApiKey')) {
     document.getElementById('assistantApiKey').value = localStorage.getItem('assistantApiKey');
   }
   hideCommandToggle();
@@ -241,9 +272,13 @@ function saveAssistantConfig() {
   localStorage.setItem('assistantName', name);
   document.getElementById('displayName').innerText = name;
   
-  if(key) {
+  if (isKeyPreConfigured()) {
+    // La key viene de GitHub Secrets — no es necesario guardarla en localStorage
+    logMessage('[CONFIG] API Key precargada desde configuración segura (GitHub Secrets)');
+    alert(`Asistente configurado como "${name}". La IA usa una clave de servidor segura.`);
+  } else if (key) {
     localStorage.setItem('assistantApiKey', key);
-    alert(`¡IA Avanzada activada! Ahora el asistente se llama ${name} y puede hablar de todo.`);
+    alert(`¡IA Avanzada activada! El asistente se llama ${name}.`);
   }
   document.getElementById('configModal').style.display = 'none';
 }
@@ -252,7 +287,7 @@ async function ejecutarHabilidad(texto) {
   console.log('ejecutarHabilidad llamado con:', texto);
   showCommandToggle(`Comando: ${texto}`);
   logMessage(`Usuario dijo: "${texto}"`);
-  const apiKey = localStorage.getItem('assistantApiKey');
+  const apiKey = getApiKey();
   const name = localStorage.getItem('assistantName') || 'SCALL';
 
   // === SI HAY API KEY, USAMOS LA IA PROFUNDA (GEMINI) ===
@@ -353,14 +388,65 @@ function enviarComandoMQTT(topic, payload) {
 }
 
 // ======================================================================
-// 4. RESPUESTA DE VOZ (Texto a Voz del Navegador)
+// 4. RESPUESTA DE VOZ (Texto a Voz del Navegador) - VOZ MASCULINA
 // ======================================================================
+
+// Nombres de voces masculinas conocidas en español (Chrome/Edge/Firefox)
+const VOCES_MASCULINAS_ES = [
+  'Microsoft Pablo',    // Edge Windows ES-ES
+  'Microsoft Jorge',    // Edge Windows ES-ES
+  'Google español',     // Chrome genérico
+  'Diego',              // macOS/iOS ES-AR
+  'Carlos',             // macOS ES-MX
+  'Jorge',              // macOS ES-ES
+  'Pablo',              // macOS ES-ES
+  'Rodrigo',            // algunas distros Linux
+];
+
+function elegirVozMasculina() {
+  const voces = window.speechSynthesis.getVoices();
+  if (!voces || voces.length === 0) return null;
+
+  // 1. Buscar por nombre exacto (masculinas conocidas)
+  for (const nombre of VOCES_MASCULINAS_ES) {
+    const voz = voces.find(v => v.name.toLowerCase().includes(nombre.toLowerCase()));
+    if (voz) return voz;
+  }
+
+  // 2. Fallback: cualquier voz en español
+  const vozEs = voces.find(v => v.lang.startsWith('es'));
+  if (vozEs) return vozEs;
+
+  // 3. Último recurso: primera voz disponible
+  return voces[0] || null;
+}
+
 function responderVoz(mensaje) {
   logMessage(`[VOZ] Asistente dice: "${mensaje}"`);
-  // Usamos la API nativa de Síntesis de Voz del navegador
   const speech = new SpeechSynthesisUtterance(mensaje);
   speech.lang = 'es-ES';
-  speech.rate = 1.0;  // Velocidad
-  speech.pitch = 1.0; // Tono
-  window.speechSynthesis.speak(speech);
+  speech.rate = 1.0;
+  speech.pitch = 0.85; // Ligeramente más grave → voz masculina
+
+  const voces = window.speechSynthesis.getVoices();
+
+  if (voces.length > 0) {
+    // Voces ya disponibles
+    const vozMasc = elegirVozMasculina();
+    if (vozMasc) {
+      speech.voice = vozMasc;
+      logMessage(`[VOZ] Usando: ${vozMasc.name}`);
+    }
+    window.speechSynthesis.speak(speech);
+  } else {
+    // Esperar a que el navegador cargue la lista de voces
+    window.speechSynthesis.onvoiceschanged = () => {
+      const vozMasc = elegirVozMasculina();
+      if (vozMasc) {
+        speech.voice = vozMasc;
+        logMessage(`[VOZ] Usando: ${vozMasc.name}`);
+      }
+      window.speechSynthesis.speak(speech);
+    };
+  }
 }

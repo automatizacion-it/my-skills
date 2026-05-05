@@ -243,6 +243,55 @@ h1 {
   overflow-y: auto;
 }
 
+/* Intent Dropdown */
+.intent-dropdown-wrapper {
+  margin-top: 20px;
+  width: 90%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.intent-dropdown-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.intent-dropdown {
+  width: 100%;
+  padding: 12px 14px;
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.intent-dropdown:hover,
+.intent-dropdown:focus {
+  border-color: var(--glow);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.intent-dropdown option {
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+
 /* Settings Modal */
 .settings-btn {
   position: absolute; top: 20px; right: 20px;

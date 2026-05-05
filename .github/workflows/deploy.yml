@@ -1,0 +1,67 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main        # Cambia a 'master' si tu rama principal se llama así
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repositorio
+        uses: actions/checkout@v4
+
+      # ──────────────────────────────────────────────────────────────
+      # SEGURIDAD: Inyectar secretos como variables de entorno JS
+      # La API Key NUNCA se guarda en el repositorio.
+      # Se configura en: Repo → Settings → Secrets → Actions
+      # ──────────────────────────────────────────────────────────────
+      - name: 🔐 Generar config.js con secretos
+        run: |
+          cat > docs/js/config.js << 'HEREDOC_END'
+          // ⚠️ ARCHIVO GENERADO AUTOMÁTICAMENTE POR GITHUB ACTIONS
+          // NO editar manualmente — NO subir al repositorio con keys reales
+          // En local, este archivo está en .gitignore
+          window.APP_CONFIG = {
+            geminiApiKey: "GEMINI_KEY_PLACEHOLDER",
+            spotifyClientId: "SPOTIFY_ID_PLACEHOLDER"
+          };
+          HEREDOC_END
+
+          # Reemplazar placeholders con los secretos reales
+          sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_API_KEY }}|g" docs/js/config.js
+          sed -i "s|SPOTIFY_ID_PLACEHOLDER|${{ secrets.SPOTIFY_CLIENT_ID }}|g" docs/js/config.js
+
+          echo "✅ config.js generado correctamente (keys no mostradas en logs)"
+
+      - name: 🔍 Verificar estructura (sin mostrar keys)
+        run: |
+          echo "Archivos en docs/js:"
+          ls -la docs/js/
+          echo "config.js generado: $(wc -c < docs/js/config.js) bytes"
+
+      - name: ⚙️ Configurar GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📦 Subir artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+
+      - name: 🚀 Desplegar a GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
