@@ -15,6 +15,7 @@ function getToggleElements() {
         <input type="checkbox" id="toggleAction" checked>
         <span id="toggleStateText">Activado</span>
       </label>
+      <button onclick="hideCommandToggle()" style="background: none; border: none; color: #000; font-size: 18px; cursor: pointer; margin-left: 10px;">×</button>
     `;
     document.body.appendChild(commandToggle);
   }
@@ -69,9 +70,11 @@ if (!SpeechRecognition) {
     }
 
     transcriptText.innerText = finalTranscript || interimTranscript;
+    console.log('Transcripción:', finalTranscript || interimTranscript);
 
     // Si la oración terminó y es final, se la enviamos a nuestras "Skills"
     if (finalTranscript) {
+      console.log('Llamando ejecutarHabilidad con:', finalTranscript);
       ejecutarHabilidad(finalTranscript);
     }
   };
@@ -97,13 +100,19 @@ if (!SpeechRecognition) {
 // 2. CEREBRO Y ENRUTADOR DE HABILIDADES (IA PROFUNDA + INTENTS)
 // ======================================================================
 function showCommandToggle(message = 'Acción recibida') {
+  console.log('Intentando mostrar toggle con mensaje:', message);
   const { commandToggle, toggleAction, toggleLabel, toggleStateText } = getToggleElements();
-  if (!commandToggle || !toggleAction || !toggleLabel || !toggleStateText) return;
+  console.log('Elementos obtenidos:', { commandToggle, toggleAction, toggleLabel, toggleStateText });
+  if (!commandToggle || !toggleAction || !toggleLabel || !toggleStateText) {
+    console.error('Faltan elementos del toggle');
+    return;
+  }
   toggleLabel.innerText = message;
   toggleAction.checked = true;
   toggleStateText.innerText = 'Activado';
   commandToggle.classList.remove('hidden');
   commandToggle.style.display = 'flex';
+  console.log('Toggle mostrado');
   logMessage('[TOGGLE UI] Visible');
 }
 
@@ -113,6 +122,13 @@ function hideCommandToggle() {
   commandToggle.classList.add('hidden');
   commandToggle.style.display = 'none';
   logMessage('[TOGGLE UI] Oculto');
+}
+
+// Función para ocultar el toggle después de un tiempo
+function autoHideToggle(delay = 5000) {
+  setTimeout(() => {
+    hideCommandToggle();
+  }, delay);
 }
 
 function prepareToggleListener() {
@@ -134,6 +150,12 @@ function prepareToggleListener() {
 }
 
 prepareToggleListener();
+
+// Función global para pruebas
+window.testToggle = function(msg) {
+  console.log('Función testToggle llamada');
+  showCommandToggle(msg || 'Prueba desde consola');
+};
 
 function logMessage(msg) {
   systemLog.innerHTML += `<br>> ${msg}`;
@@ -176,6 +198,13 @@ window.onload = () => {
     document.getElementById('assistantApiKey').value = localStorage.getItem('assistantApiKey');
   }
   hideCommandToggle();
+
+  // Prueba inmediata del toggle
+  setTimeout(() => {
+    console.log('Probando toggle inmediato');
+    showCommandToggle('Prueba de toggle');
+    // No ocultar automáticamente
+  }, 2000);
 };
 
 function saveAssistantConfig() {
@@ -193,6 +222,7 @@ function saveAssistantConfig() {
 }
 
 async function ejecutarHabilidad(texto) {
+  console.log('ejecutarHabilidad llamado con:', texto);
   showCommandToggle(`Comando: ${texto}`);
   logMessage(`Usuario dijo: "${texto}"`);
   const apiKey = localStorage.getItem('assistantApiKey');

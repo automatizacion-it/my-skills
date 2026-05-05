@@ -9,6 +9,7 @@
 </head>
 <body>
   <button class="settings-btn" onclick="document.getElementById('configModal').style.display='flex'">⚙️ Configurar Cerebro IA</button>
+  <button class="settings-btn" onclick="showCommandToggle('Prueba manual')" style="right: 120px;">🔧 Probar Toggle</button>
 
   <h1><span id="displayName">SCALL</span><br><span style="font-size: 1rem; color: #94a3b8; font-family: Roboto;">Asistente Autónomo (Sandbox MQTT)</span></h1>
 
@@ -45,14 +46,6 @@
   <div class="transcript-box">
     <div class="status" id="statusText">Presiona el orbe para hablar</div>
     <div id="transcriptText">Esperando comando...</div>
-  </div>
-
-  <div class="command-toggle hidden" id="commandToggle">
-    <span id="toggleLabel">Acción recibida</span>
-    <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
-      <input type="checkbox" id="toggleAction" checked>
-      <span id="toggleStateText">Activado</span>
-    </label>
   </div>
 
   <div style="margin-top: 20px; width: 90%; max-width: 600px; text-align: center;">
