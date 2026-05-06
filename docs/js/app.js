@@ -307,6 +307,8 @@ function conectarSpotify() {
 // ======================================================================
 // CEREBRO: IA PROFUNDA (Gemini) + INTENTS LOCALES
 // ======================================================================
+let geminiCooldown = false;
+
 async function ejecutarHabilidad(texto) {
   showCommandToggle(`Comando: ${texto}`);
   logMessage(`Usuario dijo: "${texto}"`);
@@ -314,6 +316,15 @@ async function ejecutarHabilidad(texto) {
   const name   = localStorage.getItem('assistantName') || 'SCALL';
 
   if (apiKey) {
+    // Evitar llamadas múltiples seguidas
+    if (geminiCooldown) {
+      logMessage('[GEMINI] ⏳ Espera un momento antes del siguiente comando.');
+      responderVoz('Un momento por favor.');
+      return;
+    }
+    geminiCooldown = true;
+    setTimeout(() => { geminiCooldown = false; }, 3000); // 3s entre llamadas
+
     logMessage('Consultando Cerebro IA (Gemini)...');
     transcriptText.innerText = 'Pensando...';
 
@@ -351,8 +362,15 @@ MENSAJE DEL USUARIO: "${texto}"`;
       responderVoz(aiResponse);
 
     } catch (err) {
-      logMessage(`Error IA: ${err.message}`);
-      responderVoz('Hubo un error de conexión con el cerebro de Inteligencia Artificial.');
+      geminiCooldown = false;
+      if (err.message && err.message.includes('429')) {
+        logMessage('[GEMINI] ⚠️ Límite de velocidad alcanzado. Usando intents locales...');
+        responderVoz('Estoy ocupado, usando modo local.');
+        ejecutarIntentLocal(texto);
+      } else {
+        logMessage(`Error IA: ${err.message}`);
+        responderVoz('Hubo un error de conexión con el cerebro de Inteligencia Artificial.');
+      }
     }
     return;
   }
@@ -375,8 +393,24 @@ MENSAJE DEL USUARIO: "${texto}"`;
   }
 }
 
-// ======================================================================
-// MQTT: Publicar comando
+// FALLBACK: intents locales
+function ejecutarIntentLocal(texto) {
+  const comando = texto.toLowerCase();
+  let intentEncontrado = false;
+  if (typeof intents !== 'undefined') {
+    for (const intent of intents) {
+      if (intent.match(comando)) {
+        logMessage(`Intent local: [${intent.name}]`);
+        intent.action(comando);
+        intentEncontrado = true;
+        break;
+      }
+    }
+  }
+  if (!intentEncontrado) {
+    responderVoz('No reconocí ese comando. Intenta de nuevo.');
+  }
+}
 // ======================================================================
 function enviarComandoMQTT(topic, payload) {
   if (mqttClient && mqttClient.connected) {
