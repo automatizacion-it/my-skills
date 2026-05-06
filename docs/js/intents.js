@@ -184,21 +184,32 @@ const intents = [
   // ── Radio ─────────────────────────────────────────────────────────────
   {
     name: "radio_play",
-    description: "Sintonizar emisora (Ej: 'Pon W Radio', 'Sintoniza Caracol', 'Abre La FM')",
+    description: "Sintonizar emisora (Ej: 'Pon Caracol', 'Sintoniza W Radio', 'Abre La FM', 'Pon Blu')",
     match: (c) => {
-      const triggers = ['pon ', 'sintoniza ', 'abre ', 'reproduce ', 'ponme ', 'coloca '];
-      const palabras = ['radio', 'emisora', 'fm', 'caracol', 'rcn', 'los 40',
-                        'la fm', 'blu', 'olímpica', 'tropicana', 'rumba',
-                        'amor', 'candela', 'javeriana', 'nacional', 'todelar', 'oxígeno'];
-      return triggers.some(t => c.includes(t)) && palabras.some(p => c.includes(p));
+      // Nombres exactos de emisoras — matchea aunque no digan "radio" ni "emisora"
+      const NOMBRES_EMISORAS = [
+        'w radio', 'caracol', 'rcn', 'blu radio', 'blu', 'la fm',
+        'los 40', 'oxígeno', 'tropicana', 'rumba', 'olímpica', 'olimpica',
+        'amor stereo', 'amor estéreo', 'candela', 'radio uno', 'javeriana',
+        'un radio', 'radio nacional', 'todelar'
+      ];
+      const triggers = ['pon ', 'sintoniza ', 'abre ', 'reproduce ', 'ponme ', 'coloca ', 'quiero escuchar '];
+      const palabrasGeneral = ['radio', 'emisora', 'fm'];
+
+      // Matchea si tiene trigger + nombre de emisora conocida
+      const tieneTrigger   = triggers.some(t => c.includes(t));
+      const tieneNombre    = NOMBRES_EMISORAS.some(n => c.includes(n));
+      const tieneGeneral   = palabrasGeneral.some(p => c.includes(p));
+
+      return tieneTrigger && (tieneNombre || tieneGeneral);
     },
     action: (comando) => {
-      const triggers = ['sintoniza ', 'ponme ', 'coloca ', 'abre ', 'reproduce ', 'pon '];
+      const triggers = ['quiero escuchar ', 'sintoniza ', 'ponme ', 'coloca ', 'abre ', 'reproduce ', 'pon '];
       let query = comando;
       for (const t of triggers) {
         if (comando.includes(t)) { query = comando.split(t)[1]; break; }
       }
-      query = query.replace(/\b(la|el|una|un|por favor)\b/gi, '').trim();
+      query = query.replace(/\b(la|el|una|un|por favor|música de|algo de)\b/gi, '').trim();
       if (typeof reproducirEmisora === 'function') reproducirEmisora(query);
       else responderVoz('Módulo de radio no disponible.');
     }
