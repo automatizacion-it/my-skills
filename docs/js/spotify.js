@@ -82,8 +82,7 @@ async function buscarEnYouTube(query) {
   const apiKey = getYtApiKey();
   if (!apiKey) {
     _logSafe('⚠️ YouTube API Key no configurada. Agrégala en ⚙️ o en config.js');
-    _vozSafe('No tengo configurada la clave de YouTube para buscar música.');
-    return null;
+    return null;   // sin voz aquí — reproducirMusica maneja el mensaje
   }
 
   const url = `https://www.googleapis.com/youtube/v3/search?` +
@@ -124,8 +123,14 @@ async function reproducirMusica(query = '') {
     return;
   }
   if (ytBuscando) return;
-  ytBuscando = true;
 
+  // Verificar key antes de hablar
+  if (!getYtApiKey()) {
+    _vozSafe('Para reproducir música configura la YouTube API Key en el panel de configuración.');
+    return;
+  }
+
+  ytBuscando = true;
   const busqueda = query.trim() || 'música popular';
   _logSafe(`🔍 Buscando: "${busqueda}"`);
   _vozSafe(`Buscando ${busqueda}...`);
@@ -134,7 +139,7 @@ async function reproducirMusica(query = '') {
   ytBuscando = false;
 
   if (!ids) {
-    _vozSafe('No encontré resultados. Revisa el log del sistema para más detalles.');
+    _vozSafe('No encontré resultados para esa búsqueda.');
     return;
   }
 
