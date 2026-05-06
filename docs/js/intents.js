@@ -248,5 +248,49 @@ const intents = [
         reproducirMusica('podcast ' + (query || 'tecnología'));
       }
     }
+  },
+
+  // ── Cumpleaños ────────────────────────────────────────────────────────
+  {
+    name: "cumpleanos_abrir",
+    description: "Abrir agenda de cumpleaños (Ej: 'Abre los cumpleaños')",
+    match: (c) => c.includes('cumpleaños') || c.includes('cumpleanos') || c.includes('agenda de fechas'),
+    action: () => {
+      if (typeof abrirModalCumpleanos === 'function') abrirModalCumpleanos();
+      else responderVoz('Módulo de cumpleaños no disponible.');
+    }
+  },
+  {
+    name: "cumpleanos_hoy",
+    description: "Ver cumpleaños de hoy (Ej: '¿Hay cumpleaños hoy?')",
+    match: (c) => (c.includes('cumpleaños') || c.includes('cumpleanos')) && (c.includes('hoy') || c.includes('hay')),
+    action: () => {
+      if (typeof chequearCumpleanos !== 'function') { responderVoz('Módulo no disponible.'); return; }
+      const hoy  = new Date();
+      const lista = getCumpleanos().filter(c => c.dia === hoy.getDate() && c.mes === hoy.getMonth() + 1);
+      if (lista.length === 0) responderVoz('No hay cumpleaños hoy.');
+      else responderVoz(`Hoy cumplen años: ${lista.map(c => c.nombre).join(' y ')}.`);
+    }
+  },
+  {
+    name: "cumpleanos_proximo",
+    description: "Ver próximo cumpleaños (Ej: '¿Cuál es el próximo cumpleaños?')",
+    match: (c) => (c.includes('próximo') || c.includes('siguiente')) && (c.includes('cumpleaños') || c.includes('cumpleanos')),
+    action: () => {
+      if (typeof getCumpleanos !== 'function') return;
+      const hoy   = new Date();
+      const lista = getCumpleanos();
+      if (lista.length === 0) { responderVoz('No tienes cumpleaños guardados.'); return; }
+      const MESES = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                         'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+      const conFecha = lista.map(c => {
+        let fecha = new Date(hoy.getFullYear(), c.mes - 1, c.dia);
+        if (fecha < hoy) fecha.setFullYear(hoy.getFullYear() + 1);
+        return { ...c, proxFecha: fecha };
+      }).sort((a, b) => a.proxFecha - b.proxFecha);
+      const prox = conFecha[0];
+      const dias = Math.ceil((prox.proxFecha - hoy) / 86400000);
+      responderVoz(`El próximo cumpleaños es de ${prox.nombre}, el ${prox.dia} de ${MESES[prox.mes]}. Faltan ${dias} días.`);
+    }
   }
 ];
