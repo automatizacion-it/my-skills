@@ -261,6 +261,40 @@ const intents = [
     }
   },
 
+  // ── SOS ───────────────────────────────────────────────────────────────
+  {
+    name: "sos_activar",
+    description: "Activar alerta de emergencia (Ej: 'Ayuda', 'Emergencia', 'SOS')",
+    match: (c) =>
+      c.includes('ayuda') || c.includes('emergencia') || c.includes('sos') ||
+      c.includes('auxilio') || c.includes('llama a') || c.includes('me caí') ||
+      c.includes('me siento mal') || c.includes('estoy mal'),
+    action: () => {
+      if (typeof activarSOS === 'function') activarSOS();
+      else responderVoz('Módulo SOS no disponible.');
+    }
+  },
+  {
+    name: "sos_cancelar",
+    description: "Cancelar alerta SOS (Ej: 'Cancela la alerta', 'Estoy bien')",
+    match: (c) =>
+      (c.includes('cancela') || c.includes('cancelar') || c.includes('estoy bien') || c.includes('falsa alarma')) &&
+      (c.includes('alerta') || c.includes('sos') || c.includes('emergencia') || c.includes('estoy bien')),
+    action: () => {
+      if (typeof cancelarSOS === 'function') cancelarSOS();
+    }
+  },
+  {
+    name: "sos_contactos",
+    description: "Gestionar contactos de emergencia (Ej: 'Contactos de emergencia')",
+    match: (c) =>
+      (c.includes('contacto') || c.includes('emergencia')) &&
+      (c.includes('sos') || c.includes('emergencia') || c.includes('agregar')),
+    action: () => {
+      if (typeof abrirModalSOS === 'function') abrirModalSOS();
+    }
+  },
+
   // ── Cumpleaños ────────────────────────────────────────────────────────
   {
     name: "cumpleanos_abrir",

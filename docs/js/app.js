@@ -98,14 +98,31 @@ function conectarMQTT() {
     logMessage('[MQTT] ✅ Conectado al broker. ESP32 listo.');
     statusText.innerText = 'MQTT Conectado';
     statusText.style.color = '#10b981';
+    // Actualizar dot top bar
+    const dot   = document.getElementById('mqttStatusDot');
+    const label = document.getElementById('mqttStatusLabel');
+    if (dot)   dot.className   = 'mqtt-dot connected';
+    if (label) label.textContent = 'ON';
     setTimeout(() => {
       statusText.innerText = 'Presiona el orbe para hablar';
       statusText.style.color = '';
     }, 3000);
+    // Iniciar listener SOS desde ESP32
+    if (typeof iniciarListenerSOS === 'function') iniciarListenerSOS(mqttClient);
   });
 
-  mqttClient.on('error',   (err) => { logMessage(`[MQTT] ❌ Error: ${err.message}`); });
-  mqttClient.on('offline', ()    => { logMessage('[MQTT] ⚠️ Broker desconectado. Reconectando...'); });
+  mqttClient.on('error',   (err) => {
+    logMessage(`[MQTT] ❌ Error: ${err.message}`);
+    const dot = document.getElementById('mqttStatusDot');
+    if (dot) dot.className = 'mqtt-dot error';
+  });
+  mqttClient.on('offline', () => {
+    logMessage('[MQTT] ⚠️ Broker desconectado. Reconectando...');
+    const dot   = document.getElementById('mqttStatusDot');
+    const label = document.getElementById('mqttStatusLabel');
+    if (dot)   dot.className    = 'mqtt-dot';
+    if (label) label.textContent = 'MQTT';
+  });
 }
 
 // ======================================================================
