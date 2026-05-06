@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coach de Vida en Bogotá | Alcanza tus metas</title>
+
+  <!-- Meta tags para Open Graph (Redes Sociales) -->
+  <meta property="og:title" content="Coach de Vida en Bogotá">
+  <meta property="og:description"
+    content="Recupera el control de tu vida y alcanza tus metas con sesiones personalizadas.">
+  <meta property="og:type" content="website">
+
+  <!-- Fuente Poppins de Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Variables de color y estilo */
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --text-main: #1f2937;
+      --text-light: #6b7280;
+      --bg-body: #e5e7eb;
+      --bg-container: #ffffff;
+      --bg-hero: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      --bg-alt: #f9fafb;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-body);
+      margin: 0;
+      padding: 0;
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Contenedor principal Mobile-First (Max 480px) */
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      background-color: var(--bg-container);
+      min-height: 100vh;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+    }
+
+    section {
+      padding: 40px 24px;
+    }
+
+    /* 1. Hero Section */
+    .hero {
+      text-align: center;
+      background: var(--bg-hero);
+      padding-top: 48px;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 1.125rem;
+      color: var(--primary);
+      margin-bottom: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 0 0 16px 0;
+      letter-spacing: -0.02em;
+    }
+
+    .subheadline {
+      font-size: 1.05rem;
+      color: var(--text-light);
+      margin: 0 0 32px 0;
+      line-height: 1.5;
+    }
+
+    /* Botón CTA (Común) */
+    .cta-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background-color: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.125rem;
+      height: 56px;
+      border-radius: 12px;
+      transition: background-color 0.2s, transform 0.1s;
+      box-sizing: border-box;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      border: none;
+      cursor: pointer;
+    }
+
+    .cta-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* 2. Propuesta de Valor */
+    .benefits {
+      background-color: var(--bg-container);
+    }
+
+    .benefit-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 28px;
+      gap: 16px;
+    }
+
+    .benefit-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .benefit-icon {
+      width: 48px;
+      height: 48px;
+      background-color: #eff6ff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--primary);
+    }
+
+    .benefit-text h3 {
+      margin: 0 0 4px 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .benefit-text p {
+      margin: 0;
+      color: var(--text-light);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    /* 3. Prueba Social */
+    .testimonials {
+      background-color: var(--bg-alt);
+      text-align: center;
+    }
+
+    .testimonials h2 {
+      font-size: 1.5rem;
+      margin: 0 0 24px 0;
+    }
+
+    .testimonial-card {
+      background: var(--bg-container);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .testimonial-card p {
+      font-style: italic;
+      margin: 0 0 16px 0;
+      line-height: 1.5;
+      color: var(--text-main);
+    }
+
+    .testimonial-author {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--primary);
+    }
+
+    /* 4. CTA Secundario */
+    .secondary-cta {
+      text-align: center;
+      background-color: var(--bg-container);
+      padding-bottom: 48px;
+    }
+
+    .secondary-cta h2 {
+      font-size: 1.5rem;
+      margin: 0 0 12px 0;
+    }
+
+    .whatsapp-btn {
+      background-color: #25D366;
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+      gap: 8px;
+    }
+
+    /* 5. Footer */
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      color: var(--text-light);
+      font-size: 0.875rem;
+      border-top: 1px solid #e5e7eb;
+      margin-top: auto;
+    }
+
+    .social-links {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .social-links a {
+      color: var(--text-light);
+      transition: color 0.2s;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- Sección 1: Hero -->
+    <section class="hero">
+      <div class="brand">
+        <!-- Ícono de brújula -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+        </svg>
+        Tu Coach Bogotá
+      </div>
+      <h1>Desbloquea tu Potencial y Toma el Control de tu Vida</h1>
+      <p class="subheadline">Sesiones personalizadas en Bogotá para superar bloqueos mentales, ganar claridad y diseñar
+        la vida que realmente mereces.</p>
+
+      <a href="#contacto" class="cta-btn">Agendar mi Sesión Inicial</a>
+    </section>
+
+    <!-- Sección 2: Propuesta de valor -->
+    <section class="benefits">
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <!-- Ícono de bombilla -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18h6" />
+            <path d="M10 22h4" />
+            <path
+              d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.41.56 2.63 1.49 3.49.77.77 1.24 1.53 1.42 2.52" />
+          </svg>
+        </div>
+        <div class="benefit-text">
+          <h3>Claridad Mental Inmediata</h3>
+          <p>Identifica exactamente qué te está frenando y crea un plan de acción viable paso a paso.</p>
+        </div>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <!-- Ícono de tendencia -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+            <polyline points="16 7 22 7 22 13" />
+          </svg>
+        </div>
+        <div class="benefit-text">
+          <h3>Hábitos Positivos</h3>
+          <p>Reemplaza rutinas destructivas por hábitos que potencien tu energía y motivación diaria.</p>
+        </div>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <!-- Ícono de mapa -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+            <line x1="9" y1="3" x2="9" y2="18" />
+            <line x1="15" y1="6" x2="15" y2="21" />
+          </svg>
+        </div>
+        <div class="benefit-text">
+          <h3>Acompañamiento Local</h3>
+          <p>Sesiones presenciales en Bogotá o virtuales, 100% adaptadas a tu ritmo de vida.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección 3: Prueba social -->
+    <section class="testimonials">
+      <h2>Transformaciones Reales</h2>
+
+      <div class="testimonial-card">
+        <p>"Estaba estancada en mi carrera. En solo tres sesiones logré organizar mis prioridades y dar el salto
+          profesional que necesitaba. ¡Recomendadísimo!"</p>
+        <div class="testimonial-author">— María C. (Chapinero)</div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Las herramientas que aprendí me ayudaron a manejar mi ansiedad y mejorar mis relaciones. El mejor espacio de
+          crecimiento personal en la ciudad."</p>
+        <div class="testimonial-author">— Andrés F. (Usaquén)</div>
+      </div>
+    </section>
+
+    <!-- Sección 4: CTA Secundario / Contacto -->
+    <section class="secondary-cta" id="contacto">
+      <h2>¿Listo para empezar?</h2>
+      <p style="margin-bottom: 24px; color: var(--text-light); line-height: 1.5;">
+        Escríbeme por WhatsApp y agendemos una llamada gratuita de 15 minutos para conocernos y ver cómo puedo ayudarte.
+      </p>
+
+      <!-- Reemplaza el número de teléfono en el enlace (57 es el código de Colombia) -->
+      <a href="https://wa.me/573502605543?text=Hola,%20quisiera%20más%20información%20sobre%20las%20sesiones%20de%20coaching"
+        class="cta-btn whatsapp-btn" target="_blank" rel="noopener noreferrer">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        </svg>
+        Contactar por WhatsApp
+      </a>
+    </section>
+
+    <!-- Sección 5: Footer -->
+    <footer>
+      <p>© 2026 Tu Coach Bogotá. Todos los derechos reservados.</p>
+
+      <div class="social-links">
+        <a href="#" aria-label="Instagram">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+          </svg>
+        </a>
+        <a href="#" aria-label="LinkedIn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+            <rect x="2" y="9" width="4" height="12" />
+            <circle cx="4" cy="4" r="2" />
+          </svg>
+        </a>
+      </div>
+    </footer>
+  </div>
+</body>
+
+</html>

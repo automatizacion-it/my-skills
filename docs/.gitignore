@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+.DS_Store
+
+# ⚠️ Seguridad: config.js contiene API Keys locales
+# En producción es generado por GitHub Actions con secrets
+docs/js/config.js

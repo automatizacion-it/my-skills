@@ -1,0 +1,78 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repositorio
+        uses: actions/checkout@v4
+
+      # ──────────────────────────────────────────────────────────────
+      # SEGURIDAD: Las API Keys NUNCA se guardan en el repositorio.
+      # Se inyectan aquí desde GitHub Secrets en tiempo de build.
+      # Configura en: Repo → Settings → Secrets and variables → Actions
+      #
+      # Secrets requeridos:
+      #   GEMINI_API_KEY     → Google AI Studio
+      #   YOUTUBE_API_KEY    → Google Cloud Console (YouTube Data API v3)
+      #   MQTT_HOST          → ej: abc123.s1.eu.hivemq.cloud
+      #   MQTT_USER          → usuario del broker
+      #   MQTT_PASSWORD      → contraseña del broker
+      # ──────────────────────────────────────────────────────────────
+      - name: 🔐 Generar config.js con secretos
+        run: |
+          cat > docs/js/config.js << 'HEREDOC_END'
+          // ⚠️ ARCHIVO GENERADO AUTOMÁTICAMENTE POR GITHUB ACTIONS
+          // No editar manualmente. No commitear. Está en .gitignore.
+          window.APP_CONFIG = {
+            geminiApiKey:    "GEMINI_KEY_PLACEHOLDER",
+            youtubeApiKey:   "YOUTUBE_KEY_PLACEHOLDER",
+            mqttHost:        "MQTT_HOST_PLACEHOLDER",
+            mqttUser:        "MQTT_USER_PLACEHOLDER",
+            mqttPassword:    "MQTT_PASS_PLACEHOLDER"
+          };
+          HEREDOC_END
+
+          sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_API_KEY }}|g"    docs/js/config.js
+          sed -i "s|YOUTUBE_KEY_PLACEHOLDER|${{ secrets.YOUTUBE_API_KEY }}|g"  docs/js/config.js
+          sed -i "s|MQTT_HOST_PLACEHOLDER|${{ secrets.MQTT_HOST }}|g"          docs/js/config.js
+          sed -i "s|MQTT_USER_PLACEHOLDER|${{ secrets.MQTT_USER }}|g"          docs/js/config.js
+          sed -i "s|MQTT_PASS_PLACEHOLDER|${{ secrets.MQTT_PASSWORD }}|g"      docs/js/config.js
+
+          echo "✅ config.js generado correctamente"
+
+      - name: 🔍 Verificar estructura (sin mostrar keys)
+        run: |
+          echo "Archivos en docs/js:"
+          ls -la docs/js/
+          echo "config.js: $(wc -c < docs/js/config.js) bytes"
+
+      - name: ⚙️ Configurar GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📦 Subir artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+
+      - name: 🚀 Desplegar a GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Notebook AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Librerías para procesar PDF y Word -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #f9fafb;
+      --sidebar-bg: #ffffff;
+      --border-color: #e5e7eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --msg-user: #eff6ff;
+      --msg-bot: #ffffff;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    /* Sidebar (Fuentes) */
+    .sidebar {
+      width: 320px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .sidebar-header h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .upload-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: white;
+      border: 1px dashed var(--text-muted);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .upload-btn:hover {
+      background-color: #f3f4f6;
+      border-color: var(--primary);
+    }
+
+    .sources-list {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .source-item {
+      background-color: var(--bg-color);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border-color);
+    }
+    .source-item svg {
+      width: 20px; height: 20px;
+      color: var(--primary);
+    }
+
+    /* Chat Area */
+    .main-chat {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .chat-header {
+      padding: 20px;
+      background-color: var(--sidebar-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-header h1 {
+      font-size: 1.3rem;
+    }
+
+    .toggle-sidebar {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-main);
+    }
+
+    .chat-messages {
+      flex-grow: 1;
+      padding: 30px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 15px 20px;
+      border-radius: 12px;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .msg-bot {
+      align-self: flex-start;
+      background-color: var(--msg-bot);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .msg-user {
+      align-self: flex-end;
+      background-color: var(--msg-user);
+      color: var(--primary);
+      border: 1px solid #dbeafe;
+    }
+
+    .citation {
+      display: block;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background-color: #f3f4f6;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .chat-input-container {
+      padding: 20px 30px;
+      background-color: var(--bg-color);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 10px;
+      background-color: white;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .chat-form input {
+      flex-grow: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      padding: 10px;
+      color: var(--text-main);
+    }
+
+    .chat-form button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .chat-form button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .chat-form button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: absolute;
+        left: -320px;
+        height: 100%;
+      }
+      .sidebar.open {
+        left: 0;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+      }
+      .toggle-sidebar {
+        display: block;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Settings Modal */
+    .settings-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #f3f4f6;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+    .settings-btn:hover { background-color: #e5e7eb; }
+    
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100;
+    }
+    .modal {
+      background: white; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal h3 { margin-bottom: 10px; color: var(--primary); }
+    .modal input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; }
+    .modal button { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
+    .modal button:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar: Knowledge Base -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>Fuentes (Documentos)</h2>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+        Sube documentos (.txt, .pdf, .docx) para que el modelo aprenda de ellos y responda a tus preguntas.
+      </p>
+      <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" multiple style="display: none;">
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Subir Documento
+      </button>
+      <button class="settings-btn" onclick="document.getElementById('apiModal').style.display='flex'">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        Configurar IA Real
+      </button>
+    </div>
+
+  <!-- Modal API Key -->
+  <div class="modal-overlay" id="apiModal">
+    <div class="modal">
+      <h3>Activar IA Profunda (Gemini)</h3>
+      <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Para que el asistente pueda comprender tramas, personajes principales y analizar un libro entero sin fallar, necesitas conectarlo a un cerebro real.</p>
+      <p style="font-size: 0.8rem; color: #666; margin-bottom: 15px;">Consigue una API Key gratuita en <b>aistudio.google.com</b> y pégala aquí (se guardará solo en tu navegador).</p>
+      <input type="password" id="apiKeyInput" placeholder="Pega tu API Key de Gemini aquí">
+      <button onclick="saveApiKey()">Guardar y Activar IA</button>
+      <button onclick="document.getElementById('apiModal').style.display='none'" style="background: transparent; color: #666; border: 1px solid #ddd; margin-top: 10px;">Cancelar</button>
+    </div>
+  </div>
+    <div class="sources-list" id="sourcesList">
+      <!-- Fuentes aparecerán aquí -->
+    </div>
+  </div>
+
+  <!-- Main Chat -->
+  <div class="main-chat">
+    <div class="chat-header">
+      <button class="toggle-sidebar" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <h1>Mi Asistente tipo NotebookLM</h1>
+      <div></div>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+      <div class="message msg-bot">
+        ¡Hola! Soy tu asistente de lectura inteligente. Sube tus archivos de texto en la barra lateral "Fuentes" y mi nivel de conocimiento se incrementará automáticamente. Luego, pregúntame lo que necesites saber sobre esos textos.
+      </div>
+    </div>
+
+    <div class="chat-input-container">
+      <form class="chat-form" id="chatForm">
+        <input type="text" id="userInput" placeholder="Haz una pregunta sobre tus documentos..." autocomplete="off">
+        <button type="submit" id="sendBtn">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Memoria del modelo simulado (Motor RAG en el navegador)
+    const knowledgeBase = [];
+    
+    // Configurar el worker de PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    // Funciones para extraer texto
+    async function extractTextFromPDF(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = "";
+      for(let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const strings = content.items.map(item => item.str);
+          text += strings.join(" ") + "\n";
+      }
+      return text;
+    }
+
+    async function extractTextFromWord(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+      return result.value;
+    }
+
+    // Manejar subida de archivos
+    document.getElementById('fileInput').addEventListener('change', async function(e) {
+      const files = e.target.files;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Evitar duplicados por nombre
+        if (knowledgeBase.some(doc => doc.name === file.name)) continue;
+
+        let content = "";
+        
+        try {
+          // Mostrar que está cargando
+          const tempId = 'loading-' + Date.now() + i;
+          updateSourcesUI(file.name + " (Procesando...)", tempId);
+
+          if (file.name.toLowerCase().endsWith('.pdf')) {
+            content = await extractTextFromPDF(file);
+          } else if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
+            content = await extractTextFromWord(file);
+          } else {
+            // Asumir que es TXT
+            content = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (evt) => resolve(evt.target.result);
+              reader.readAsText(file);
+            });
+          }
+
+          // Guardar en la base de conocimientos dividiendo el texto por párrafos
+          const paragraphs = content.split('\n').filter(p => p.trim().length > 20);
+          
+          knowledgeBase.push({
+            name: file.name,
+            paragraphs: paragraphs
+          });
+
+          // Actualizar UI quitando el (Procesando...)
+          document.getElementById(tempId).innerText = file.name;
+
+        } catch (error) {
+          console.error("Error leyendo archivo:", file.name, error);
+          alert("Hubo un error procesando el archivo: " + file.name);
+        }
+      }
+    });
+
+    function updateSourcesUI(fileName, id = '') {
+      const list = document.getElementById('sourcesList');
+      const item = document.createElement('div');
+      item.className = 'source-item';
+      item.innerHTML = `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        <span id="${id}">${fileName}</span>
+      `;
+      list.appendChild(item);
+    }
+
+    // Lógica de la Interfaz del Chat
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+
+    chatForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const question = userInput.value.trim();
+      if (!question) return;
+
+      appendMessage('user', question);
+      userInput.value = '';
+
+      // Simular tiempo de procesamiento de la IA
+      setTimeout(() => {
+        generateResponse(question);
+      }, 800);
+    });
+
+    function appendMessage(sender, text, citation = null) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message msg-${sender}`;
+      msgDiv.innerText = text;
+
+      // Agregar la tarjeta de citación si el bot encontró una fuente
+      if (citation) {
+        const citeDiv = document.createElement('span');
+        citeDiv.className = 'citation';
+        citeDiv.innerText = `📄 Fuente: ${citation}`;
+        msgDiv.appendChild(citeDiv);
+      }
+
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+      return msgDiv;
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if(key) {
+        localStorage.setItem('geminiApiKey', key);
+        alert("API Key guardada correctamente. ¡IA Avanzada activada!");
+      }
+      document.getElementById('apiModal').style.display = 'none';
+    }
+
+    // Comprobar al cargar si hay key
+    window.onload = () => {
+      if(localStorage.getItem('geminiApiKey')) {
+        document.getElementById('apiKeyInput').value = localStorage.getItem('geminiApiKey');
+      }
+    };
+
+    // Función para llamar a Gemini API directamente desde el navegador
+    async function askGemini(query, apiKey) {
+      // Unir todo el texto
+      let allText = knowledgeBase.map(doc => `Documento: ${doc.name}\n${doc.paragraphs.join('\n')}`).join('\n\n');
+      
+      // Límite de seguridad
+      if (allText.length > 600000) {
+          allText = allText.substring(0, 600000) + "... [Texto truncado por límite del navegador]";
+      }
+
+      const prompt = `Actúa como un asistente experto de lectura estilo NotebookLM. A continuación te proporcionaré uno o varios documentos. Tu trabajo es leerlos cuidadosamente y responder a la pregunta del usuario con absoluta precisión basándote ÚNICAMENTE en este texto proporcionado. Si te preguntan por personajes principales, tramas o resúmenes, analiza la totalidad del texto para dar la mejor respuesta profunda y detallada.\n\nTEXTO PROPORCIONADO:\n${allText}\n\nPREGUNTA DEL USUARIO: ${query}`;
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+        
+        const data = await response.json();
+        if (data.error) {
+           appendMessage('bot', "Error de la API de Google: " + data.error.message);
+           return;
+        }
+        
+        const aiResponse = data.candidates[0].content.parts[0].text;
+        appendMessage('bot', aiResponse, "Análisis de IA Profundo (Gemini 1.5)");
+      } catch (err) {
+        appendMessage('bot', "Hubo un error conectando con la IA de Google: " + err.message);
+      }
+    }
+
+    // Motor Inteligente de búsqueda y respuesta (Simulador RAG o LLM)
+    async function generateResponse(query) {
+      if (knowledgeBase.length === 0) {
+        appendMessage('bot', "Aún no tengo información en mi memoria. Por favor, sube algunos documentos en la barra lateral izquierda para que pueda aprender de ellos.");
+        return;
+      }
+
+      // ==== INTEGRACIÓN DE IA REAL ====
+      const apiKey = localStorage.getItem('geminiApiKey');
+      if (apiKey) {
+        const loadingMsg = appendMessage('bot', "🧠 Analizando el libro entero con Inteligencia Artificial (Gemini)...");
+        await askGemini(query, apiKey);
+        loadingMsg.remove();
+        return;
+      }
+      // ================================
+
+      const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?.,]/g, '');
+      
+      // HABILIDAD ESPECIAL 1: Detección de Personajes (Análisis de Entidades)
+      if (normalizedQuery.includes('personaje') || normalizedQuery.includes('protagonista') || normalizedQuery.includes('quienes son')) {
+        const nameCounts = {};
+        knowledgeBase.forEach(doc => {
+          doc.paragraphs.forEach(p => {
+            // Buscar palabras capitalizadas que no estén justo después de un punto (posibles nombres propios)
+            const matches = p.match(/(?<!^|\.\s+)[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+/g);
+            if (matches) {
+              matches.forEach(m => {
+                const lower = m.toLowerCase();
+                const stop = ['el', 'la', 'los', 'las', 'un', 'una', 'y', 'o', 'pero', 'si', 'no', 'que', 'de', 'en', 'a', 'para', 'su', 'sus'];
+                if (!stop.includes(lower) && m.length > 2) {
+                  nameCounts[m] = (nameCounts[m] || 0) + 1;
+                }
+              });
+            }
+          });
+        });
+        
+        // Filtrar y ordenar los nombres más frecuentes
+        const topCharacters = Object.entries(nameCounts)
+          .filter(e => e[1] > 1) // Que aparezcan más de una vez
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(e => e[0]);
+          
+        if (topCharacters.length > 0) {
+          appendMessage('bot', `Parece que preguntas por los personajes. Al analizar lingüísticamente el libro, los nombres más importantes y frecuentes son:\n\n• ${topCharacters.join('\n• ')}`, knowledgeBase[0].name);
+          return;
+        }
+      }
+
+      // HABILIDAD ESPECIAL 2: Resumen del Documento
+      if (normalizedQuery.includes('resumen') || normalizedQuery.includes('de que trata') || normalizedQuery.includes('sinopsis')) {
+        const firstDoc = knowledgeBase[0];
+        // Tomar los primeros párrafos del documento como resumen introductorio
+        const intro = firstDoc.paragraphs.slice(0, 3).join('\n\n');
+        appendMessage('bot', `Aquí tienes un extracto introductorio que resume el inicio de la historia:\n\n"${intro}..."`, firstDoc.name);
+        return;
+      }
+
+      // BÚSQUEDA GENERAL DE CONTEXTO
+      // 1. Limpiar la pregunta para sacar palabras clave relevantes
+      const stopWords = ['el', 'la', 'los', 'las', 'un', 'una', 'qué', 'que', 'de', 'del', 'en', 'para', 'por', 'con', 'es', 'son', 'como', 'cual', 'cuales'];
+      const keywords = normalizedQuery.split(' ').filter(word => !stopWords.includes(word) && word.length > 2);
+
+      if (keywords.length === 0) {
+        appendMessage('bot', "No estoy seguro de qué me preguntas. Intenta usar palabras más específicas.");
+        return;
+      }
+
+      // 2. Buscar similitud (Contexto ampliado)
+      let bestMatch = null;
+      let maxScore = 0;
+
+      knowledgeBase.forEach(doc => {
+        for (let i = 0; i < doc.paragraphs.length; i++) {
+          const paragraph = doc.paragraphs[i];
+          let score = 0;
+          const pLower = paragraph.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          
+          keywords.forEach(kw => {
+            if (pLower.includes(kw)) score++;
+          });
+
+          if (score > maxScore) {
+            maxScore = score;
+            // Guardar el párrafo actual más un poco de contexto (párrafo anterior y siguiente para mayor lectura)
+            const prev = i > 0 ? doc.paragraphs[i-1] : '';
+            const next = i < doc.paragraphs.length - 1 ? doc.paragraphs[i+1] : '';
+            const combinedContext = [prev, paragraph, next].filter(p => p).join('\n\n');
+            
+            bestMatch = { text: combinedContext, source: doc.name };
+          }
+        }
+      });
+
+      // 3. Generar la respuesta final
+      if (maxScore > 0 && bestMatch) {
+        const responseText = `Encontré este fragmento relevante (con contexto ampliado):\n\n"${bestMatch.text}"`;
+        appendMessage('bot', responseText, bestMatch.source);
+      } else {
+        appendMessage('bot', "He revisado detalladamente todos tus documentos, pero no encontré ninguna información que coincida con tu pregunta. Intenta formularla de otra manera o sube más fuentes relacionadas.");
+      }
+    }
+  </script>
+</body>
+</html>

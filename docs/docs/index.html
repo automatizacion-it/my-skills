@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Asistente de Voz IA - Sandbox</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Barra superior -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <div class="ai-status-badge" id="aiStatusBadge">
+        <span class="ai-status-dot"></span>
+        <span class="ai-status-text" id="aiStatusText">Verificando IA...</span>
+      </div>
+    </div>
+    <div class="top-bar-right">
+      <button class="icon-btn" onclick="abrirModalCumpleanos()" title="Cumpleaños">🎂</button>
+      <button class="icon-btn" onclick="showCommandToggle('Prueba manual')" title="Probar Toggle">🔧</button>
+      <button class="icon-btn" onclick="document.getElementById('configModal').style.display='flex'" title="Configurar">⚙️</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <h1>
+      <span id="displayName">SCALL</span>
+      <span class="subtitle">Asistente Autónomo · Sandbox MQTT</span>
+    </h1>
+
+    <!-- Orb -->
+    <div class="orb-container" id="orbBtn">
+      <div class="orb">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z">
+          </path>
+        </svg>
+      </div>
+      <div class="ring"></div>
+      <div class="ring"></div>
+    </div>
+
+    <!-- Transcript -->
+    <div class="transcript-box">
+      <div class="status" id="statusText">Presiona el orbe para hablar</div>
+      <div id="transcriptText">Esperando comando...</div>
+    </div>
+
+    <!-- Comandos disponibles -->
+    <div class="intent-dropdown-wrapper">
+      <label class="intent-dropdown-label">🎙️ Comandos disponibles</label>
+      <select id="intentDropdown" class="intent-dropdown">
+        <option value="">-- Seleccionar comando --</option>
+      </select>
+    </div>
+
+    <div id="togglesContainer"></div>
+
+    <!-- Log -->
+    <div class="log-box" id="systemLog">&gt; Sistema Frontend Iniciado. Esperando permisos de micrófono...</div>
+
+  </main>
+
+  <!-- ── Modal Configuración ── -->
+  <div class="modal-overlay" id="configModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>⚙️ Configuración</h3>
+        <button class="modal-close" onclick="document.getElementById('configModal').style.display='none'">✕</button>
+      </div>
+
+      <!-- Nombre del asistente -->
+      <div class="form-group">
+        <label>¿Cómo quieres llamar a tu Asistente?</label>
+        <input type="text" id="assistantName" placeholder="Ej: SCALL, Jarvis, Cortana">
+      </div>
+
+      <!-- Estado IA (reemplaza el campo de API Key) -->
+      <div class="form-group">
+        <label>Estado del Cerebro IA</label>
+        <div class="ai-status-card" id="aiStatusCard">
+          <div class="ai-status-icon">🔄</div>
+          <div class="ai-status-info">
+            <strong id="aiStatusCardTitle">Verificando...</strong>
+            <small id="aiStatusCardDesc">Comprobando configuración del servidor</small>
+          </div>
+        </div>
+        <p class="form-hint" id="aiHint" style="display:none;"></p>
+      </div>
+
+      <hr class="modal-divider">
+
+      <!-- MQTT -->
+      <div class="form-group">
+        <label class="label-accent-blue">🌐 Broker MQTT (ESP32)</label>
+        <input type="text" id="mqttHost" placeholder="Ej: abc123.s1.eu.hivemq.cloud">
+        <div class="input-row">
+          <input type="text" id="mqttUser" placeholder="Usuario MQTT">
+          <input type="password" id="mqttPassword" placeholder="Contraseña MQTT">
+        </div>
+        <button class="btn btn-blue" onclick="guardarYConectarMQTT()">⚡ Conectar ESP32 vía MQTT</button>
+      </div>
+
+      <hr class="modal-divider">
+
+      <!-- Spotify / YouTube -->
+      <div class="form-group">
+        <label class="label-accent-green">🎵 YouTube API (Música)</label>
+        <input type="text" id="spotifyClientId" placeholder="YouTube Data API v3 Key">
+        <button class="btn btn-green" onclick="conectarSpotify()">Conectar Música</button>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="saveAssistantConfig()">Guardar Configuración</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/spotify.js"></script>
+  <script src="js/radio.js"></script>
+  <script src="js/cumpleanos.js"></script>
+  <script src="js/intents.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
