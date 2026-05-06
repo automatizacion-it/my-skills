@@ -202,13 +202,19 @@ if (!SpeechRecognition) {
   });
 
   recognition.onresult = (event) => {
-    let finalTranscript = '', interimTranscript = '';
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
-      if (event.results[i].isFinal) finalTranscript   += event.results[i][0].transcript;
-      else                          interimTranscript += event.results[i][0].transcript;
+    const result = event.results[event.results.length - 1];
+
+    if (!result.isFinal) {
+      // Mostrar texto intermedio en pantalla sin llamar a Gemini
+      transcriptText.innerText = result[0].transcript;
+      return;
     }
-    transcriptText.innerText = finalTranscript || interimTranscript;
-    if (finalTranscript) ejecutarHabilidad(finalTranscript);
+
+    // Solo cuando la frase está completa
+    const texto = result[0].transcript;
+    logMessage(`Frase completa: "${texto}"`);
+    transcriptText.innerText = texto;
+    ejecutarHabilidad(texto);
   };
 
   recognition.onerror = (event) => {
