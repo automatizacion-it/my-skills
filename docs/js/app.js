@@ -489,6 +489,79 @@ function responderVoz(mensaje) {
 }
 
 // ======================================================================
+// PARADA GLOBAL — Detener toda la actividad
+// ======================================================================
+function detenerTodaActividad() {
+  logMessage('[STOP] 🛑 Deteniendo toda actividad...');
+  
+  // 1. Detener reconocimiento de voz
+  if (typeof SpeechRecognition !== 'undefined') {
+    try {
+      if (typeof recognition !== 'undefined' && recognition) {
+        recognition.abort();
+        orbBtn.classList.remove('listening');
+        statusText.innerText = 'Presiona el orbe para hablar';
+        logMessage('[STOP] ✓ Reconocimiento de voz detenido');
+      }
+    } catch (e) {
+      logMessage(`[STOP] ⚠️ Error deteniendo reconocimiento: ${e.message}`);
+    }
+  }
+
+  // 2. Cancelar síntesis de voz
+  try {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      logMessage('[STOP] ✓ Síntesis de voz cancelada');
+    }
+  } catch (e) {
+    logMessage(`[STOP] ⚠️ Error cancelando síntesis: ${e.message}`);
+  }
+
+  // 3. Detener reproducción de música (YouTube)
+  try {
+    if (typeof pausarMusica === 'function') {
+      pausarMusica();
+      logMessage('[STOP] ✓ Música pausada');
+    }
+  } catch (e) {
+    logMessage(`[STOP] ⚠️ Error pausando música: ${e.message}`);
+  }
+
+  // 4. Detener radio
+  try {
+    if (typeof detenerRadio === 'function') {
+      detenerRadio(true);
+      logMessage('[STOP] ✓ Radio detenida');
+    }
+  } catch (e) {
+    logMessage(`[STOP] ⚠️ Error deteniendo radio: ${e.message}`);
+  }
+
+  // 5. Apagar luces y dispositivos vía MQTT
+  try {
+    enviarComandoMQTT('casa/general/luces', 'OFF');
+    enviarComandoMQTT('casa/sala/tv', 'OFF');
+    logMessage('[STOP] ✓ Dispositivos apagados vía MQTT');
+  } catch (e) {
+    logMessage(`[STOP] ⚠️ Error enviando comandos MQTT: ${e.message}`);
+  }
+
+  // 6. Actualizar estado de actividades
+  activityState = { musicPlaying: false, lightsOn: false, tvOn: false, currentCommand: '' };
+  updateToggleDisplay();
+  
+  // 7. Feedback visual
+  statusText.style.color = '#ef4444';
+  setTimeout(() => {
+    statusText.style.color = '';
+    statusText.innerText = 'Sistema pausado. Presiona el orbe para reanudar.';
+  }, 1500);
+
+  logMessage('[STOP] ✅ Parada global completada');
+}
+
+// ======================================================================
 // INICIO
 // ======================================================================
 window.onload = () => {

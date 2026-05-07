@@ -292,5 +292,21 @@ const intents = [
       const dias = Math.ceil((prox.proxFecha - hoy) / 86400000);
       responderVoz(`El próximo cumpleaños es de ${prox.nombre}, el ${prox.dia} de ${MESES[prox.mes]}. Faltan ${dias} días.`);
     }
+  },
+
+  // ── PARADA GLOBAL ────────────────────────────────────────────────────
+  {
+    name: "parada_total",
+    description: "Parar toda actividad (Ej: 'Stop', 'Parar', 'Quieto', 'Silencio')",
+    match: (c) => {
+      const palabrasParada = ['stop', 'parar', 'quieto', 'silencio', 'basta', 'alto', 'para', 'apaga todo'];
+      return palabrasParada.some(p => c.trim() === p || c === p);
+    },
+    action: () => {
+      if (typeof detenerTodaActividad === 'function') {
+        detenerTodaActividad();
+        responderVoz('Deteniendo toda actividad. Sistema en pausa.');
+      }
+    }
   }
 ];
