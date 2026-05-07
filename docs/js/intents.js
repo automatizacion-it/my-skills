@@ -353,5 +353,53 @@ const intents = [
         responderVoz('Deteniendo toda actividad. Sistema en pausa.');
       }
     }
+  },
+
+  // ── ALARMAS Y RECORDATORIOS ──────────────────────────────────────────
+  {
+    name: "alarma_crear",
+    description: "Crear alarma o recordatorio (Ej: 'Alarma para las 3 de la tarde', 'Recuérdame en 5 minutos')",
+    match: (c) => {
+      return (c.includes('alarma') || c.includes('recuérdame') || c.includes('recordatorio')) &&
+             (c.includes(':') || c.includes('minuto') || c.includes('hora') || c.includes('para las'));
+    },
+    action: (comando) => {
+      if (typeof crearAlarmaDesdeVoz === 'function') {
+        crearAlarmaDesdeVoz(comando);
+      }
+    }
+  },
+  {
+    name: "alarma_listar",
+    description: "Ver alarmas (Ej: '¿Qué alarmas tengo?', 'Mis alarmas')",
+    match: (c) => (c.includes('qué alarmas') || c.includes('mis alarmas') || c.includes('alarmas tienes') || c.includes('mis recordatorios')) && !c.includes('crear'),
+    action: () => {
+      if (typeof abrirModalAlarmas === 'function') {
+        abrirModalAlarmas();
+      }
+    }
+  },
+  {
+    name: "alarma_abrir_modal",
+    description: "Abrir gestor de alarmas (Ej: 'Abre las alarmas', 'Panel de alarmas')",
+    match: (c) => c.includes('abre') && (c.includes('alarma') || c.includes('recordatorio')) && !c.includes('crear'),
+    action: () => {
+      if (typeof abrirModalAlarmas === 'function') {
+        abrirModalAlarmas();
+        responderVoz('Abriendo panel de alarmas.');
+      }
+    }
+  },
+  {
+    name: "alarma_desactivar",
+    description: "Desactivar todas las alarmas (Ej: 'Desactiva mis alarmas')",
+    match: (c) => (c.includes('desactiva') || c.includes('apaga')) && (c.includes('alarma') || c.includes('recordatorio')),
+    action: () => {
+      const alarmas = getAlarmas();
+      alarmas.forEach(a => {
+        if (a.activa) toggleAlarm(a.id, false);
+      });
+      responderVoz(`Desactivadas ${alarmas.length} alarma(s).`);
+    }
   }
 ];
