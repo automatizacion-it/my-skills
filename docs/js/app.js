@@ -9,8 +9,13 @@ const systemLog   = document.getElementById('systemLog');
 // No se acepta ninguna clave introducida manualmente por el usuario en la UI.
 // ======================================================================
 function getApiKey() {
-  const key = window.APP_CONFIG && window.APP_CONFIG.geminiApiKey;
-  return (key && key.trim() !== '') ? key.trim() : '';
+  // Prioridad 1: GitHub Secrets via APP_CONFIG
+  const fromConfig = window.APP_CONFIG && window.APP_CONFIG.geminiApiKey;
+  if (fromConfig && fromConfig.trim() !== '') return fromConfig.trim();
+  // Prioridad 2: formulario → localStorage
+  const fromLocal = localStorage.getItem('geminiApiKey');
+  if (fromLocal && fromLocal.trim() !== '') return fromLocal.trim();
+  return '';
 }
 
 function isKeyPreConfigured() {
@@ -281,12 +286,16 @@ function saveAssistantConfig() {
   localStorage.setItem('assistantName', name);
   document.getElementById('displayName').innerText = name;
 
-  if (isKeyPreConfigured()) {
-    logMessage(`[CONFIG] Asistente renombrado a "${name}". IA usa clave de servidor.`);
-  } else {
-    logMessage(`[CONFIG] Asistente renombrado a "${name}". Sin IA activa (modo local).`);
+  // Guardar key del formulario si se ingresó
+  const keyInput = document.getElementById('geminiKeyInput');
+  if (keyInput && keyInput.value.trim() !== '') {
+    localStorage.setItem('geminiApiKey', keyInput.value.trim());
+    keyInput.value = '';  // limpiar campo después de guardar
+    logMessage('[CONFIG] ✅ Gemini API Key guardada localmente.');
   }
 
+  updateAIStatusUI();
+  logMessage(`[CONFIG] Asistente: "${name}"`);
   document.getElementById('configModal').style.display = 'none';
 }
 
@@ -349,10 +358,20 @@ MENSAJE DEL USUARIO: "${texto}"`;
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] })
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 256
+            }
+          })
         }
       );
       const data = await response.json();
+      if (!response.ok) {
+        _sosLog(`[GEMINI] ❌ Error ${response.status}: ${JSON.stringify(data.error)}`);
+        throw new Error(data.error?.message || response.status);
+      }
       if (data.error) throw new Error(data.error.message);
 
       let aiResponse = data.candidates[0].content.parts[0].text;
