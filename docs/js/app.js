@@ -414,7 +414,10 @@ MENSAJE DEL USUARIO: "${texto}"`;
     }
   }
   if (!intentEncontrado) {
-    responderVoz('En modo local no tengo registrado ese comando. Configura Gemini para respuestas avanzadas.');
+    // Guardar en corpus
+    if (typeof agregarAlCorpus === 'function') agregarAlCorpus(texto);
+    logMessage(`[CORPUS] 📝 "${texto}"`);
+    responderVoz('En modo local no tengo registrado ese comando. Lo guardé para aprender.');
   }
 }
 
@@ -433,7 +436,10 @@ function ejecutarIntentLocal(texto) {
     }
   }
   if (!intentEncontrado) {
-    responderVoz('No reconocí ese comando. Intenta de nuevo.');
+    // Guardar en corpus de entrenamiento
+    if (typeof agregarAlCorpus === 'function') agregarAlCorpus(texto);
+    logMessage(`[CORPUS] 📝 Frase guardada: "${texto}"`);
+    responderVoz('No reconocí ese comando. Lo guardé para aprender.');
   }
 }
 // ======================================================================
@@ -486,79 +492,6 @@ function responderVoz(mensaje) {
   };
   if (voces.length > 0) asignar();
   else window.speechSynthesis.onvoiceschanged = asignar;
-}
-
-// ======================================================================
-// PARADA GLOBAL — Detener toda la actividad
-// ======================================================================
-function detenerTodaActividad() {
-  logMessage('[STOP] 🛑 Deteniendo toda actividad...');
-  
-  // 1. Detener reconocimiento de voz
-  if (typeof SpeechRecognition !== 'undefined') {
-    try {
-      if (typeof recognition !== 'undefined' && recognition) {
-        recognition.abort();
-        orbBtn.classList.remove('listening');
-        statusText.innerText = 'Presiona el orbe para hablar';
-        logMessage('[STOP] ✓ Reconocimiento de voz detenido');
-      }
-    } catch (e) {
-      logMessage(`[STOP] ⚠️ Error deteniendo reconocimiento: ${e.message}`);
-    }
-  }
-
-  // 2. Cancelar síntesis de voz
-  try {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      logMessage('[STOP] ✓ Síntesis de voz cancelada');
-    }
-  } catch (e) {
-    logMessage(`[STOP] ⚠️ Error cancelando síntesis: ${e.message}`);
-  }
-
-  // 3. Detener reproducción de música (YouTube)
-  try {
-    if (typeof pausarMusica === 'function') {
-      pausarMusica();
-      logMessage('[STOP] ✓ Música pausada');
-    }
-  } catch (e) {
-    logMessage(`[STOP] ⚠️ Error pausando música: ${e.message}`);
-  }
-
-  // 4. Detener radio
-  try {
-    if (typeof detenerRadio === 'function') {
-      detenerRadio(true);
-      logMessage('[STOP] ✓ Radio detenida');
-    }
-  } catch (e) {
-    logMessage(`[STOP] ⚠️ Error deteniendo radio: ${e.message}`);
-  }
-
-  // 5. Apagar luces y dispositivos vía MQTT
-  try {
-    enviarComandoMQTT('casa/general/luces', 'OFF');
-    enviarComandoMQTT('casa/sala/tv', 'OFF');
-    logMessage('[STOP] ✓ Dispositivos apagados vía MQTT');
-  } catch (e) {
-    logMessage(`[STOP] ⚠️ Error enviando comandos MQTT: ${e.message}`);
-  }
-
-  // 6. Actualizar estado de actividades
-  activityState = { musicPlaying: false, lightsOn: false, tvOn: false, currentCommand: '' };
-  updateToggleDisplay();
-  
-  // 7. Feedback visual
-  statusText.style.color = '#ef4444';
-  setTimeout(() => {
-    statusText.style.color = '';
-    statusText.innerText = 'Sistema pausado. Presiona el orbe para reanudar.';
-  }, 1500);
-
-  logMessage('[STOP] ✅ Parada global completada');
 }
 
 // ======================================================================
