@@ -1,410 +1,311 @@
 // =====================================================================
-// MÓDULO ALARMAS Y RECORDATORIOS — SCALL
-// Gestiona alarmas, recordatorios y notificaciones programadas
+// MÓDULO ALARMAS — SCALL
+// Alarmas, recordatorios, medicamentos, temporizador, cronómetro
 // =====================================================================
 
-const ALARMS_KEY = 'scall_alarms';
-let alarmasActivas = {};  // id -> { alarm object + intervalId }
-let alarmaSonando = false;
+const ALARMAS_KEY = 'scall_alarmas';
+let alarmasActivas  = {};     // { id: setInterval }
+let timerInterval   = null;
+let timerSegundos   = 0;
+let cronometroInt   = null;
+let cronometroSeg   = 0;
+let cronometroActivo = false;
 
-// ── CRUD ─────────────────────────────────────────────────────────────
+// ── ALARMAS ──────────────────────────────────────────────────────────
 
 function getAlarmas() {
-  try { return JSON.parse(localStorage.getItem(ALARMS_KEY)) || []; }
+  try { return JSON.parse(localStorage.getItem(ALARMAS_KEY)) || []; }
   catch { return []; }
 }
+function saveAlarmas(lista) { localStorage.setItem(ALARMAS_KEY, JSON.stringify(lista)); }
 
-function saveAlarmas(lista) {
-  localStorage.setItem(ALARMS_KEY, JSON.stringify(lista));
-}
-
-function agregarAlarm({ titulo, descripcion, hora, tipo = 'once', sonido = true }) {
-  if (!titulo || !hora) {
-    _alarmLog('⚠️ Faltan datos para agregar alarma.');
-    return false;
-  }
-
+function crearAlarma({ hora, minuto, mensaje, tipo = 'alarma', repetir = false }) {
   const lista = getAlarmas();
-  const id = Date.now();
-
-  lista.push({
-    id,
-    titulo,
-    descripcion: descripcion || '',
-    hora,           // "HH:MM" o "en 5 minutos"
-    tipo,           // 'once', 'diaria', 'cada_min'
-    sonido,
-    activa: true,
-    creada: new Date().toISOString(),
-    ultimaEjecucion: null
-  });
-
+  const id    = Date.now();
+  lista.push({ id, hora, minuto, mensaje, tipo, repetir, activa: true });
   saveAlarmas(lista);
-  _alarmLog(`✅ Alarma "${titulo}" creada para las ${hora}`);
-  
-  activarAlarm(id);
-  return true;
+  iniciarChequeoAlarma({ id, hora, minuto, mensaje, tipo });
+
+  const horaStr = `${String(hora).padStart(2,'0')}:${String(minuto).padStart(2,'0')}`;
+  _alarVoz(`Alarma configurada para las ${hora} y ${minuto} minutos. ${mensaje ? mensaje + '.' : ''}`);
+  _alarLog(`[ALARMA] ✅ ${tipo} → ${horaStr} "${mensaje}"`);
+  return id;
 }
 
-function eliminarAlarm(id) {
-  // Detener la alarma activa si existe
-  if (alarmasActivas[id]) {
-    clearInterval(alarmasActivas[id].intervalId);
-    delete alarmasActivas[id];
-  }
-
-  const lista = getAlarmas().filter(a => a.id !== id);
-  saveAlarmas(lista);
-  _alarmLog(`🗑 Alarma eliminada.`);
-  actualizarListaAlarmas();
-}
-
-function editarAlarm(id, cambios) {
-  const lista = getAlarmas().map(a =>
-    a.id === id ? { ...a, ...cambios } : a
-  );
-  saveAlarmas(lista);
-  _alarmLog(`✏️ Alarma actualizada.`);
-  
-  // Reactivar si hubo cambios
-  if (alarmasActivas[id]) {
-    clearInterval(alarmasActivas[id].intervalId);
-    delete alarmasActivas[id];
-  }
-  activarAlarm(id);
-}
-
-function toggleAlarm(id, activa) {
-  const lista = getAlarmas().map(a =>
-    a.id === id ? { ...a, activa } : a
-  );
-  saveAlarmas(lista);
-
-  if (activa) {
-    activarAlarm(id);
-    _alarmLog(`▶️ Alarma activada.`);
-  } else {
-    if (alarmasActivas[id]) {
-      clearInterval(alarmasActivas[id].intervalId);
-      delete alarmasActivas[id];
+function iniciarChequeoAlarma(alarma) {
+  const intervalo = setInterval(() => {
+    const now = new Date();
+    if (now.getHours() === alarma.hora && now.getMinutes() === alarma.minuto && now.getSeconds() < 30) {
+      dispararAlarma(alarma);
+      if (!alarma.repetir) {
+        clearInterval(intervalo);
+        delete alarmasActivas[alarma.id];
+        // Marcar como inactiva
+        const lista = getAlarmas().map(a => a.id === alarma.id ? { ...a, activa: false } : a);
+        saveAlarmas(lista);
+      }
     }
-    _alarmLog(`⏸ Alarma desactivada.`);
+  }, 15000); // chequear cada 15s
+  alarmasActivas[alarma.id] = intervalo;
+}
+
+function dispararAlarma(alarma) {
+  const tipo = alarma.tipo === 'medicamento' ? '💊' : alarma.tipo === 'recordatorio' ? '📌' : '⏰';
+  _alarVoz(alarma.mensaje || `Alarma. Son las ${alarma.hora} y ${alarma.minuto} minutos.`);
+  _alarLog(`[ALARMA] ${tipo} DISPARADA: "${alarma.mensaje}"`);
+  mostrarToastAlarma(alarma);
+  // Notificación del navegador
+  if (Notification.permission === 'granted') {
+    new Notification(`SCALL ${tipo}`, { body: alarma.mensaje || 'Es hora!', icon: '/favicon.ico' });
   }
-  actualizarListaAlarmas();
 }
 
-// ── Activación de alarmas ─────────────────────────────────────────
-
-function activarAlarm(id) {
-  const alarma = getAlarmas().find(a => a.id === id);
-  if (!alarma || !alarma.activa) return;
-
-  const intervalId = setInterval(() => {
-    chequearAlarm(alarma);
-  }, 10000);  // Chequear cada 10 segundos
-
-  alarmasActivas[id] = { ...alarma, intervalId };
-  _alarmLog(`🔔 Monitorear alarma: ${alarma.titulo}`);
-  
-  // Hacer chequeo inmediato
-  chequearAlarm(alarma);
+function eliminarAlarma(id) {
+  if (alarmasActivas[id]) { clearInterval(alarmasActivas[id]); delete alarmasActivas[id]; }
+  saveAlarmas(getAlarmas().filter(a => a.id !== id));
+  _alarLog(`[ALARMA] 🗑 Eliminada ${id}`);
 }
 
-function chequearAlarm(alarma) {
-  const ahora = new Date();
-  const horaActual = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
-  
-  // Caso 1: Hora exacta (HH:MM)
-  if (alarma.hora.includes(':')) {
-    if (horaActual === alarma.hora) {
-      dispararAlarm(alarma);
+// ── PARSER DE VOZ ─────────────────────────────────────────────────────
+
+function parsearAlarmaVoz(comando) {
+  // "pon alarma a las 7 y 30", "recuérdame tomar pastilla a las 8"
+  // "despiértame a las 6 de la mañana"
+  const horaMatch = comando.match(/(\d{1,2})\s*(?:y\s*(\d{1,2}))?\s*(?:de\s+la\s+(mañana|tarde|noche))?/);
+  if (!horaMatch) return null;
+
+  let hora   = parseInt(horaMatch[1]);
+  let minuto = parseInt(horaMatch[2] || '0');
+  const periodo = horaMatch[3];
+
+  if (periodo === 'tarde' || periodo === 'noche') {
+    if (hora < 12) hora += 12;
+  } else if (periodo === 'mañana' && hora === 12) {
+    hora = 0;
+  }
+
+  // Detectar tipo
+  let tipo = 'alarma';
+  let msg  = '';
+  if (comando.includes('medicamento') || comando.includes('pastilla') || comando.includes('medicina')) {
+    tipo = 'medicamento';
+    msg  = 'Es hora de tomar tu medicamento.';
+  } else if (comando.includes('recordatorio') || comando.includes('recuérdame') || comando.includes('recuerda')) {
+    tipo = 'recordatorio';
+    // Extraer el mensaje
+    const msgMatch = comando.match(/recuérdame\s+(.+?)\s+a\s+las/i) || comando.match(/recuerda\s+(.+?)\s+a\s+las/i);
+    if (msgMatch) msg = msgMatch[1];
+    else msg = 'Tienes un recordatorio.';
+  } else if (comando.includes('despierta') || comando.includes('despiértame')) {
+    msg = 'Buenos días! Es hora de levantarse.';
+  }
+
+  return { hora, minuto, tipo, mensaje: msg, repetir: comando.includes('todos los días') };
+}
+
+// ── TEMPORIZADOR ──────────────────────────────────────────────────────
+
+function iniciarTimer(segundos) {
+  if (timerInterval) { clearInterval(timerInterval); }
+  timerSegundos = segundos;
+
+  const min = Math.floor(segundos / 60);
+  const seg = segundos % 60;
+  _alarVoz(`Temporizador de ${min > 0 ? min + ' minutos' : ''} ${seg > 0 ? seg + ' segundos' : ''} iniciado.`);
+  _alarLog(`[TIMER] ⏱ ${segundos}s iniciado`);
+
+  mostrarToastTimer(segundos);
+
+  timerInterval = setInterval(() => {
+    timerSegundos--;
+    actualizarToastTimer(timerSegundos);
+    if (timerSegundos <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      _alarVoz('¡El temporizador terminó!');
+      _alarLog('[TIMER] ✅ Completado');
+      if (Notification.permission === 'granted') new Notification('SCALL ⏱', { body: '¡Temporizador completado!' });
+      ocultarToastTimer();
     }
-  }
-  // Caso 2: "en X minutos" o "en X horas"
-  else if (alarma.hora.includes('en ')) {
-    // Se ejecuta cuando se crea (ver agregarAlarmaPorVoz)
-  }
+  }, 1000);
 }
 
-function dispararAlarm(alarma) {
-  // Evitar disparar múltiples veces en el mismo minuto
-  const now = new Date().toISOString();
-  const yaDisparo = alarma.ultimaEjecucion && 
-                    new Date(now) - new Date(alarma.ultimaEjecucion) < 60000;
-  if (yaDisparo) return;
-
-  _alarmLog(`🔊 ¡ALARMA! ${alarma.titulo}`);
-  alarmaSonando = true;
-
-  // Respuesta de voz
-  if (typeof responderVoz === 'function') {
-    const msg = alarma.descripcion ? 
-                `Alarma: ${alarma.titulo}. ${alarma.descripcion}` :
-                `Alarma: ${alarma.titulo}`;
-    responderVoz(msg);
-  }
-
-  // Sonido (usar Web Audio o notificación)
-  if (alarma.sonido) reproducirSonidoAlarm();
-
-  // Actualizar hora última ejecución
-  const lista = getAlarmas().map(a =>
-    a.id === alarma.id ? { ...a, ultimaEjecucion: now } : a
-  );
-  saveAlarmas(lista);
-
-  // Mostrar modal de alarma
-  mostrarModalAlarm(alarma);
-
-  // Si es 'once', desactivar después
-  if (alarma.tipo === 'once') {
-    toggleAlarm(alarma.id, false);
-  }
+function parsearTimer(comando) {
+  let total = 0;
+  const horas   = comando.match(/(\d+)\s*hora/);
+  const minutos = comando.match(/(\d+)\s*minuto/);
+  const segundos = comando.match(/(\d+)\s*segundo/);
+  if (horas)    total += parseInt(horas[1]) * 3600;
+  if (minutos)  total += parseInt(minutos[1]) * 60;
+  if (segundos) total += parseInt(segundos[1]);
+  return total;
 }
 
-function reproducirSonidoAlarm() {
-  // Usar oscilador de Web Audio API
-  try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.frequency.value = 800;  // Frecuencia en Hz
-    oscillator.type = 'sine';
-
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 1);
-
-    _alarmLog('🔊 Sonido de alarma reproducido');
-  } catch (e) {
-    _alarmLog(`⚠️ Error reproduciendo sonido: ${e.message}`);
-  }
+function cancelarTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  ocultarToastTimer();
+  _alarVoz('Temporizador cancelado.');
 }
 
-function silenciarAlarma() {
-  alarmaSonando = false;
-  _alarmLog('🔇 Alarma silenciada');
-  cerrarModalAlarm();
+// ── CRONÓMETRO ────────────────────────────────────────────────────────
+
+function iniciarCronometro() {
+  if (cronometroActivo) { _alarVoz('El cronómetro ya está corriendo.'); return; }
+  cronometroSeg    = 0;
+  cronometroActivo = true;
+  cronometroInt    = setInterval(() => { cronometroSeg++; actualizarToastCronometro(); }, 1000);
+  _alarVoz('Cronómetro iniciado.');
+  _alarLog('[CRONÓMETRO] ▶ Iniciado');
+  mostrarToastCronometro();
 }
 
-// ── Crear alarma por voz ──────────────────────────────────────────
-
-function crearAlarmaDesdeVoz(comando) {
-  // Ejemplos:
-  // "Alarma para las 3 de la tarde"
-  // "Recuérdame en 5 minutos"
-  // "Alarma a las 15:30"
-
-  let titulo = 'Recordatorio';
-  let hora = null;
-  let tipo = 'once';
-
-  // Extraer hora (HH:MM o "X minutos/horas")
-  const regex_hora = /(\d{1,2}):(\d{2})|(\d{1,2})\s*(minutos?|horas?|segundos?)/i;
-  const match_hora = comando.match(regex_hora);
-
-  if (match_hora) {
-    if (match_hora[1]) {
-      // Formato HH:MM
-      const horas = parseInt(match_hora[1]);
-      const mins = parseInt(match_hora[2]);
-      hora = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-      titulo = `Alarma a las ${horas}:${String(mins).padStart(2, '0')}`;
-    } else if (match_hora[3]) {
-      // Formato "en X minutos/horas"
-      const cantidad = parseInt(match_hora[3]);
-      const unidad = match_hora[4].toLowerCase();
-      const ms = unidad.includes('minuto') ? cantidad * 60000 :
-                 unidad.includes('hora') ? cantidad * 3600000 :
-                 cantidad * 1000;
-
-      const futuro = new Date(Date.now() + ms);
-      hora = `${String(futuro.getHours()).padStart(2, '0')}:${String(futuro.getMinutes()).padStart(2, '0')}`;
-      titulo = `Recordatorio en ${cantidad} ${unidad}`;
-    }
-  }
-
-  if (!hora) {
-    if (typeof responderVoz === 'function')
-      responderVoz('No entiendo la hora de la alarma. Intenta: alarma para las 3 de la tarde.');
-    return false;
-  }
-
-  // Extraer descripción si existe
-  const descripcion = comando
-    .replace(/alarma|recordatorio|recuérdame/gi, '')
-    .replace(/para las?|a las?|en/gi, '')
-    .trim() || '';
-
-  return agregarAlarm({
-    titulo,
-    descripcion: descripcion.slice(0, 100),
-    hora,
-    tipo,
-    sonido: true
-  });
+function pausarCronometro() {
+  if (cronometroInt) { clearInterval(cronometroInt); cronometroInt = null; }
+  cronometroActivo = false;
+  _alarVoz(`Cronómetro pausado en ${formatTiempo(cronometroSeg)}.`);
 }
 
-// ── UI — Modal ────────────────────────────────────────────────────
-
-function abrirModalAlarmas() {
-  let modal = document.getElementById('alarmsModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'alarmsModal';
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <h3>🔔 Alarmas y Recordatorios</h3>
-          <button class="modal-close" onclick="document.getElementById('alarmsModal').style.display='none'">✕</button>
-        </div>
-        
-        <div class="form-group">
-          <label>Nueva Alarma</label>
-          <input type="text" id="alarmTitle" placeholder="Ej: Tomar medicina" maxlength="50">
-          <input type="time" id="alarmTime" style="margin-top:8px;">
-          <textarea id="alarmDesc" placeholder="Descripción (opcional)" maxlength="100" style="margin-top:8px;"></textarea>
-          <button class="btn btn-primary" onclick="crearAlarmaUI()" style="margin-top:8px;">+ Crear Alarma</button>
-        </div>
-
-        <hr class="modal-divider">
-
-        <div class="form-group">
-          <label>Alarmas Activas</label>
-          <div id="alarmsList" style="max-height:300px;overflow-y:auto;"></div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn" onclick="document.getElementById('alarmsModal').style.display='none'">Cerrar</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-
-  modal.style.display = 'flex';
-  actualizarListaAlarmas();
+function reiniciarCronometro() {
+  pausarCronometro();
+  cronometroSeg = 0;
+  _alarVoz('Cronómetro reiniciado.');
+  actualizarToastCronometro();
 }
 
-function crearAlarmaUI() {
-  const titulo = document.getElementById('alarmTitle').value.trim();
-  const hora = document.getElementById('alarmTime').value;
-  const desc = document.getElementById('alarmDesc').value.trim();
-
-  if (!titulo || !hora) {
-    if (typeof responderVoz === 'function')
-      responderVoz('Por favor rellena título y hora.');
-    return;
-  }
-
-  if (agregarAlarm({ titulo, descripcion: desc, hora, tipo: 'once', sonido: true })) {
-    document.getElementById('alarmTitle').value = '';
-    document.getElementById('alarmTime').value = '';
-    document.getElementById('alarmDesc').value = '';
-    actualizarListaAlarmas();
-    if (typeof responderVoz === 'function')
-      responderVoz(`Alarma "${titulo}" creada para las ${hora.split(':').join(' y ')}`);
-  }
+function leerCronometro() {
+  _alarVoz(`El cronómetro lleva ${formatTiempo(cronometroSeg)}.`);
 }
 
-function actualizarListaAlarmas() {
-  const container = document.getElementById('alarmsList');
-  if (!container) return;
+function formatTiempo(seg) {
+  const h = Math.floor(seg / 3600);
+  const m = Math.floor((seg % 3600) / 60);
+  const s = seg % 60;
+  const parts = [];
+  if (h > 0) parts.push(`${h} hora${h > 1 ? 's' : ''}`);
+  if (m > 0) parts.push(`${m} minuto${m > 1 ? 's' : ''}`);
+  if (s > 0 || parts.length === 0) parts.push(`${s} segundo${s !== 1 ? 's' : ''}`);
+  return parts.join(' y ');
+}
 
-  const alarmas = getAlarmas();
-  if (alarmas.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">Sin alarmas configuradas</p>';
-    return;
-  }
+// ── TOASTS ────────────────────────────────────────────────────────────
 
-  container.innerHTML = alarmas.map(a => `
-    <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;margin-bottom:8px;border-left:3px solid ${a.activa ? '#10b981' : '#666'};">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <strong>${a.titulo}</strong>
-          <br>
-          <small style="color:var(--text-muted);">⏰ ${a.hora} ${a.descripcion ? '| ' + a.descripcion : ''}</small>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-sm" onclick="toggleAlarm(${a.id}, ${!a.activa})" style="padding:4px 8px;font-size:0.8rem;">
-            ${a.activa ? '⏸' : '▶️'}
-          </button>
-          <button class="btn btn-sm" onclick="eliminarAlarm(${a.id})" style="padding:4px 8px;font-size:0.8rem;background:rgba(239,68,68,0.2);">
-            🗑
-          </button>
-        </div>
+function mostrarToastAlarma(alarma) {
+  const emoji = alarma.tipo === 'medicamento' ? '💊' : alarma.tipo === 'recordatorio' ? '📌' : '⏰';
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position:fixed;top:70px;left:50%;transform:translateX(-50%);
+    width:min(340px,calc(100vw - 32px));
+    background:linear-gradient(135deg,#1a0d4d,#0d0626);
+    border:1px solid rgba(123,97,255,0.4);border-radius:16px;
+    padding:16px 18px;z-index:20001;color:#f8fafc;
+    box-shadow:0 8px 32px rgba(123,97,255,0.3);
+    font-family:var(--font-body,sans-serif);
+    display:flex;align-items:center;gap:14px;
+  `;
+  toast.innerHTML = `
+    <span style="font-size:2rem;">${emoji}</span>
+    <div style="flex:1;">
+      <strong style="font-size:0.9rem;">${alarma.mensaje || 'Alarma'}</strong>
+      <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">
+        ${String(alarma.hora).padStart(2,'0')}:${String(alarma.minuto).padStart(2,'0')}
       </div>
     </div>
-  `).join('');
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;">✕</button>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => { if (toast.parentElement) toast.remove(); }, 15000);
 }
 
-function mostrarModalAlarm(alarma) {
-  const modal = document.createElement('div');
-  modal.id = `alarm-firing-${alarma.id}`;
-  modal.className = 'modal-overlay';
-  modal.style.zIndex = '9999';
-  modal.innerHTML = `
-    <div class="modal" style="background:linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.1) 100%);border: 2px solid #ef4444;">
-      <div class="modal-header">
-        <h3>🔊 ¡ALARMA!</h3>
-      </div>
-      <div style="padding:20px;text-align:center;">
-        <h2 style="font-size:2rem;color:#ef4444;margin:0 0 10px 0;">${alarma.titulo}</h2>
-        <p style="font-size:1.2rem;margin:0 0 20px 0;">${alarma.descripcion || 'Es hora de tu recordatorio'}</p>
-        <p style="color:var(--text-muted);margin-bottom:20px;">Hora: ${alarma.hora}</p>
-        <button class="btn btn-primary" onclick="silenciarAlarma();document.getElementById('alarm-firing-${alarma.id}').remove();" style="padding:10px 30px;font-size:1.1rem;">
-          ✓ Entendido
-        </button>
-      </div>
+let timerToast = null;
+function mostrarToastTimer(seg) {
+  if (timerToast) timerToast.remove();
+  timerToast = document.createElement('div');
+  timerToast.id = 'timerWidget';
+  timerToast.style.cssText = `
+    position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+    width:min(280px,calc(100vw - 32px));
+    background:var(--surface,#1e293b);
+    border:1px solid rgba(0,212,255,0.3);border-radius:16px;
+    padding:16px 20px;z-index:19998;color:var(--text,#f8fafc);
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;
+    font-family:var(--font-display,monospace);
+  `;
+  timerToast.innerHTML = `
+    <div style="font-size:0.68rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">⏱ Temporizador</div>
+    <div id="timerDisplay" style="font-size:2.2rem;font-weight:700;color:var(--glow,#00d4ff);">${formatTiempoPadded(seg)}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:center;">
+      <button onclick="cancelarTimer()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.78rem;">Cancelar</button>
     </div>
   `;
-  document.body.appendChild(modal);
-
-  // Auto-cerrar después de 30 segundos
-  setTimeout(() => {
-    const m = document.getElementById(`alarm-firing-${alarma.id}`);
-    if (m) m.remove();
-  }, 30000);
+  document.body.appendChild(timerToast);
 }
 
-function cerrarModalAlarm() {
-  const modals = document.querySelectorAll('[id^="alarm-firing-"]');
-  modals.forEach(m => m.remove());
+function actualizarToastTimer(seg) {
+  const el = document.getElementById('timerDisplay');
+  if (el) el.textContent = formatTiempoPadded(seg);
+  if (seg <= 10 && el) el.style.color = '#ef4444';
 }
 
-// ── Logging ───────────────────────────────────────────────────────
+function ocultarToastTimer() {
+  if (timerToast) { timerToast.remove(); timerToast = null; }
+}
 
-function _alarmLog(mensaje) {
-  const log = document.getElementById('systemLog');
-  if (log) {
-    log.innerHTML += `<div style="color:#fbbf24;">[ALARMAS] ${mensaje}</div>`;
-    log.scrollTop = log.scrollHeight;
+let cronToast = null;
+function mostrarToastCronometro() {
+  if (cronToast) cronToast.remove();
+  cronToast = document.createElement('div');
+  cronToast.id = 'cronWidget';
+  cronToast.style.cssText = `
+    position:fixed;bottom:90px;right:16px;
+    width:min(240px,calc(100vw - 32px));
+    background:var(--surface,#1e293b);
+    border:1px solid rgba(16,185,129,0.3);border-radius:16px;
+    padding:16px 20px;z-index:19997;color:var(--text,#f8fafc);
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;
+    font-family:var(--font-display,monospace);
+  `;
+  cronToast.innerHTML = `
+    <div style="font-size:0.68rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">⏱ Cronómetro</div>
+    <div id="cronDisplay" style="font-size:1.8rem;font-weight:700;color:#10b981;">00:00:00</div>
+    <div style="display:flex;gap:6px;margin-top:12px;justify-content:center;">
+      <button onclick="pausarCronometro()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:#f8fafc;padding:5px 10px;border-radius:8px;cursor:pointer;font-size:0.72rem;">Pausar</button>
+      <button onclick="reiniciarCronometro()" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444;padding:5px 10px;border-radius:8px;cursor:pointer;font-size:0.72rem;">Reset</button>
+    </div>
+  `;
+  document.body.appendChild(cronToast);
+}
+
+function actualizarToastCronometro() {
+  const el = document.getElementById('cronDisplay');
+  if (el) {
+    const h = Math.floor(cronometroSeg / 3600);
+    const m = Math.floor((cronometroSeg % 3600) / 60);
+    const s = cronometroSeg % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
-  console.log(`[ALARMAS] ${mensaje}`);
 }
 
-// ── Inicialización ────────────────────────────────────────────────
-
-function inicializarAlarmas() {
-  _alarmLog('Inicializando módulo de alarmas...');
-  
-  // Activar todas las alarmas guardadas
-  const alarmas = getAlarmas();
-  alarmas.forEach(a => {
-    if (a.activa) activarAlarm(a.id);
-  });
-
-  _alarmLog(`${alarmas.length} alarma(s) monitoreada(s)`);
+function formatTiempoPadded(seg) {
+  const m = Math.floor(seg / 60);
+  const s = seg % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-// Inicializar cuando carga la página
+// ── PERMISOS NOTIFICACIÓN ─────────────────────────────────────────────
+function pedirPermisoNotificacion() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
-  setTimeout(inicializarAlarmas, 1000);
+  pedirPermisoNotificacion();
+  // Reactivar alarmas guardadas
+  const alarmas = getAlarmas().filter(a => a.activa);
+  alarmas.forEach(a => iniciarChequeoAlarma(a));
+  if (alarmas.length > 0) _alarLog(`[ALARMA] ♻ ${alarmas.length} alarma(s) reactivada(s)`);
 });
+
+function _alarLog(m) { typeof logMessage  === 'function' ? logMessage(m)  : console.log(m); }
+function _alarVoz(m) { typeof responderVoz === 'function' ? responderVoz(m) : console.warn(m); }

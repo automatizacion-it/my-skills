@@ -339,67 +339,131 @@ const intents = [
     }
   },
 
-  // ── PARADA GLOBAL ────────────────────────────────────────────────────
+  // ── Clima ─────────────────────────────────────────────────────────────
   {
-    name: "parada_total",
-    description: "Parar toda actividad (Ej: 'Stop', 'Parar', 'Quieto', 'Silencio')",
-    match: (c) => {
-      const palabrasParada = ['stop', 'parar', 'quieto', 'silencio', 'basta', 'alto', 'para', 'apaga todo'];
-      return palabrasParada.some(p => c.trim() === p || c === p);
-    },
-    action: () => {
-      if (typeof detenerTodaActividad === 'function') {
-        detenerTodaActividad();
-        responderVoz('Deteniendo toda actividad. Sistema en pausa.');
-      }
+    name: "clima_consultar",
+    description: "Consultar el clima (Ej: '¿Cómo está el clima?', 'Temperatura en Medellín')",
+    match: (c) =>
+      c.includes('clima') || c.includes('temperatura') || c.includes('tiempo hace') ||
+      c.includes('lloverá') || c.includes('va a llover') || c.includes('hace frío') ||
+      c.includes('hace calor') || c.includes('pronóstico'),
+    action: (comando) => {
+      const ciudades = ['bogotá','medellín','cali','barranquilla','cartagena','bucaramanga','pereira','manizales','cúcuta','ibagué'];
+      const ciudad = ciudades.find(c => comando.includes(c));
+      if (typeof consultarClima === 'function') consultarClima(ciudad);
+      else responderVoz('Módulo de clima no disponible.');
     }
   },
 
-  // ── ALARMAS Y RECORDATORIOS ──────────────────────────────────────────
+  // ── Noticias ──────────────────────────────────────────────────────────
+  {
+    name: "noticias_consultar",
+    description: "Ver noticias de Colombia (Ej: 'Dime las noticias', 'Qué pasó hoy')",
+    match: (c) =>
+      c.includes('noticias') || c.includes('qué pasó') || c.includes('novedades') ||
+      c.includes('titulares') || c.includes('actualidad'),
+    action: (comando) => {
+      let cat = 'general';
+      if (comando.includes('tecnología') || comando.includes('tech')) cat = 'tecnologia';
+      else if (comando.includes('economía') || comando.includes('economia')) cat = 'economia';
+      else if (comando.includes('deporte')) cat = 'deportes';
+      else if (comando.includes('bogotá') || comando.includes('bogota')) cat = 'bogota';
+      if (typeof consultarNoticias === 'function') consultarNoticias(cat);
+      else responderVoz('Módulo de noticias no disponible.');
+    }
+  },
+  {
+    name: "noticias_siguiente",
+    description: "Siguiente noticia (Ej: 'Siguiente noticia', 'La siguiente')",
+    match: (c) => (c.includes('siguiente') || c.includes('otra noticia') || c.includes('la siguiente')) && c.includes('noticia'),
+    action: () => { if (typeof siguienteNoticia === 'function') siguienteNoticia(); }
+  },
+
+  // ── Traductor ─────────────────────────────────────────────────────────
+  {
+    name: "traducir",
+    description: "Traducir texto (Ej: 'Traduce hola al inglés', 'Cómo se dice gracias en francés')",
+    match: (c) =>
+      c.includes('traduce') || c.includes('traducir') || c.includes('cómo se dice') ||
+      c.includes('en inglés') || c.includes('en francés') || c.includes('en portugués') ||
+      c.includes('en alemán') || c.includes('en italiano'),
+    action: (comando) => {
+      if (typeof traducirTexto === 'function') traducirTexto(comando);
+      else responderVoz('Módulo de traducción no disponible.');
+    }
+  },
+
+  // ── Alarmas ───────────────────────────────────────────────────────────
   {
     name: "alarma_crear",
-    description: "Crear alarma o recordatorio (Ej: 'Alarma para las 3 de la tarde', 'Recuérdame en 5 minutos')",
-    match: (c) => {
-      return (c.includes('alarma') || c.includes('recuérdame') || c.includes('recordatorio')) &&
-             (c.includes(':') || c.includes('minuto') || c.includes('hora') || c.includes('para las'));
-    },
+    description: "Poner alarma (Ej: 'Pon alarma a las 7', 'Despiértame a las 6 de la mañana')",
+    match: (c) =>
+      (c.includes('alarma') || c.includes('despiértame') || c.includes('despiertame')) &&
+      (c.includes('las ') || c.includes('a las')),
     action: (comando) => {
-      if (typeof crearAlarmaDesdeVoz === 'function') {
-        crearAlarmaDesdeVoz(comando);
-      }
+      if (typeof parsearAlarmaVoz !== 'function') { responderVoz('Módulo de alarmas no disponible.'); return; }
+      const alarma = parsearAlarmaVoz(comando);
+      if (alarma) crearAlarma(alarma);
+      else responderVoz('No entendí la hora. Di por ejemplo: pon alarma a las 7 y 30 de la mañana.');
     }
   },
   {
-    name: "alarma_listar",
-    description: "Ver alarmas (Ej: '¿Qué alarmas tengo?', 'Mis alarmas')",
-    match: (c) => (c.includes('qué alarmas') || c.includes('mis alarmas') || c.includes('alarmas tienes') || c.includes('mis recordatorios')) && !c.includes('crear'),
-    action: () => {
-      if (typeof abrirModalAlarmas === 'function') {
-        abrirModalAlarmas();
-      }
+    name: "recordatorio_crear",
+    description: "Crear recordatorio (Ej: 'Recuérdame la reunión a las 3')",
+    match: (c) => (c.includes('recuérdame') || c.includes('recuerda') || c.includes('recordatorio')) && c.includes('las'),
+    action: (comando) => {
+      if (typeof parsearAlarmaVoz !== 'function') { responderVoz('Módulo no disponible.'); return; }
+      const alarma = parsearAlarmaVoz(comando);
+      if (alarma) crearAlarma({ ...alarma, tipo: 'recordatorio' });
+      else responderVoz('No entendí la hora del recordatorio.');
     }
   },
   {
-    name: "alarma_abrir_modal",
-    description: "Abrir gestor de alarmas (Ej: 'Abre las alarmas', 'Panel de alarmas')",
-    match: (c) => c.includes('abre') && (c.includes('alarma') || c.includes('recordatorio')) && !c.includes('crear'),
-    action: () => {
-      if (typeof abrirModalAlarmas === 'function') {
-        abrirModalAlarmas();
-        responderVoz('Abriendo panel de alarmas.');
-      }
+    name: "medicamento_recordatorio",
+    description: "Recordatorio de medicamento (Ej: 'Recuérdame tomar la pastilla a las 8')",
+    match: (c) =>
+      (c.includes('medicamento') || c.includes('pastilla') || c.includes('medicina') || c.includes('tomar')) &&
+      (c.includes('las') || c.includes('recordatorio')),
+    action: (comando) => {
+      if (typeof parsearAlarmaVoz !== 'function') { responderVoz('Módulo no disponible.'); return; }
+      const alarma = parsearAlarmaVoz(comando);
+      if (alarma) crearAlarma({ ...alarma, tipo: 'medicamento', mensaje: 'Es hora de tomar tu medicamento.' });
+      else responderVoz('No entendí la hora. Di: recuérdame tomar la pastilla a las 8 de la mañana.');
+    }
+  },
+
+  // ── Temporizador ──────────────────────────────────────────────────────
+  {
+    name: "timer_iniciar",
+    description: "Iniciar temporizador (Ej: 'Pon un timer de 5 minutos', 'Temporizador 30 segundos')",
+    match: (c) =>
+      (c.includes('timer') || c.includes('temporizador') || c.includes('cuenta regresiva')) &&
+      (c.includes('minuto') || c.includes('segundo') || c.includes('hora')),
+    action: (comando) => {
+      if (typeof parsearTimer !== 'function') { responderVoz('Módulo no disponible.'); return; }
+      const seg = parsearTimer(comando);
+      if (seg > 0) iniciarTimer(seg);
+      else responderVoz('No entendí el tiempo. Di por ejemplo: pon timer de 5 minutos.');
     }
   },
   {
-    name: "alarma_desactivar",
-    description: "Desactivar todas las alarmas (Ej: 'Desactiva mis alarmas')",
-    match: (c) => (c.includes('desactiva') || c.includes('apaga')) && (c.includes('alarma') || c.includes('recordatorio')),
-    action: () => {
-      const alarmas = getAlarmas();
-      alarmas.forEach(a => {
-        if (a.activa) toggleAlarm(a.id, false);
-      });
-      responderVoz(`Desactivadas ${alarmas.length} alarma(s).`);
+    name: "timer_cancelar",
+    description: "Cancelar temporizador (Ej: 'Cancela el timer')",
+    match: (c) => (c.includes('cancela') || c.includes('para') || c.includes('detén')) && (c.includes('timer') || c.includes('temporizador')),
+    action: () => { if (typeof cancelarTimer === 'function') cancelarTimer(); }
+  },
+
+  // ── Cronómetro ────────────────────────────────────────────────────────
+  {
+    name: "cronometro_iniciar",
+    description: "Iniciar cronómetro (Ej: 'Inicia el cronómetro', 'Pon el cronómetro')",
+    match: (c) => c.includes('cronómetro') || c.includes('cronometro'),
+    action: (comando) => {
+      if (typeof iniciarCronometro !== 'function') { responderVoz('Módulo no disponible.'); return; }
+      if (comando.includes('pausa') || comando.includes('para'))  { pausarCronometro(); }
+      else if (comando.includes('reinicia') || comando.includes('reset')) { reiniciarCronometro(); }
+      else if (comando.includes('cuánto') || comando.includes('tiempo lleva')) { leerCronometro(); }
+      else { iniciarCronometro(); }
     }
   }
 ];
