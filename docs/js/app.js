@@ -9,10 +9,8 @@ const systemLog   = document.getElementById('systemLog');
 // No se acepta ninguna clave introducida manualmente por el usuario en la UI.
 // ======================================================================
 function getApiKey() {
-  // Prioridad 1: GitHub Secrets via APP_CONFIG
   const fromConfig = window.APP_CONFIG && window.APP_CONFIG.geminiApiKey;
   if (fromConfig && fromConfig.trim() !== '') return fromConfig.trim();
-  // Prioridad 2: formulario → localStorage
   const fromLocal = localStorage.getItem('geminiApiKey');
   if (fromLocal && fromLocal.trim() !== '') return fromLocal.trim();
   return '';
@@ -27,18 +25,16 @@ function getYtApiKeyConfig() {
   return (key && key.trim() !== '') ? key.trim() : localStorage.getItem('youtubeApiKey') || '';
 }
 
-// Actualiza el badge en la top bar y la tarjeta dentro del modal
 function updateAIStatusUI() {
-  const badge    = document.getElementById('aiStatusBadge');
+  const badge     = document.getElementById('aiStatusBadge');
   const badgeText = document.getElementById('aiStatusText');
-  const card     = document.getElementById('aiStatusCard');
+  const card      = document.getElementById('aiStatusCard');
   const cardTitle = document.getElementById('aiStatusCardTitle');
   const cardDesc  = document.getElementById('aiStatusCardDesc');
   const hint      = document.getElementById('aiHint');
   const icon      = card && card.querySelector('.ai-status-icon');
 
   if (isKeyPreConfigured()) {
-    // ✅ Configurada
     if (badge)     { badge.className = 'ai-status-badge ready'; }
     if (badgeText)  badgeText.textContent = 'IA Gemini activa';
     if (card)      { card.className = 'ai-status-card ready'; }
@@ -48,7 +44,6 @@ function updateAIStatusUI() {
     if (hint)       hint.style.display = 'none';
     logMessage('[SEGURIDAD] ✅ Gemini API Key cargada desde GitHub Secrets');
   } else {
-    // ⚠️ Sin clave
     if (badge)     { badge.className = 'ai-status-badge warn'; }
     if (badgeText)  badgeText.textContent = 'Sin IA · modo local';
     if (card)      { card.className = 'ai-status-card warn'; }
@@ -63,7 +58,7 @@ function updateAIStatusUI() {
 }
 
 // ======================================================================
-// MQTT — Conexión al broker vía WebSockets
+// MQTT
 // ======================================================================
 let mqttClient = null;
 
@@ -103,16 +98,14 @@ function conectarMQTT() {
     logMessage('[MQTT] ✅ Conectado al broker. ESP32 listo.');
     statusText.innerText = 'MQTT Conectado';
     statusText.style.color = '#10b981';
-    // Actualizar dot top bar
     const dot   = document.getElementById('mqttStatusDot');
     const label = document.getElementById('mqttStatusLabel');
-    if (dot)   dot.className   = 'mqtt-dot connected';
+    if (dot)   dot.className    = 'mqtt-dot connected';
     if (label) label.textContent = 'ON';
     setTimeout(() => {
       statusText.innerText = 'Presiona el orbe para hablar';
       statusText.style.color = '';
     }, 3000);
-    // Iniciar listener SOS desde ESP32
     if (typeof iniciarListenerSOS === 'function') iniciarListenerSOS(mqttClient);
   });
 
@@ -192,6 +185,29 @@ if (!SpeechRecognition) {
   recognition.interimResults = true;
   let isListening = false;
 
+  // ── Web Audio para el orbe ──
+  let audioCtx = null;
+  let analyserNode = null;
+  let micStream = null;
+
+  async function iniciarAudioOrbe() {
+    if (analyserNode) return; // ya iniciado
+    try {
+      micStream  = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+      const src  = audioCtx.createMediaStreamSource(micStream);
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 256;
+      analyserNode.smoothingTimeConstant = 0.75;
+      src.connect(analyserNode);
+      // Exponer para que el orbe 3D lo lea en cada frame
+      window.scallAudioAnalyser = analyserNode;
+      logMessage('[ORBE] 🎙️ Audio conectado al orbe 3D');
+    } catch (e) {
+      logMessage('[ORBE] ⚠️ No se pudo acceder al micrófono para el orbe.');
+    }
+  }
+
   orbBtn.addEventListener('click', () => {
     if (!isListening) {
       try {
@@ -200,6 +216,11 @@ if (!SpeechRecognition) {
         statusText.innerText = 'Escuchando...';
         transcriptText.innerText = '';
         isListening = true;
+
+        // ── ORBE: estado escuchando ──
+        if (window.scallOrb) window.scallOrb.setState('listening');
+        iniciarAudioOrbe();
+
       } catch(e) { console.error('No se pudo iniciar:', e); }
     } else {
       recognition.stop();
@@ -208,17 +229,17 @@ if (!SpeechRecognition) {
 
   recognition.onresult = (event) => {
     const result = event.results[event.results.length - 1];
-
     if (!result.isFinal) {
-      // Mostrar texto intermedio en pantalla sin llamar a Gemini
       transcriptText.innerText = result[0].transcript;
       return;
     }
-
-    // Solo cuando la frase está completa
     const texto = result[0].transcript;
     logMessage(`Frase completa: "${texto}"`);
     transcriptText.innerText = texto;
+
+    // ── ORBE: procesando ──
+    if (window.scallOrb) window.scallOrb.setState('processing');
+
     ejecutarHabilidad(texto);
   };
 
@@ -226,6 +247,9 @@ if (!SpeechRecognition) {
     statusText.innerText = 'Error de voz: ' + event.error;
     orbBtn.classList.remove('listening');
     isListening = false;
+
+    // ── ORBE: volver a idle ──
+    if (window.scallOrb) window.scallOrb.setState('idle');
   };
 
   recognition.onend = () => {
@@ -233,6 +257,7 @@ if (!SpeechRecognition) {
     orbBtn.classList.remove('listening');
     isListening = false;
     setTimeout(() => { statusText.innerText = 'Presiona el orbe para hablar'; }, 2000);
+    // El estado del orbe lo maneja ejecutarHabilidad → responderVoz
   };
 }
 
@@ -279,18 +304,17 @@ function logMessage(msg) {
 }
 
 // ======================================================================
-// GUARDAR CONFIGURACIÓN (sin manejo de API key manual)
+// GUARDAR CONFIGURACIÓN
 // ======================================================================
 function saveAssistantConfig() {
   const name = document.getElementById('assistantName').value.trim() || 'SCALL';
   localStorage.setItem('assistantName', name);
   document.getElementById('displayName').innerText = name;
 
-  // Guardar key del formulario si se ingresó
   const keyInput = document.getElementById('geminiKeyInput');
   if (keyInput && keyInput.value.trim() !== '') {
     localStorage.setItem('geminiApiKey', keyInput.value.trim());
-    keyInput.value = '';  // limpiar campo después de guardar
+    keyInput.value = '';
     logMessage('[CONFIG] ✅ Gemini API Key guardada localmente.');
   }
 
@@ -312,7 +336,6 @@ function guardarYConectarMQTT() {
   conectarMQTT();
 }
 
-// Spotify / YouTube alias (el modal ya no tiene spotifyClientId como key de Spotify)
 function conectarSpotify() {
   const key = document.getElementById('spotifyClientId') && document.getElementById('spotifyClientId').value.trim();
   if (key) localStorage.setItem('youtubeApiKey', key);
@@ -320,7 +343,7 @@ function conectarSpotify() {
 }
 
 // ======================================================================
-// CEREBRO: IA PROFUNDA (Gemini) + INTENTS LOCALES
+// CEREBRO: Gemini + INTENTS LOCALES
 // ======================================================================
 let geminiCooldown = false;
 
@@ -331,14 +354,13 @@ async function ejecutarHabilidad(texto) {
   const name   = localStorage.getItem('assistantName') || 'SCALL';
 
   if (apiKey) {
-    // Evitar llamadas múltiples seguidas
     if (geminiCooldown) {
       logMessage('[GEMINI] ⏳ Espera un momento antes del siguiente comando.');
       responderVoz('Un momento por favor.');
       return;
     }
     geminiCooldown = true;
-    setTimeout(() => { geminiCooldown = false; }, 3000); // 3s entre llamadas
+    setTimeout(() => { geminiCooldown = false; }, 3000);
 
     logMessage('Consultando Cerebro IA (Gemini)...');
     transcriptText.innerText = 'Pensando...';
@@ -360,23 +382,19 @@ MENSAJE DEL USUARIO: "${texto}"`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemPrompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 256
-            }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 256 }
           })
         }
       );
       const data = await response.json();
       if (!response.ok) {
-        _sosLog(`[GEMINI] ❌ Error ${response.status}: ${JSON.stringify(data.error)}`);
         throw new Error(data.error?.message || response.status);
       }
       if (data.error) throw new Error(data.error.message);
 
       let aiResponse = data.candidates[0].content.parts[0].text;
 
-      // Extraer comandos MQTT de la respuesta
+      // Extraer comandos MQTT
       const mqttRegex = /MQTT\[(.*?)\]/g;
       let match;
       while ((match = mqttRegex.exec(aiResponse)) !== null) {
@@ -384,10 +402,18 @@ MENSAJE DEL USUARIO: "${texto}"`;
         if (cmd.length === 2) enviarComandoMQTT(cmd[0], cmd[1]);
       }
       aiResponse = aiResponse.replace(/MQTT\[.*?\]/g, '').trim();
+
+      // ── ORBE: respondiendo ──
+      if (window.scallOrb) window.scallOrb.setState('speaking');
+
       responderVoz(aiResponse);
 
     } catch (err) {
       geminiCooldown = false;
+
+      // ── ORBE: volver a idle en error ──
+      if (window.scallOrb) window.scallOrb.setState('idle');
+
       if (err.message && err.message.includes('429')) {
         logMessage('[GEMINI] ⚠️ Límite de velocidad alcanzado. Usando intents locales...');
         responderVoz('Estoy ocupado, usando modo local.');
@@ -414,14 +440,12 @@ MENSAJE DEL USUARIO: "${texto}"`;
     }
   }
   if (!intentEncontrado) {
-    // Guardar en corpus
     if (typeof agregarAlCorpus === 'function') agregarAlCorpus(texto);
     logMessage(`[CORPUS] 📝 "${texto}"`);
     responderVoz('En modo local no tengo registrado ese comando. Lo guardé para aprender.');
   }
 }
 
-// FALLBACK: intents locales
 function ejecutarIntentLocal(texto) {
   const comando = texto.toLowerCase();
   let intentEncontrado = false;
@@ -436,12 +460,12 @@ function ejecutarIntentLocal(texto) {
     }
   }
   if (!intentEncontrado) {
-    // Guardar en corpus de entrenamiento
     if (typeof agregarAlCorpus === 'function') agregarAlCorpus(texto);
     logMessage(`[CORPUS] 📝 Frase guardada: "${texto}"`);
     responderVoz('No reconocí ese comando. Lo guardé para aprender.');
   }
 }
+
 // ======================================================================
 function enviarComandoMQTT(topic, payload) {
   if (mqttClient && mqttClient.connected) {
@@ -460,7 +484,7 @@ function enviarComandoMQTT(topic, payload) {
 }
 
 // ======================================================================
-// VOZ — Text to Speech masculina
+// VOZ — Text to Speech
 // ======================================================================
 const VOCES_MASCULINAS_ES = [
   'Microsoft Pablo', 'Microsoft Jorge', 'Google español',
@@ -480,10 +504,20 @@ function elegirVozMasculina() {
 function responderVoz(mensaje) {
   transcriptText.innerText = mensaje;
   logMessage(`[VOZ] "${mensaje}"`);
+
+  // ── ORBE: speaking mientras habla, idle al terminar ──
+  if (window.scallOrb) window.scallOrb.setState('speaking');
+
   const speech  = new SpeechSynthesisUtterance(mensaje);
   speech.lang   = 'es-ES';
   speech.rate   = 1.0;
   speech.pitch  = 0.85;
+
+  speech.onend = () => {
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    logMessage('[ORBE] 🟢 Voz terminada → idle');
+  };
+
   const voces   = window.speechSynthesis.getVoices();
   const asignar = () => {
     const voz = elegirVozMasculina();
@@ -498,12 +532,11 @@ function responderVoz(mensaje) {
 // INICIO
 // ======================================================================
 window.onload = () => {
-  // Poblar dropdown de intents
   const dropdown = document.getElementById('intentDropdown');
   if (dropdown && typeof intents !== 'undefined') {
     intents.forEach(intent => {
-      const option      = document.createElement('option');
-      option.value      = intent.name;
+      const option       = document.createElement('option');
+      option.value       = intent.name;
       option.textContent = intent.description || intent.name;
       dropdown.appendChild(option);
     });
@@ -516,13 +549,11 @@ window.onload = () => {
     });
   }
 
-  // Restaurar nombre
   const savedName = localStorage.getItem('assistantName') || 'SCALL';
   const nameInput = document.getElementById('assistantName');
   if (nameInput) nameInput.value = savedName;
   document.getElementById('displayName').innerText = savedName;
 
-  // Restaurar MQTT del localStorage
   const savedHost = localStorage.getItem('mqttHost');
   if (savedHost) {
     const h = document.getElementById('mqttHost');
@@ -533,9 +564,7 @@ window.onload = () => {
     if (p) p.value = localStorage.getItem('mqttPassword') || '';
   }
 
-  // Actualizar UI de estado IA
   updateAIStatusUI();
-
   hideCommandToggle();
   setTimeout(() => { prepareToggleListener(); }, 100);
   setTimeout(() => { conectarMQTT(); }, 500);
