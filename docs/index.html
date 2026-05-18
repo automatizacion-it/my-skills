@@ -19,7 +19,7 @@
 </head>
 <body>
 
-  <!-- ── Fondo: solo neblina + grid + horizonte ── -->
+  <!-- ── Fondo de profundidad ── -->
   <div class="depth-vortex"></div>
   <div class="depth-fog"></div>
   <div class="depth-grid"></div>
@@ -34,26 +34,98 @@
       </div>
     </div>
     <div class="top-bar-right">
+
+      <!-- MQTT status -->
       <div class="icon-btn mqtt-status-btn" id="mqttStatusBtn" title="MQTT">
         <span id="mqttStatusDot" class="mqtt-dot"></span>
         <span id="mqttStatusLabel">MQTT</span>
       </div>
-      <button class="icon-btn" onclick="togglePanel('alarmaPanel')" title="Alarmas">⏰</button>
-      <button class="icon-btn" onclick="togglePanel('noticiasPanel')" title="Noticias">📰</button>
-      <button class="icon-btn" onclick="togglePanel('climaPanel')" title="Clima">🌤️</button>
-      <button class="icon-btn" onclick="togglePanel('tradPanel')" title="Traductor">🌍</button>
-      <button class="icon-btn" onclick="togglePanel('corpusPanel')" title="Log Corpus">📋</button>
-      <button class="icon-btn theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema">☀️</button>
-      <button class="icon-btn" onclick="abrirModalCumpleanos()" title="Cumpleaños">🎂</button>
-      <button class="icon-btn btn-sos" id="sosBtn" onclick="activarSOS()" title="SOS">🆘</button>
-      <button class="icon-btn" onclick="document.getElementById('configModal').style.display='flex'" title="Config">⚙️</button>
+
+      <div class="top-bar-sep"></div>
+
+      <!-- Alarmas -->
+      <button class="icon-btn" onclick="togglePanel('alarmaPanel')" title="Alarmas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="13" r="7"/><polyline points="12 10 12 13 14 15"/>
+          <line x1="7" y1="3" x2="4" y2="6"/><line x1="17" y1="3" x2="20" y2="6"/>
+        </svg>
+      </button>
+
+      <!-- Noticias -->
+      <button class="icon-btn" onclick="togglePanel('noticiasPanel')" title="Noticias">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l19-9-9 19-2-8-8-2z"/>
+        </svg>
+      </button>
+
+      <!-- Clima -->
+      <button class="icon-btn" onclick="togglePanel('climaPanel')" title="Clima">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a5 5 0 0 1 5 5c0 5-5 11-5 11S7 12 7 7a5 5 0 0 1 5-5z"/>
+          <circle cx="12" cy="7" r="1.5"/>
+        </svg>
+      </button>
+
+      <!-- Traductor -->
+      <button class="icon-btn" onclick="togglePanel('tradPanel')" title="Traductor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 8h14M5 12h8"/><polyline points="15 12 18 16 21 12"/>
+        </svg>
+      </button>
+
+      <!-- Corpus -->
+      <button class="icon-btn" onclick="togglePanel('corpusPanel')" title="Corpus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+      </button>
+
+      <div class="top-bar-sep"></div>
+
+      <!-- Tema -->
+      <button class="icon-btn theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+
+      <!-- Cumpleaños / Eventos -->
+      <button class="icon-btn" onclick="abrirModalCumpleanos()" title="Eventos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="1.5"/>
+        </svg>
+      </button>
+
+      <!-- SOS -->
+      <button class="icon-btn btn-sos" id="sosBtn" onclick="activarSOS()" title="SOS">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 22 21 2 21"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </button>
+
+      <!-- Config -->
+      <button class="icon-btn" onclick="document.getElementById('configModal').style.display='flex'" title="Configuración">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="2"/>
+          <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+        </svg>
+      </button>
+
     </div>
   </header>
 
   <!-- ── Panels flotantes ── -->
+
   <div class="skill-panel" id="alarmaPanel" style="display:none;">
     <div class="skill-panel-header">
-      <span>⏰ Alarmas &amp; Recordatorios</span>
+      <span>Alarmas &amp; Recordatorios</span>
       <button onclick="togglePanel('alarmaPanel')">✕</button>
     </div>
     <div class="skill-panel-body">
@@ -70,15 +142,15 @@
         <div class="alarm-time-group">
           <label>Tipo</label>
           <select id="alarmTipo" class="alarm-input">
-            <option value="alarma">⏰ Alarma</option>
-            <option value="recordatorio">📌 Recordatorio</option>
-            <option value="medicamento">💊 Medicamento</option>
+            <option value="alarma">Alarma</option>
+            <option value="recordatorio">Recordatorio</option>
+            <option value="medicamento">Medicamento</option>
           </select>
         </div>
       </div>
       <input type="text" id="alarmMsg" placeholder="Mensaje (opcional)" class="alarm-msg-input">
       <div class="alarm-sound-row">
-        <span>🔊 Sonido</span>
+        <span>Sonido</span>
         <button class="sound-toggle on" id="soundToggle" onclick="toggleSonido()">ON</button>
         <label class="alarm-repeat"><input type="checkbox" id="alarmRepetir"> Repetir diario</label>
       </div>
@@ -89,13 +161,13 @@
 
   <div class="skill-panel" id="noticiasPanel" style="display:none;">
     <div class="skill-panel-header">
-      <span>📰 Noticias Colombia</span>
+      <span>Noticias Colombia</span>
       <button onclick="togglePanel('noticiasPanel')">✕</button>
     </div>
     <div class="skill-panel-body">
       <div class="skill-tabs">
-        <button class="skill-tab active" onclick="switchTab('radio-noticias','noticiasPanel',this)">📻 Radio</button>
-        <button class="skill-tab" onclick="switchTab('rss-noticias','noticiasPanel',this)">📄 Texto</button>
+        <button class="skill-tab active" onclick="switchTab('radio-noticias','noticiasPanel',this)">Radio</button>
+        <button class="skill-tab" onclick="switchTab('rss-noticias','noticiasPanel',this)">Texto</button>
       </div>
       <div id="radio-noticias" class="skill-tab-content active">
         <div class="news-radio-grid" id="newsRadioGrid"></div>
@@ -114,7 +186,7 @@
 
   <div class="skill-panel" id="climaPanel" style="display:none;">
     <div class="skill-panel-header">
-      <span>🌤️ Clima</span>
+      <span>Clima</span>
       <button onclick="togglePanel('climaPanel')">✕</button>
     </div>
     <div class="skill-panel-body">
@@ -132,7 +204,7 @@
 
   <div class="skill-panel" id="tradPanel" style="display:none;">
     <div class="skill-panel-header">
-      <span>🌍 Traductor</span>
+      <span>Traductor</span>
       <button onclick="togglePanel('tradPanel')">✕</button>
     </div>
     <div class="skill-panel-body">
@@ -140,13 +212,13 @@
       <textarea id="tradInput" placeholder="Escribe o di el texto..." class="trad-textarea" rows="3"></textarea>
       <div class="trad-lang-row">
         <select id="tradLang" class="alarm-input">
-          <option value="en">🇺🇸 Inglés</option>
-          <option value="fr">🇫🇷 Francés</option>
-          <option value="pt">🇧🇷 Portugués</option>
-          <option value="de">🇩🇪 Alemán</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="zh">🇨🇳 Chino</option>
-          <option value="ja">🇯🇵 Japonés</option>
+          <option value="en">Inglés</option>
+          <option value="fr">Francés</option>
+          <option value="pt">Portugués</option>
+          <option value="de">Alemán</option>
+          <option value="it">Italiano</option>
+          <option value="zh">Chino</option>
+          <option value="ja">Japonés</option>
         </select>
         <button class="btn btn-primary" style="width:auto;padding:10px 18px;" onclick="traducirUI()">Traducir</button>
       </div>
@@ -156,26 +228,28 @@
 
   <div class="skill-panel" id="corpusPanel" style="display:none;">
     <div class="skill-panel-header">
-      <span>📋 Corpus de Entrenamiento</span>
+      <span>Corpus de Entrenamiento</span>
       <button onclick="togglePanel('corpusPanel')">✕</button>
     </div>
     <div class="skill-panel-body">
       <p class="skill-hint">Frases no reconocidas — úsalas para crear nuevos intents.</p>
       <div id="corpusList" class="corpus-list"></div>
       <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="btn btn-primary" onclick="exportarCorpus()">⬇ Exportar .txt</button>
-        <button class="btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);" onclick="limpiarCorpus()">🗑 Limpiar</button>
+        <button class="btn btn-primary" onclick="exportarCorpus()">Exportar .txt</button>
+        <button class="btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);" onclick="limpiarCorpus()">Limpiar</button>
       </div>
     </div>
   </div>
 
   <!-- ── Main ── -->
   <main class="main-content">
+
     <h1>
       <span id="displayName">SCALL</span>
       <span class="subtitle">Asistente Autónomo · IIT</span>
     </h1>
 
+    <!-- Orbe wireframe (intacto) -->
     <div class="orb-container" id="orbBtn">
       <div class="orb"></div>
       <div class="ring"></div>
@@ -183,31 +257,90 @@
       <canvas id="orb-canvas" width="220" height="220"></canvas>
     </div>
 
+    <!-- Transcript -->
     <div class="transcript-box">
       <div class="status" id="statusText">Presiona el orbe para hablar</div>
       <div id="transcriptText">Esperando comando...</div>
     </div>
 
-    <div class="intent-dropdown-wrapper">
-      <label class="intent-dropdown-label">🎙️ Comandos disponibles</label>
-      <select id="intentDropdown" class="intent-dropdown">
-        <option value="">-- Seleccionar comando --</option>
+    <!-- Acciones rápidas (reemplaza el dropdown de emojis) -->
+    <div class="quick-actions" id="quickActionsBar">
+      <div class="quick-actions-label">Comandos disponibles</div>
+      <div class="quick-actions-row">
+
+        <button class="qa-btn" onclick="document.getElementById('intentDropdown').focus()" title="Audio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/>
+            <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+          </svg>
+          <span>Audio</span>
+        </button>
+
+        <button class="qa-btn" onclick="toggleDevicesPanel()" title="Dispositivos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/>
+          </svg>
+          <span>Dispositivos</span>
+        </button>
+
+        <button class="qa-btn" id="intentQuickBtn" title="Intents">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span>Intents</span>
+        </button>
+
+        <button class="qa-btn" onclick="toggleHistoryPanel()" title="Historial">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          <span>Historial</span>
+        </button>
+
+        <button class="qa-btn" onclick="document.getElementById('systemLog').scrollIntoView({behavior:'smooth'})" title="Log">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span>Log</span>
+        </button>
+
+      </div>
+      <!-- Dropdown oculto pero funcional para intents -->
+      <select id="intentDropdown" class="intent-dropdown-hidden">
+        <option value="">-- Seleccionar --</option>
       </select>
     </div>
 
     <div id="togglesContainer"></div>
 
+    <!-- Dispositivos IoT -->
     <div class="devices-panel">
       <div class="devices-panel-header open" onclick="toggleDevicesPanel()">
-        <h4>🏠 Dispositivos IoT</h4>
+        <h4>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;display:inline-block;vertical-align:-1px;margin-right:6px;">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          Dispositivos IoT
+        </h4>
         <span>▾</span>
       </div>
       <div class="devices-grid" id="devicesGrid"></div>
     </div>
 
+    <!-- Historial -->
     <div class="history-panel">
       <div class="devices-panel-header" onclick="toggleHistoryPanel()">
-        <h4>💬 Historial</h4>
+        <h4>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;display:inline-block;vertical-align:-1px;margin-right:6px;">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          Historial
+        </h4>
         <div style="display:flex;gap:8px;align-items:center;">
           <button onclick="event.stopPropagation();clearHistory()"
             style="background:none;border:none;color:var(--text-muted);font-size:.72rem;cursor:pointer;font-family:var(--font-mono);">Limpiar</button>
@@ -217,14 +350,16 @@
       <div id="historyList" style="display:none;"></div>
     </div>
 
+    <!-- Log -->
     <div class="log-box" id="systemLog">&gt; Sistema Frontend Iniciado...</div>
+
   </main>
 
   <!-- ── Modal Configuración ── -->
   <div class="modal-overlay" id="configModal">
     <div class="modal">
       <div class="modal-header">
-        <h3>⚙️ Configuración</h3>
+        <h3>Configuración</h3>
         <button class="modal-close" onclick="document.getElementById('configModal').style.display='none'">✕</button>
       </div>
       <div class="form-group">
@@ -234,29 +369,29 @@
       <div class="form-group">
         <label>Estado del Cerebro IA</label>
         <div class="ai-status-card" id="aiStatusCard">
-          <div class="ai-status-icon">🔄</div>
+          <div class="ai-status-icon">↻</div>
           <div class="ai-status-info">
             <strong id="aiStatusCardTitle">Verificando...</strong>
             <small id="aiStatusCardDesc">Comprobando configuración</small>
           </div>
         </div>
         <label style="margin-top:12px;">Gemini API Key</label>
-        <input type="password" id="geminiKeyInput" placeholder="AIzaSy... (guardada solo en tu dispositivo)">
+        <input type="password" id="geminiKeyInput" placeholder="AIzaSy...">
         <p class="form-hint">La key se guarda en tu navegador. Nunca se sube al repositorio.</p>
       </div>
       <hr class="modal-divider">
       <div class="form-group">
-        <label class="label-accent-blue">🌐 Broker MQTT (ESP32)</label>
+        <label class="label-accent-blue">Broker MQTT (ESP32)</label>
         <input type="text" id="mqttHost" placeholder="abc123.s1.eu.hivemq.cloud">
         <div class="input-row">
           <input type="text" id="mqttUser" placeholder="Usuario MQTT">
           <input type="password" id="mqttPassword" placeholder="Contraseña MQTT">
         </div>
-        <button class="btn btn-blue" onclick="guardarYConectarMQTT()">⚡ Conectar ESP32 vía MQTT</button>
+        <button class="btn btn-blue" onclick="guardarYConectarMQTT()">Conectar ESP32 vía MQTT</button>
       </div>
       <hr class="modal-divider">
       <div class="form-group">
-        <label class="label-accent-green">🎵 YouTube API (Música)</label>
+        <label class="label-accent-green">YouTube API (Música)</label>
         <input type="password" id="spotifyClientId" placeholder="YouTube Data API v3 Key">
         <button class="btn btn-green" onclick="conectarSpotify()">Conectar Música</button>
       </div>
@@ -278,7 +413,7 @@
   <script src="js/intents.js"></script>
   <script src="js/app.js"></script>
 
-  <!-- ── Three.js Orbe Wireframe ── -->
+  <!-- ── Three.js Orbe Wireframe (sin cambios) ── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
   (function(){
@@ -300,7 +435,6 @@
     const R=1.4,MERIDIANS=16,PARALLELS=10;
     const group=new THREE.Group(); scene.add(group);
     const meridianLines=[],parallelLines=[],dotMeshes=[];
-
     for(let i=0;i<MERIDIANS;i++){
       const isMain=i%4===0;
       const pts=[];
@@ -326,15 +460,13 @@
     const poleMat=new THREE.LineBasicMaterial({color:STATES.idle.color,transparent:true,opacity:0.28});
     group.add(new THREE.Line(poleGeo,poleMat));
     const dotGeo=new THREE.SphereGeometry(0.028,8,8);
-    for(let i=0;i<10;i++){
-      for(let j=1;j<7;j++){
-        const phi=(i/10)*Math.PI*2,theta=((j/7)-0.5)*Math.PI;
-        const m=new THREE.MeshBasicMaterial({color:STATES.idle.color,transparent:true,opacity:0.55});
-        const d=new THREE.Mesh(dotGeo.clone(),m);
-        d.position.set(R*Math.cos(theta)*Math.cos(phi),R*Math.sin(theta),R*Math.cos(theta)*Math.sin(phi));
-        group.add(d); dotMeshes.push(d);
-      }
-    }
+    for(let i=0;i<10;i++){for(let j=1;j<7;j++){
+      const phi=(i/10)*Math.PI*2,theta=((j/7)-0.5)*Math.PI;
+      const m=new THREE.MeshBasicMaterial({color:STATES.idle.color,transparent:true,opacity:0.55});
+      const d=new THREE.Mesh(dotGeo.clone(),m);
+      d.position.set(R*Math.cos(theta)*Math.cos(phi),R*Math.sin(theta),R*Math.cos(theta)*Math.sin(phi));
+      group.add(d); dotMeshes.push(d);
+    }}
     [new THREE.Vector3(0,R,0),new THREE.Vector3(0,-R,0)].forEach(p=>{
       const m=new THREE.MeshBasicMaterial({color:STATES.idle.accentColor,transparent:true,opacity:0.9});
       const d=new THREE.Mesh(dotGeo.clone(),m); d.position.copy(p); group.add(d); dotMeshes.push(d);
@@ -342,7 +474,6 @@
     const coreMat=new THREE.MeshBasicMaterial({color:0x001a2e,transparent:true,opacity:0.5,side:THREE.BackSide});
     const coreMesh=new THREE.Mesh(new THREE.SphereGeometry(R*1.01,32,32),coreMat);
     group.add(coreMesh);
-
     let currentKey='idle',fromSt={...STATES.idle},toSt={...STATES.idle},lerpT=1,smoothVol=0;
     const lerp=(a,b,t)=>a+(b-a)*t;
     const lerpHex=(c1,c2,t)=>{
@@ -350,14 +481,10 @@
       const r2=(c2>>16)&0xff,g2=(c2>>8)&0xff,b2=c2&0xff;
       return(Math.round(lerp(r1,r2,t))<<16)|(Math.round(lerp(g1,g2,t))<<8)|Math.round(lerp(b1,b2,t));
     };
-
-    window.scallOrb={
-      setState(name){
-        if(!STATES[name]||name===currentKey)return;
-        fromSt={...toSt}; toSt={...STATES[name]}; currentKey=name; lerpT=0;
-      }
-    };
-
+    window.scallOrb={setState(name){
+      if(!STATES[name]||name===currentKey)return;
+      fromSt={...toSt};toSt={...STATES[name]};currentKey=name;lerpT=0;
+    }};
     let mx=0,my=0,velX=0,velY=0,dragging=false,px=0,py=0;
     const orbBtn=document.getElementById('orbBtn');
     orbBtn.addEventListener('mousedown',e=>{dragging=true;px=e.clientX;py=e.clientY;velX=velY=0;});
@@ -374,10 +501,9 @@
       group.rotation.y+=velY;group.rotation.x+=velX;px=e.touches[0].clientX;py=e.touches[0].clientY;
     },{passive:true});
     orbBtn.addEventListener('touchend',()=>dragging=false);
-
     let time=0;
     function animate(){
-      requestAnimationFrame(animate); time+=0.016; lerpT=Math.min(lerpT+0.04,1);
+      requestAnimationFrame(animate);time+=0.016;lerpT=Math.min(lerpT+0.04,1);
       let rawVol=0;
       if(window.scallAudioAnalyser){
         const d=new Uint8Array(window.scallAudioAnalyser.frequencyBinCount);
@@ -392,7 +518,6 @@
       const curSpeed=lerp(fromSt.rotSpeed,toSt.rotSpeed,lerpT);
       const curPulse=lerp(fromSt.pulseAmp,toSt.pulseAmp,lerpT)+vol*0.18;
       const isIdle=currentKey==='idle';
-
       if(!dragging){
         velX*=0.88;velY*=0.88;
         group.rotation.y+=curSpeed+velY+mx*0.003;
@@ -415,7 +540,7 @@
           const ey=line._baseY+Math.sin(time*3+i*0.9)*(0.04+vol*0.08);
           for(let j=0;j<=80;j++){const a=(j/80)*Math.PI*2;pos.array[j*3]=er*Math.cos(a);pos.array[j*3+1]=ey;pos.array[j*3+2]=er*Math.sin(a);}
           pos.needsUpdate=true;
-        } else if(line.geometry&&Math.abs(line.geometry.attributes.position.array[1]-line._baseY)>0.001){
+        }else if(line.geometry&&Math.abs(line.geometry.attributes.position.array[1]-line._baseY)>0.001){
           const pos=line.geometry.attributes.position;
           for(let j=0;j<=80;j++){const a=(j/80)*Math.PI*2;pos.array[j*3]=line._baseR*Math.cos(a);pos.array[j*3+1]=line._baseY;pos.array[j*3+2]=line._baseR*Math.sin(a);}
           pos.needsUpdate=true;
@@ -433,6 +558,16 @@
     }
     animate();
   })();
+
+  /* Conectar botón Intents al dropdown oculto */
+  document.getElementById('intentQuickBtn').addEventListener('click', () => {
+    const dd = document.getElementById('intentDropdown');
+    dd.size = dd.options.length > 1 ? dd.options.length : 1;
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+  });
+  document.getElementById('intentDropdown').addEventListener('change', function(){
+    this.style.display = 'none'; this.size = 1;
+  });
   </script>
 
 </body>
