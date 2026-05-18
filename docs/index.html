@@ -401,16 +401,33 @@
     </div>
   </div>
 
-  <!-- ── Scripts originales ── -->
+  <!-- ══════════════════════════════════════════════
+       SCRIPTS — orden de carga obligatorio
+       ══════════════════════════════════════════════ -->
+
+  <!-- 1. Librerías externas -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <!-- 2. Configuración (keys desde localStorage o GitHub Secrets) -->
   <script src="js/config.js"></script>
+
+  <!-- 3. Módulos de UI y habilidades -->
   <script src="js/ui.js"></script>
   <script src="js/skills.js"></script>
+
+  <!-- 4. Módulos de media -->
   <script src="js/spotify.js"></script>
   <script src="js/radio.js"></script>
+
+  <!-- 5. Módulos de utilidades -->
   <script src="js/cumpleanos.js"></script>
   <script src="js/sos.js"></script>
-  <script src="js/intents.js"></script>
+
+  <!-- 6. Intents — primero los específicos, luego los generales -->
+  <script src="js/intents_musica.js"></script>  <!-- géneros, artistas, volumen -->
+  <script src="js/intents.js"></script>          <!-- resto de intents -->
+
+  <!-- 7. Motor principal -->
   <script src="js/app.js"></script>
 
   <!-- ── Three.js Orbe Wireframe (sin cambios) ── -->

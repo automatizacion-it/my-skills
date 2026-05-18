@@ -1,0 +1,257 @@
+================================================================
+SCALL — CORPUS DE INTENTS DE MÚSICA
+Referencia completa de comandos de voz para el módulo de música
+================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. REPRODUCIR MÚSICA GENÉRICA
+   Intent: musica_play
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pon música
+pon algo de música
+reproduce música
+reproducir música
+coloca música
+coloca algo de música
+quiero escuchar música
+escuchar música
+toca algo
+toca música
+play música
+música por favor
+dame música
+ponme música
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. REPRODUCIR POR GÉNERO
+   Intent: musica_play_query
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pon música popular
+pon música electrónica
+pon música eléctrica
+pon música clásica
+pon música romántica
+pon música relajante
+pon música para trabajar
+pon música para estudiar
+pon música para dormir
+pon música para ejercitar
+pon música para concentrarse
+pon música latina
+pon música colombiana
+pon música reggaeton
+pon música salsa
+pon música cumbia
+pon música vallenato
+pon música pop
+pon música rock
+pon música jazz
+pon música blues
+pon música hip hop
+pon música trap
+pon música bachata
+pon música merengue
+pon música instrumental
+pon música ambiente
+coloca música electrónica
+coloca música popular
+quiero escuchar algo relajante
+quiero escuchar música para estudiar
+reproduce algo tranquilo
+reproduce algo movido
+reproduce música de fondo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. REPRODUCIR POR ARTISTA
+   Intent: musica_play_query
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pon Bad Bunny
+pon Maluma
+pon J Balvin
+pon Shakira
+pon Carlos Vives
+pon Juanes
+pon Silvestre Dangond
+pon Pipe Bueno
+pon Fonseca
+pon ChocQuibTown
+pon Karol G
+pon Myke Towers
+pon Rauw Alejandro
+pon Ozuna
+pon Daddy Yankee
+reproduce Bad Bunny
+reproduce Queen
+reproduce The Beatles
+reproduce Led Zeppelin
+reproduce Metallica
+reproduce Pink Floyd
+quiero escuchar Bad Bunny
+quiero escuchar Shakira
+ponme algo de Maluma
+ponme algo de salsa de Grupo Niche
+ponme algo de Carlos Vives
+busca música de Juanes
+busca canciones de Fonseca
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. REPRODUCIR POR CANCIÓN ESPECÍFICA
+   Intent: musica_play_query
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pon la canción Bohemian Rhapsody
+reproduce Despacito
+reproduce Shape of You
+pon Blinding Lights
+pon la de Bad Bunny que dice
+busca la canción de
+ponme la canción
+pon el hit de
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. PAUSAR / DETENER
+   Intent: musica_stop
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pausa
+pausa la música
+pausa la canción
+para la música
+para la canción
+detén la música
+detener la música
+apaga la música
+apaga el reproductor
+silencia la música
+silenciar la música
+stop música
+detén eso
+para eso
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. REANUDAR
+   Intent: musica_reanudar
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+continúa la música
+continúa la canción
+reanuda la música
+reanuda
+sigue la música
+sigue tocando
+continúa
+play
+reproduce de nuevo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. SIGUIENTE CANCIÓN
+   Intent: musica_next
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+siguiente
+siguiente canción
+pon otra
+pon otra canción
+cambia de canción
+cambia la canción
+otra canción
+pasa la canción
+salta esta canción
+no me gusta esta
+skip
+skip canción
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. CANCIÓN ANTERIOR
+   Intent: musica_anterior
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+anterior
+canción anterior
+la de antes
+vuelve a la anterior
+regresa la canción
+vuelve atrás
+atrás
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. VOLUMEN
+   Intents: musica_volumen_subir / musica_volumen_bajar
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sube el volumen
+sube volumen
+más volumen
+aumenta el volumen
+aumenta volumen
+sube la música
+más fuerte
+ponlo más fuerte
+pon más volumen
+
+baja el volumen
+baja volumen
+menos volumen
+reduce el volumen
+baja la música
+más suave
+ponlo más suave
+pon menos volumen
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. RADIO
+    Intents: radio_play / radio_stop
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pon la radio
+pon radio
+sintoniza la radio
+abre la radio
+pon Caracol
+pon W Radio
+pon Blu Radio
+pon La FM
+pon Los 40
+pon Oxígeno
+pon Tropicana
+pon Rumba
+pon Olímpica
+pon Amor Estéreo
+pon Candela
+pon Radio Uno
+sintoniza Caracol
+sintoniza W Radio
+abre Blu Radio
+coloca la radio
+quiero escuchar radio
+quiero escuchar Caracol
+
+apaga la radio
+para la radio
+detén la radio
+detener la emisora
+apaga la emisora
+
+siguiente emisora
+cambia de emisora
+otra radio
+otra emisora
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. PODCAST
+    Intent: podcast_play
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pon un podcast
+reproduce un podcast
+pon el podcast de tecnología
+pon el podcast de noticias
+pon el podcast de ciencia
+busca un podcast de negocios
+quiero escuchar un podcast
+ponme un podcast de historia
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOTAS DE DESARROLLO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Triggers principales: pon, ponme, reproduce, coloca,
+  busca, quiero escuchar, dame, toca
+- El intent musica_play_query extrae el query después
+  del trigger y lo busca en YouTube
+- El intent musica_play solo coincide con frases exactas
+  como "pon música" sin artista ni género
+- Radio tiene prioridad sobre YouTube cuando la frase
+  incluye nombre de emisora conocida o la palabra "radio"
+- Podcast usa YouTube como motor de búsqueda
