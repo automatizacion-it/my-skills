@@ -8,20 +8,43 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <style>
+    /* ── Orbe wireframe: oculta elementos CSS originales ── */
     .orb-container > .orb  { display: none !important; }
     .orb-container > .ring { display: none !important; }
+
+    /* Canvas centrado dentro del container */
     #orb-canvas {
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       border-radius: 50%;
       pointer-events: none;
+      display: block;
+    }
+
+    /* Glow ambiental debajo del orbe */
+    .orb-container::after {
+      content: '';
+      position: absolute;
+      bottom: -36px; left: 50%;
+      transform: translateX(-50%) scaleY(0.22);
+      width: 85%; height: 85%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(0,212,255,0.18) 0%, transparent 70%);
+      filter: blur(14px);
+      pointer-events: none;
+      animation: orbReflect 5s ease-in-out infinite;
+      z-index: 0;
+    }
+    @keyframes orbReflect {
+      0%,100% { opacity:.5; transform:translateX(-50%) scaleY(.22) scaleX(1); }
+      50%      { opacity:.9; transform:translateX(-50%) scaleY(.28) scaleX(1.1); }
     }
   </style>
 </head>
 <body>
 
-  <!-- ── Capas de profundidad 3D (CSS puro, sin canvas) ── -->
+  <!-- ── Capas de profundidad 3D ── -->
   <div class="depth-vortex"></div>
   <div class="depth-rings"></div>
   <div class="depth-fog"></div>
@@ -54,6 +77,8 @@
   </header>
 
   <!-- ── Panels flotantes ── -->
+
+  <!-- ALARMA -->
   <div class="skill-panel" id="alarmaPanel" style="display:none;">
     <div class="skill-panel-header">
       <span>⏰ Alarmas &amp; Recordatorios</span>
@@ -90,6 +115,7 @@
     </div>
   </div>
 
+  <!-- NOTICIAS -->
   <div class="skill-panel" id="noticiasPanel" style="display:none;">
     <div class="skill-panel-header">
       <span>📰 Noticias Colombia</span>
@@ -100,7 +126,9 @@
         <button class="skill-tab active" onclick="switchTab('radio-noticias','noticiasPanel',this)">📻 Radio</button>
         <button class="skill-tab" onclick="switchTab('rss-noticias','noticiasPanel',this)">📄 Texto</button>
       </div>
-      <div id="radio-noticias" class="skill-tab-content active"><div class="news-radio-grid" id="newsRadioGrid"></div></div>
+      <div id="radio-noticias" class="skill-tab-content active">
+        <div class="news-radio-grid" id="newsRadioGrid"></div>
+      </div>
       <div id="rss-noticias" class="skill-tab-content">
         <div class="rss-cat-row">
           <button class="rss-cat-btn active" onclick="cargarRSS('general',this)">General</button>
@@ -108,11 +136,12 @@
           <button class="rss-cat-btn" onclick="cargarRSS('economia',this)">Eco</button>
           <button class="rss-cat-btn" onclick="cargarRSS('deportes',this)">Dep</button>
         </div>
-        <div id="rssList" class="rss-list"><p style="color:var(--text-muted);font-size:0.8rem;padding:16px;text-align:center;">Selecciona una categoría</p></div>
+        <div id="rssList" class="rss-list"><p style="color:var(--text-muted);font-size:.8rem;padding:16px;text-align:center;">Selecciona una categoría</p></div>
       </div>
     </div>
   </div>
 
+  <!-- CLIMA -->
   <div class="skill-panel" id="climaPanel" style="display:none;">
     <div class="skill-panel-header">
       <span>🌤️ Clima</span>
@@ -131,6 +160,7 @@
     </div>
   </div>
 
+  <!-- TRADUCTOR -->
   <div class="skill-panel" id="tradPanel" style="display:none;">
     <div class="skill-panel-header">
       <span>🌍 Traductor</span>
@@ -155,6 +185,7 @@
     </div>
   </div>
 
+  <!-- CORPUS -->
   <div class="skill-panel" id="corpusPanel" style="display:none;">
     <div class="skill-panel-header">
       <span>📋 Corpus de Entrenamiento</span>
@@ -172,23 +203,29 @@
 
   <!-- ── Main ── -->
   <main class="main-content">
+
     <h1>
       <span id="displayName">SCALL</span>
       <span class="subtitle">Asistente Autónomo · IIT</span>
     </h1>
 
+    <!-- ── Orbe wireframe ── -->
     <div class="orb-container" id="orbBtn">
+      <!-- originales ocultos, no borrar -->
       <div class="orb"></div>
       <div class="ring"></div>
       <div class="ring"></div>
+      <!-- Canvas Three.js wireframe -->
       <canvas id="orb-canvas" width="220" height="220"></canvas>
     </div>
 
+    <!-- Transcript -->
     <div class="transcript-box">
       <div class="status" id="statusText">Presiona el orbe para hablar</div>
       <div id="transcriptText">Esperando comando...</div>
     </div>
 
+    <!-- Comandos -->
     <div class="intent-dropdown-wrapper">
       <label class="intent-dropdown-label">🎙️ Comandos disponibles</label>
       <select id="intentDropdown" class="intent-dropdown">
@@ -198,6 +235,7 @@
 
     <div id="togglesContainer"></div>
 
+    <!-- Dispositivos IoT -->
     <div class="devices-panel">
       <div class="devices-panel-header open" onclick="toggleDevicesPanel()">
         <h4>🏠 Dispositivos IoT</h4>
@@ -206,19 +244,24 @@
       <div class="devices-grid" id="devicesGrid"></div>
     </div>
 
+    <!-- Historial -->
     <div class="history-panel">
       <div class="devices-panel-header" onclick="toggleHistoryPanel()">
         <h4>💬 Historial</h4>
         <div style="display:flex;gap:8px;align-items:center;">
           <button onclick="event.stopPropagation();clearHistory()"
-            style="background:none;border:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:var(--font-mono);">Limpiar</button>
+            style="background:none;border:none;color:var(--text-muted);font-size:.72rem;cursor:pointer;font-family:var(--font-mono);">
+            Limpiar
+          </button>
           <span>▾</span>
         </div>
       </div>
       <div id="historyList" style="display:none;"></div>
     </div>
 
+    <!-- Log -->
     <div class="log-box" id="systemLog">&gt; Sistema Frontend Iniciado...</div>
+
   </main>
 
   <!-- ── Modal Configuración ── -->
@@ -267,7 +310,7 @@
     </div>
   </div>
 
-  <!-- ── Scripts originales ── -->
+  <!-- ── Scripts originales (orden intacto) ── -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/ui.js"></script>
@@ -279,141 +322,288 @@
   <script src="js/intents.js"></script>
   <script src="js/app.js"></script>
 
-  <!-- ── Three.js Orbe 3D ── -->
+  <!-- ── Three.js ── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- ── Orbe Wireframe Globo ── -->
   <script>
+  /**
+   * SCALL · Orbe Wireframe Globo Holográfico
+   * ─────────────────────────────────────────
+   * API para app.js:
+   *   window.scallOrb.setState('idle')
+   *   window.scallOrb.setState('listening')
+   *   window.scallOrb.setState('speaking')
+   *   window.scallOrb.setState('processing')
+   *
+   * Audio (opcional):
+   *   window.scallAudioAnalyser = <AnalyserNode>
+   */
   (function () {
+
     const STATES = {
-      idle:       { hex: 0x1D9E75, emHex: 0x0a5c42, speed: 0.003 },
-      listening:  { hex: 0x378ADD, emHex: 0x0d4a87, speed: 0.007 },
-      speaking:   { hex: 0x7F77DD, emHex: 0x3a3490, speed: 0.014 },
-      processing: { hex: 0xEF9F27, emHex: 0x854F0B, speed: 0.010 },
+      idle: {
+        color: 0x00d4ff, dimColor: 0x052030, accentColor: 0x00f0ff,
+        rotSpeed: 0.0025, pulseAmp: 0.0, coreColor: 0x001a2e
+      },
+      listening: {
+        color: 0x4499ff, dimColor: 0x0a1a40, accentColor: 0x88ccff,
+        rotSpeed: 0.006,  pulseAmp: 0.06, coreColor: 0x001430
+      },
+      speaking: {
+        color: 0x9988ff, dimColor: 0x1a0a40, accentColor: 0xccbbff,
+        rotSpeed: 0.012,  pulseAmp: 0.14, coreColor: 0x0d0830
+      },
+      processing: {
+        color: 0xffaa44, dimColor: 0x2a1400, accentColor: 0xffcc88,
+        rotSpeed: 0.009,  pulseAmp: 0.09, coreColor: 0x1a0a00
+      },
     };
 
     const canvas = document.getElementById('orb-canvas');
     const W = 220, H = 220;
-    canvas.width = W; canvas.height = H;
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(W, H);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(DPR);
     renderer.setClearColor(0x000000, 0);
 
     const scene  = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.z = 3;
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.z = 4.2;
 
-    const geo     = new THREE.SphereGeometry(1, 128, 128);
-    const basePos = new Float32Array(geo.attributes.position.array);
-    const mat = new THREE.MeshPhongMaterial({
-      color: new THREE.Color(STATES.idle.hex),
-      emissive: new THREE.Color(STATES.idle.emHex),
-      shininess: 90, transparent: true, opacity: 0.93,
-    });
-    const sphere = new THREE.Mesh(geo, mat);
-    scene.add(sphere);
+    const R         = 1.4;
+    const MERIDIANS = 16;
+    const PARALLELS = 10;
 
-    const innerMat = new THREE.MeshPhongMaterial({
-      color: 0xffffff, emissive: new THREE.Color(STATES.idle.emHex),
-      shininess: 150, transparent: true, opacity: 0.18,
-    });
-    scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.85, 32, 32), innerMat));
+    const group = new THREE.Group();
+    scene.add(group);
 
-    const rings = [];
-    for (let i = 0; i < 3; i++) {
-      const rm = new THREE.MeshBasicMaterial({ color: new THREE.Color(STATES.idle.hex), transparent: true, opacity: 0, side: THREE.DoubleSide });
-      const r  = new THREE.Mesh(new THREE.TorusGeometry(1.18 + i * 0.2, 0.011, 16, 120), rm);
-      r.rotation.x = Math.PI / 2 + i * 0.4; r.rotation.y = i * 0.7;
-      scene.add(r); rings.push(r);
+    const meridianLines = [];
+    const parallelLines = [];
+    const dotMeshes     = [];
+
+    /* ── Meridianos ── */
+    for (let i = 0; i < MERIDIANS; i++) {
+      const isMain = i % 4 === 0;
+      const pts = [];
+      for (let j = 0; j <= 80; j++) {
+        const a = (j / 80) * Math.PI * 2;
+        pts.push(new THREE.Vector3(R * Math.cos(a), R * Math.sin(a), 0));
+      }
+      const geo  = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat  = new THREE.LineBasicMaterial({
+        color: isMain ? STATES.idle.color : STATES.idle.dimColor,
+        transparent: true, opacity: isMain ? 0.5 : 0.15,
+      });
+      const line = new THREE.Line(geo, mat);
+      line.rotation.y = (i / MERIDIANS) * Math.PI;
+      line._isMain = isMain;
+      line._idx    = i;
+      group.add(line);
+      meridianLines.push(line);
     }
 
-    const pCount = 260, pBase = new Float32Array(pCount * 3), pPhase = new Float32Array(pCount);
-    for (let i = 0; i < pCount; i++) {
-      const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1), r = 1.35+Math.random()*0.85;
-      pBase[i*3]=r*Math.sin(ph)*Math.cos(th); pBase[i*3+1]=r*Math.sin(ph)*Math.sin(th); pBase[i*3+2]=r*Math.cos(ph);
-      pPhase[i]=Math.random()*Math.PI*2;
+    /* ── Paralelos ── */
+    for (let i = 1; i < PARALLELS; i++) {
+      const lat  = ((i / PARALLELS) - 0.5) * Math.PI;
+      const r    = R * Math.cos(lat);
+      const y    = R * Math.sin(lat);
+      const isEq = i === Math.floor(PARALLELS / 2);
+      const pts  = [];
+      for (let j = 0; j <= 80; j++) {
+        const a = (j / 80) * Math.PI * 2;
+        pts.push(new THREE.Vector3(r * Math.cos(a), y, r * Math.sin(a)));
+      }
+      const geo  = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat  = new THREE.LineBasicMaterial({
+        color: isEq ? STATES.idle.accentColor : STATES.idle.dimColor,
+        transparent: true, opacity: isEq ? 0.6 : 0.12,
+      });
+      const line = new THREE.Line(geo, mat);
+      line._isEq  = isEq;
+      line._idx   = i;
+      line._baseY = y;
+      line._baseR = r;
+      group.add(line);
+      parallelLines.push(line);
     }
-    const pGeo = new THREE.BufferGeometry(), pArr = new Float32Array(pCount*3);
-    pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
-    const pMat = new THREE.PointsMaterial({ color: new THREE.Color(STATES.idle.hex), size: 0.026, transparent: true, opacity: 0.45 });
-    scene.add(new THREE.Points(pGeo, pMat));
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const pl1 = new THREE.PointLight(0x88ccff, 1.3, 10); pl1.position.set(3,3,3); scene.add(pl1);
-    const pl2 = new THREE.PointLight(0xcc88ff, 0.7, 10); pl2.position.set(-2,-2,2); scene.add(pl2);
+    /* ── Eje polar ── */
+    const poleGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, -R * 1.05, 0),
+      new THREE.Vector3(0,  R * 1.05, 0),
+    ]);
+    const poleMat = new THREE.LineBasicMaterial({ color: STATES.idle.color, transparent: true, opacity: 0.28 });
+    group.add(new THREE.Line(poleGeo, poleMat));
 
-    let currentKey='idle', fromColor=new THREE.Color(STATES.idle.hex), fromEmissive=new THREE.Color(STATES.idle.emHex);
-    let toColor=new THREE.Color(STATES.idle.hex), toEmissive=new THREE.Color(STATES.idle.emHex), lerpT=1, smoothVol=0;
+    /* ── Puntos en intersecciones ── */
+    const dotGeo = new THREE.SphereGeometry(0.028, 8, 8);
+    for (let i = 0; i < 10; i++) {
+      for (let j = 1; j < 7; j++) {
+        const phi   = (i / 10) * Math.PI * 2;
+        const theta = ((j / 7) - 0.5) * Math.PI;
+        const m = new THREE.MeshBasicMaterial({ color: STATES.idle.color, transparent: true, opacity: 0.55 });
+        const d = new THREE.Mesh(dotGeo.clone(), m);
+        d.position.set(R * Math.cos(theta) * Math.cos(phi), R * Math.sin(theta), R * Math.cos(theta) * Math.sin(phi));
+        group.add(d);
+        dotMeshes.push(d);
+      }
+    }
+    [new THREE.Vector3(0, R, 0), new THREE.Vector3(0, -R, 0)].forEach(p => {
+      const m = new THREE.MeshBasicMaterial({ color: STATES.idle.accentColor, transparent: true, opacity: 0.9 });
+      const d = new THREE.Mesh(dotGeo.clone(), m);
+      d.position.copy(p);
+      group.add(d);
+      dotMeshes.push(d);
+    });
 
-    const lerp  = (a,b,t) => a+(b-a)*t;
-    const lerpC = (c1,c2,t) => new THREE.Color(lerp(c1.r,c2.r,t),lerp(c1.g,c2.g,t),lerp(c1.b,c2.b,t));
+    /* ── Esfera interior oscura ── */
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0x001a2e, transparent: true, opacity: 0.5, side: THREE.BackSide });
+    const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(R * 1.01, 32, 32), coreMat);
+    group.add(coreMesh);
 
+    /* ── Estado ── */
+    let currentKey = 'idle';
+    let fromSt = { ...STATES.idle };
+    let toSt   = { ...STATES.idle };
+    let lerpT  = 1;
+    let smoothVol = 0;
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function lerpHex(c1, c2, t) {
+      const r1=(c1>>16)&0xff, g1=(c1>>8)&0xff, b1=c1&0xff;
+      const r2=(c2>>16)&0xff, g2=(c2>>8)&0xff, b2=c2&0xff;
+      return (Math.round(lerp(r1,r2,t))<<16)|(Math.round(lerp(g1,g2,t))<<8)|Math.round(lerp(b1,b2,t));
+    }
+
+    /* ── API pública ── */
     window.scallOrb = {
       setState(name) {
-        if (!STATES[name] || name===currentKey) return;
-        fromColor=mat.color.clone(); fromEmissive=mat.emissive.clone();
-        toColor=new THREE.Color(STATES[name].hex); toEmissive=new THREE.Color(STATES[name].emHex);
-        currentKey=name; lerpT=0;
+        if (!STATES[name] || name === currentKey) return;
+        fromSt     = { ...toSt };
+        toSt       = { ...STATES[name] };
+        currentKey = name;
+        lerpT      = 0;
       }
     };
 
-    let mx=0, my=0;
+    /* ── Parallax mouse ── */
+    let mx = 0, my = 0, velX = 0, velY = 0, dragging = false, px = 0, py = 0;
     const orbBtn = document.getElementById('orbBtn');
-    orbBtn.addEventListener('mousemove', e => { const r=orbBtn.getBoundingClientRect(); mx=((e.clientX-r.left)/W-0.5)*2; my=-((e.clientY-r.top)/H-0.5)*2; });
-    orbBtn.addEventListener('mouseleave', () => { mx=0; my=0; });
 
-    let time=0;
+    orbBtn.addEventListener('mousedown', e => { dragging = true; px = e.clientX; py = e.clientY; velX = velY = 0; });
+    window.addEventListener('mousemove', e => {
+      if (!dragging) { mx = (e.clientX/window.innerWidth-0.5)*2; my = -(e.clientY/window.innerHeight-0.5)*2; return; }
+      velY = (e.clientX - px) * 0.006; velX = (e.clientY - py) * 0.006;
+      group.rotation.y += velY; group.rotation.x += velX;
+      px = e.clientX; py = e.clientY;
+    });
+    window.addEventListener('mouseup', () => dragging = false);
+
+    orbBtn.addEventListener('touchstart', e => { dragging=true; px=e.touches[0].clientX; py=e.touches[0].clientY; }, { passive:true });
+    orbBtn.addEventListener('touchmove',  e => {
+      if (!dragging) return;
+      velY=(e.touches[0].clientX-px)*0.006; velX=(e.touches[0].clientY-py)*0.006;
+      group.rotation.y+=velY; group.rotation.x+=velX;
+      px=e.touches[0].clientX; py=e.touches[0].clientY;
+    }, { passive:true });
+    orbBtn.addEventListener('touchend', () => dragging = false);
+
+    /* ── Loop ── */
+    let time = 0;
     function animate() {
       requestAnimationFrame(animate);
-      time+=0.016; lerpT=Math.min(lerpT+0.03,1);
+      time  += 0.016;
+      lerpT  = Math.min(lerpT + 0.04, 1);
 
-      let rawVol=0;
+      /* Volumen Web Audio */
+      let rawVol = 0;
       if (window.scallAudioAnalyser) {
-        const d=new Uint8Array(window.scallAudioAnalyser.frequencyBinCount);
+        const d = new Uint8Array(window.scallAudioAnalyser.frequencyBinCount);
         window.scallAudioAnalyser.getByteFrequencyData(d);
-        rawVol=d.reduce((s,v)=>s+v,0)/(d.length*255);
+        rawVol = d.reduce((s,v) => s+v, 0) / (d.length * 255);
       }
-      smoothVol=lerp(smoothVol,rawVol,0.2);
-      const vol=smoothVol, st=STATES[currentKey];
-      const curColor=lerpC(fromColor,toColor,lerpT), curEmissive=lerpC(fromEmissive,toEmissive,lerpT);
-      const isIdle=currentKey==='idle';
-      const audioAmp=isIdle?0:vol*0.55, tScale=currentKey==='speaking'?3.8:1.8;
-      const baseScale=1+(isIdle?0:vol*0.22)+Math.sin(time*1.4)*(isIdle?0.022:0.05+vol*0.1);
+      smoothVol = lerp(smoothVol, rawVol, 0.2);
+      const vol = smoothVol;
 
-      const pa=geo.attributes.position;
-      for (let i=0;i<pa.count;i++) {
-        const bx=basePos[i*3],by=basePos[i*3+1],bz=basePos[i*3+2];
-        const len=Math.sqrt(bx*bx+by*by+bz*bz);
-        const noise=Math.sin(bx/len*4+time*tScale)*Math.cos(by/len*4+time*tScale*0.8)*Math.sin(bz/len*3+time*tScale*1.2);
-        const d=baseScale+noise*audioAmp;
-        pa.array[i*3]=bx*d; pa.array[i*3+1]=by*d; pa.array[i*3+2]=bz*d;
+      /* Interpolación de colores y velocidad */
+      const curColor  = lerpHex(fromSt.color,       toSt.color,       lerpT);
+      const curDim    = lerpHex(fromSt.dimColor,     toSt.dimColor,    lerpT);
+      const curAccent = lerpHex(fromSt.accentColor,  toSt.accentColor, lerpT);
+      const curSpeed  = lerp(fromSt.rotSpeed,  toSt.rotSpeed,  lerpT);
+      const curPulse  = lerp(fromSt.pulseAmp,  toSt.pulseAmp,  lerpT) + vol * 0.18;
+      const isIdle    = currentKey === 'idle';
+
+      /* Rotación auto */
+      if (!dragging) {
+        velX *= 0.88; velY *= 0.88;
+        group.rotation.y += curSpeed + velY + mx * 0.003;
+        group.rotation.x  = Math.max(-0.6, Math.min(0.6, group.rotation.x + 0.0005 + velX + my * 0.001));
       }
-      pa.needsUpdate=true; geo.computeVertexNormals();
 
-      sphere.rotation.y+=st.speed+vol*0.018+mx*0.007;
-      sphere.rotation.x+=st.speed*0.3+my*0.007;
-      mat.color.copy(curColor); mat.emissive.copy(curEmissive);
-      innerMat.emissive.copy(curEmissive);
-
-      const rt=isIdle?0:0.5+vol*0.4;
-      rings.forEach((r,i)=>{
-        r.material.color.copy(curColor);
-        r.material.opacity=lerp(r.material.opacity,rt-i*0.12,0.07);
-        r.scale.setScalar(1+Math.sin(time*(1.4+i*0.6)+i)*0.03+vol*0.12);
-        r.rotation.x+=0.004+i*0.002+vol*0.02; r.rotation.z+=0.002+i*0.001+vol*0.01;
+      /* Meridianos */
+      meridianLines.forEach((line, i) => {
+        line.material.color.setHex(line._isMain ? curColor : curDim);
+        const base  = line._isMain ? 0.5 : 0.15;
+        const boost = isIdle ? 0 : 0.28 * Math.sin(time * 2.5 + i * 0.45) * curPulse * 4;
+        line.material.opacity = Math.max(0.04, Math.min(0.95, base + boost));
       });
 
-      for (let i=0;i<pCount;i++) {
-        const drift=1+Math.sin(time*0.9+pPhase[i])*(isIdle?0.025:0.07+vol*0.18);
-        pArr[i*3]=pBase[i*3]*drift; pArr[i*3+1]=pBase[i*3+1]*drift; pArr[i*3+2]=pBase[i*3+2]*drift;
-      }
-      pGeo.attributes.position.needsUpdate=true;
-      pMat.color.copy(curColor); pMat.opacity=0.35+vol*0.55+Math.sin(time*1.3)*0.08;
+      /* Paralelos */
+      parallelLines.forEach((line, i) => {
+        line.material.color.setHex(line._isEq ? curAccent : curDim);
+        const base  = line._isEq ? 0.6 : 0.12;
+        const wave  = isIdle ? 0 : Math.sin(time * 3.5 + i * 0.9) * curPulse;
+        line.material.opacity = Math.max(0.04, Math.min(0.95, base + wave));
 
-      pl1.intensity=1.3+Math.sin(time*2)*0.3+vol*1.5;
-      pl2.intensity=0.7+vol*0.8;
-      renderer.render(scene,camera);
+        /* Speaking: paralelos se expanden con audio */
+        if (currentKey === 'speaking' && line.geometry) {
+          const pos = line.geometry.attributes.position;
+          const er  = line._baseR * (1 + Math.sin(time * 4 + i * 1.2) * (0.035 + vol * 0.12));
+          const ey  = line._baseY + Math.sin(time * 3 + i * 0.9) * (0.04 + vol * 0.08);
+          for (let j = 0; j <= 80; j++) {
+            const a = (j / 80) * Math.PI * 2;
+            pos.array[j*3]   = er * Math.cos(a);
+            pos.array[j*3+1] = ey;
+            pos.array[j*3+2] = er * Math.sin(a);
+          }
+          pos.needsUpdate = true;
+        } else if (line.geometry) {
+          const pos = line.geometry.attributes.position;
+          if (Math.abs(pos.array[1] - line._baseY) > 0.001) {
+            for (let j = 0; j <= 80; j++) {
+              const a = (j / 80) * Math.PI * 2;
+              pos.array[j*3]   = line._baseR * Math.cos(a);
+              pos.array[j*3+1] = line._baseY;
+              pos.array[j*3+2] = line._baseR * Math.sin(a);
+            }
+            pos.needsUpdate = true;
+          }
+        }
+      });
+
+      /* Puntos */
+      dotMeshes.forEach((d, i) => {
+        d.material.color.setHex(curColor);
+        let op = 0.45 + 0.3 * Math.sin(time * 1.8 + i * 0.35);
+        if (!isIdle) op += curPulse * Math.sin(time * 3 + i * 0.5) * 0.5;
+        d.material.opacity = Math.max(0.08, Math.min(0.95, op));
+      });
+
+      /* Eje y core */
+      poleMat.color.setHex(curColor);
+      coreMat.color.setHex(toSt.coreColor);
+
+      renderer.render(scene, camera);
     }
     animate();
+
   })();
   </script>
 
