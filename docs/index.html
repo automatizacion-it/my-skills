@@ -8,13 +8,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <style>
-    /* ── Orbe 3D: neutraliza estilos CSS previos del .orb y .ring ── */
+    /* Orbe 3D: ocultar elementos CSS originales */
     .orb-container > .orb  { display: none !important; }
     .orb-container > .ring { display: none !important; }
     #orb-canvas {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       border-radius: 50%;
       pointer-events: none;
@@ -22,6 +21,11 @@
   </style>
 </head>
 <body>
+
+  <!-- ── Fondo 3D profundo ── -->
+  <canvas id="space-canvas"></canvas>
+  <div class="space-fog"></div>
+  <div class="grid-floor"></div>
 
   <!-- ── Top Bar ── -->
   <header class="top-bar">
@@ -185,11 +189,9 @@
 
     <!-- ── Orbe 3D ── -->
     <div class="orb-container" id="orbBtn">
-      <!-- Originales ocultos por CSS — no borrar, app.js los puede referenciar -->
       <div class="orb"></div>
       <div class="ring"></div>
       <div class="ring"></div>
-      <!-- Canvas Three.js montado encima -->
       <canvas id="orb-canvas" width="220" height="220"></canvas>
     </div>
 
@@ -284,7 +286,7 @@
     </div>
   </div>
 
-  <!-- ── Scripts originales (orden intacto) ── -->
+  <!-- ── Scripts originales ── -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/ui.js"></script>
@@ -296,25 +298,127 @@
   <script src="js/intents.js"></script>
   <script src="js/app.js"></script>
 
-  <!-- ── Three.js Orbe 3D (se carga después de app.js) ── -->
+  <!-- ── Three.js ── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script>
-  /**
-   * SCALL · Orbe 3D
-   * ───────────────
-   * Solo modifica #orb-canvas. No toca ningún otro elemento del DOM.
-   *
-   * Desde app.js llama:
-   *   window.scallOrb.setState('idle')        → verde,  reposo
-   *   window.scallOrb.setState('listening')   → azul,   escuchando
-   *   window.scallOrb.setState('speaking')    → morado, respondiendo
-   *   window.scallOrb.setState('processing')  → ámbar,  procesando IA
-   *
-   * Audio en tiempo real (opcional):
-   *   window.scallAudioAnalyser = <AnalyserNode>  // tu nodo Web Audio
-   */
-  (function () {
 
+  <script>
+  /* ══════════════════════════════════════════════════
+     ESPACIO 3D — Estrellas + Nebulosa en #space-canvas
+     ══════════════════════════════════════════════════ */
+  (function () {
+    const canvas = document.getElementById('space-canvas');
+    const ctx    = canvas.getContext('2d');
+
+    let W, H, stars = [], nebulas = [];
+    const STAR_COUNT   = 320;
+    const NEBULA_COUNT = 6;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      buildStars();
+      buildNebulas();
+    }
+
+    function buildStars() {
+      stars = [];
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const z = Math.random();           // profundidad 0=fondo 1=cerca
+        stars.push({
+          x:     Math.random() * W,
+          y:     Math.random() * H,
+          z,
+          r:     0.4 + z * 1.6,
+          alpha: 0.3 + z * 0.7,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.3 + Math.random() * 1.2,
+          color: Math.random() > 0.85
+            ? `rgba(${180 + Math.floor(z*75)},${160 + Math.floor(z*55)},255,`
+            : `rgba(255,255,${220 + Math.floor(z*35)},`
+        });
+      }
+    }
+
+    function buildNebulas() {
+      nebulas = [
+        { x: W*0.15, y: H*0.2,  r: W*0.28, c: 'rgba(0,212,255,',   a: 0.028, phase: 0 },
+        { x: W*0.82, y: H*0.35, r: W*0.22, c: 'rgba(123,97,255,',  a: 0.032, phase: 1.2 },
+        { x: W*0.5,  y: H*0.65, r: W*0.18, c: 'rgba(0,212,255,',   a: 0.018, phase: 2.4 },
+        { x: W*0.28, y: H*0.75, r: W*0.14, c: 'rgba(200,100,255,', a: 0.022, phase: 3.6 },
+        { x: W*0.75, y: H*0.8,  r: W*0.16, c: 'rgba(0,180,255,',   a: 0.016, phase: 4.8 },
+        { x: W*0.5,  y: H*0.1,  r: W*0.20, c: 'rgba(100,200,255,', a: 0.020, phase: 0.6 },
+      ];
+    }
+
+    let t = 0;
+    function draw() {
+      requestAnimationFrame(draw);
+      t += 0.008;
+
+      // Fondo
+      ctx.fillStyle = '#080b10';
+      ctx.fillRect(0, 0, W, H);
+
+      // Nebulosas
+      nebulas.forEach(n => {
+        const pulse = 1 + Math.sin(t * 0.5 + n.phase) * 0.12;
+        const grad  = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * pulse);
+        grad.addColorStop(0,   n.c + (n.a * 1.4) + ')');
+        grad.addColorStop(0.5, n.c + n.a + ')');
+        grad.addColorStop(1,   n.c + '0)');
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      });
+
+      // Estrellas
+      stars.forEach(s => {
+        const twinkle = s.alpha * (0.6 + 0.4 * Math.sin(t * s.speed + s.phase));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = s.color + twinkle + ')';
+        ctx.fill();
+
+        // Halo en estrellas grandes cercanas
+        if (s.z > 0.75) {
+          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4);
+          g.addColorStop(0,   s.color + (twinkle * 0.4) + ')');
+          g.addColorStop(1,   s.color + '0)');
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2);
+          ctx.fillStyle = g;
+          ctx.fill();
+        }
+      });
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    draw();
+
+    // Parallax suave con el mouse
+    document.addEventListener('mousemove', (e) => {
+      const mx = (e.clientX / W - 0.5) * 2;
+      const my = (e.clientY / H - 0.5) * 2;
+      stars.forEach((s, i) => {
+        const depth = s.z * 0.6;
+        s.x += mx * depth * 0.18;
+        s.y += my * depth * 0.18;
+        if (s.x < 0) s.x += W;
+        if (s.x > W) s.x -= W;
+        if (s.y < 0) s.y += H;
+        if (s.y > H) s.y -= H;
+      });
+    });
+  })();
+
+  /* ══════════════════════════════════════════════════
+     ORBE 3D — Three.js sobre #orb-canvas
+     API: window.scallOrb.setState(name)
+     Audio: window.scallAudioAnalyser = AnalyserNode
+     ══════════════════════════════════════════════════ */
+  (function () {
     const STATES = {
       idle:       { hex: 0x1D9E75, emHex: 0x0a5c42, speed: 0.003 },
       listening:  { hex: 0x378ADD, emHex: 0x0d4a87, speed: 0.007 },
@@ -335,7 +439,6 @@
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.z = 3;
 
-    /* Esfera deformable */
     const geo     = new THREE.SphereGeometry(1, 128, 128);
     const basePos = new Float32Array(geo.attributes.position.array);
     const mat = new THREE.MeshPhongMaterial({
@@ -346,7 +449,6 @@
     const sphere = new THREE.Mesh(geo, mat);
     scene.add(sphere);
 
-    /* Glow interior */
     const innerMat = new THREE.MeshPhongMaterial({
       color: 0xffffff, emissive: new THREE.Color(STATES.idle.emHex),
       shininess: 150, transparent: true, opacity: 0.18,
@@ -354,7 +456,6 @@
     const inner = new THREE.Mesh(new THREE.SphereGeometry(0.85, 32, 32), innerMat);
     scene.add(inner);
 
-    /* Anillos */
     const rings = [];
     for (let i = 0; i < 3; i++) {
       const rm = new THREE.MeshBasicMaterial({
@@ -368,7 +469,6 @@
       rings.push(r);
     }
 
-    /* Partículas */
     const pCount = 260;
     const pBase  = new Float32Array(pCount * 3);
     const pPhase = new Float32Array(pCount);
@@ -385,20 +485,17 @@
     const pArr = new Float32Array(pCount * 3);
     pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
     const pMat = new THREE.PointsMaterial({
-      color: new THREE.Color(STATES.idle.hex),
-      size: 0.026, transparent: true, opacity: 0.45,
+      color: new THREE.Color(STATES.idle.hex), size: 0.026, transparent: true, opacity: 0.45,
     });
     const particles = new THREE.Points(pGeo, pMat);
     scene.add(particles);
 
-    /* Luces */
     scene.add(new THREE.AmbientLight(0xffffff, 0.35));
     const pl1 = new THREE.PointLight(0x88ccff, 1.3, 10);
     pl1.position.set(3, 3, 3); scene.add(pl1);
     const pl2 = new THREE.PointLight(0xcc88ff, 0.7, 10);
     pl2.position.set(-2, -2, 2); scene.add(pl2);
 
-    /* Estado interno */
     let currentKey   = 'idle';
     let fromColor    = new THREE.Color(STATES.idle.hex);
     let fromEmissive = new THREE.Color(STATES.idle.emHex);
@@ -412,7 +509,6 @@
       return new THREE.Color(lerp(c1.r,c2.r,t), lerp(c1.g,c2.g,t), lerp(c1.b,c2.b,t));
     }
 
-    /* API pública */
     window.scallOrb = {
       setState(name) {
         if (!STATES[name] || name === currentKey) return;
@@ -425,7 +521,6 @@
       }
     };
 
-    /* Parallax mouse */
     let mx = 0, my = 0;
     const orbBtn = document.getElementById('orbBtn');
     orbBtn.addEventListener('mousemove', (e) => {
@@ -435,14 +530,12 @@
     });
     orbBtn.addEventListener('mouseleave', () => { mx = 0; my = 0; });
 
-    /* Loop de render */
     let time = 0;
     function animate() {
       requestAnimationFrame(animate);
       time += 0.016;
       lerpT = Math.min(lerpT + 0.03, 1);
 
-      /* Volumen desde Web Audio */
       let rawVol = 0;
       if (window.scallAudioAnalyser) {
         const data = new Uint8Array(window.scallAudioAnalyser.frequencyBinCount);
@@ -459,7 +552,6 @@
       const curEmissive = lerpC(fromEmissive, toEmissive, lerpT);
       const isIdle      = currentKey === 'idle';
 
-      /* Deformación de vértices */
       const audioAmp  = isIdle ? 0 : vol * 0.55;
       const tScale    = currentKey === 'speaking' ? 3.8 : 1.8;
       const baseScale = 1
@@ -482,17 +574,14 @@
       posAttr.needsUpdate = true;
       geo.computeVertexNormals();
 
-      /* Rotación + parallax */
       sphere.rotation.y += st.speed + vol * 0.018 + mx * 0.007;
       sphere.rotation.x += st.speed * 0.3           + my * 0.007;
 
-      /* Colores */
       mat.color.copy(curColor);
       mat.emissive.copy(curEmissive);
       innerMat.emissive.copy(curEmissive);
       inner.scale.setScalar(1 + Math.sin(time * 2.2) * 0.02 + vol * 0.15);
 
-      /* Anillos */
       const ringTarget = isIdle ? 0 : 0.5 + vol * 0.4;
       rings.forEach((r, i) => {
         r.material.color.copy(curColor);
@@ -502,7 +591,6 @@
         r.rotation.z += 0.002 + i * 0.001 + vol * 0.01;
       });
 
-      /* Partículas */
       for (let i = 0; i < pCount; i++) {
         const drift = 1 + Math.sin(time * 0.9 + pPhase[i]) * (isIdle ? 0.025 : 0.07 + vol * 0.18);
         pArr[i*3]   = pBase[i*3]   * drift;
@@ -515,14 +603,12 @@
       particles.rotation.y -= 0.002 + vol * 0.01;
       particles.rotation.x += 0.001;
 
-      /* Luces */
       pl1.intensity = 1.3 + Math.sin(time * 2) * 0.3 + vol * 1.5;
       pl2.intensity = 0.7  + vol * 0.8;
 
       renderer.render(scene, camera);
     }
     animate();
-
   })();
   </script>
 
