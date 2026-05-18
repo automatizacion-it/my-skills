@@ -383,7 +383,47 @@ async function ejecutarHabilidad(texto) {
   const apiKey = getApiKey();
   const name   = localStorage.getItem('assistantName') || 'SCALL';
 
-  // ── Enrutar a Claude o Gemini según selección ──
+  // ══════════════════════════════════════════════════════════════
+  // FILTRO PREVIO — intents locales con prioridad sobre la IA
+  // Música, radio, luces, TV y otros intents de hardware se
+  // ejecutan directamente sin gastar la IA ni la cuota de API.
+  // ══════════════════════════════════════════════════════════════
+  const comandoLower = texto.toLowerCase();
+  const INTENTS_PRIORITARIOS = [
+    // Música
+    'musica_play', 'musica_play_query', 'musica_electronica', 'musica_relajante',
+    'musica_trabajar', 'musica_ejercicio', 'musica_salsa', 'musica_vallenato',
+    'musica_reggaeton', 'musica_cumbia', 'musica_pop', 'musica_rock', 'musica_jazz',
+    'musica_romantica', 'musica_instrumental', 'musica_popular',
+    'musica_stop', 'musica_reanudar', 'musica_next', 'musica_anterior',
+    'musica_volumen_subir', 'musica_volumen_bajar',
+    // Radio
+    'radio_play', 'radio_stop', 'radio_siguiente', 'radio_anterior', 'radio_lista',
+    // Podcast
+    'podcast_play',
+    // Luces y dispositivos (MQTT)
+    'encender_luz_sala', 'apagar_luz_sala', 'encender_luz_cuarto', 'apagar_luz_cuarto',
+    'encender_luz_general', 'apagar_luz_general', 'encender_tv', 'apagar_tv',
+    'abrir_persianas', 'cerrar_persianas',
+    // Utilidades locales
+    'hora', 'fecha', 'alarma_crear', 'recordatorio_crear', 'medicamento',
+    'timer_iniciar', 'cronometro', 'clima_consultar', 'noticias_consultar',
+    'traducir', 'cumpleanos_abrir', 'cumpleanos_hoy', 'cumpleanos_proximo',
+    'corpus_ver', 'sos_activar', 'sos_cancelar'
+  ];
+
+  if (typeof intents !== 'undefined') {
+    for (const intent of intents) {
+      if (INTENTS_PRIORITARIOS.includes(intent.name) && intent.match(comandoLower)) {
+        logMessage(`[Intent local prioritario] → [${intent.name}]`);
+        intent.action(comandoLower);
+        if (window.scallOrb) window.scallOrb.setState('idle');
+        return;  // ← No llama a la IA
+      }
+    }
+  }
+
+  // ── Enrutar a Claude o Gemini para todo lo demás ──
   const iaActiva = getActiveIA();
   if (iaActiva === 'claude' && getClaudeKey()) {
     logMessage('[IA] Usando Claude (Anthropic)...');
