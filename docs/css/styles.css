@@ -550,3 +550,57 @@ h1 {
 @media(min-width:600px){:root{--orb-size:130px;--orb-container:210px}.main-content{padding:32px 24px 80px;gap:26px}.top-bar{padding:8px 20px}}
 @media(min-width:900px){:root{--orb-size:140px;--orb-container:220px}.command-toggle{left:24px;bottom:24px;transform:none;width:340px}.intent-toggle{left:24px;bottom:84px;transform:none;width:300px}#yt-player-container{top:20px !important;right:20px !important;bottom:auto !important;border-radius:14px !important}}
 @media(max-width:420px){.skill-panel{right:0;left:0;width:100%;border-radius:0 0 16px 16px;top:56px}}
+
+/* ── Selector de IA (Gemini / Claude) ── */
+.ai-selector {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.ai-selector-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 9px 12px; border-radius: 9px;
+  border: 1px solid var(--border);
+  background: rgba(0,212,255,0.03);
+  color: var(--text-muted);
+  font-family: var(--font-mono); font-size: .75rem;
+  font-weight: 600; letter-spacing: .06em;
+  cursor: pointer; transition: all .2s;
+}
+.ai-selector-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; flex-shrink:0; }
+.ai-selector-btn:hover {
+  border-color: rgba(0,212,255,0.3);
+  background: rgba(0,212,255,0.07);
+  color: var(--text);
+}
+.ai-selector-btn.active {
+  border-color: var(--glow);
+  background: rgba(0,212,255,0.1);
+  color: var(--glow);
+  box-shadow: 0 0 12px rgba(0,212,255,0.12);
+}
+.ai-selector-btn.active.claude-active {
+  border-color: #e07040;
+  background: rgba(224,112,64,0.1);
+  color: #e07040;
+  box-shadow: 0 0 12px rgba(224,112,64,0.12);
+}
+
+/* Labels de color por proveedor */
+.label-accent-yellow { color: #fbbf24 !important; }
+.label-accent-claude { color: #e07040 !important; }
+
+/* Fila de modelo Claude */
+.ai-model-row {
+  display: flex; flex-direction: column; gap: 5px; margin-top: 8px;
+}
+
+/* Badge IA activa en el top bar */
+.ai-status-badge.claude-active {
+  border-color: rgba(224,112,64,0.3);
+  background: rgba(224,112,64,0.06);
+  color: rgba(224,112,64,0.8);
+}
+.ai-status-badge.claude-active .ai-status-dot {
+  background: #e07040;
+  box-shadow: 0 0 8px #e07040;
+}
+

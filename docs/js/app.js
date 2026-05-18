@@ -15,6 +15,104 @@ function getYtApiKeyConfig() {
   const key = window.APP_CONFIG && window.APP_CONFIG.youtubeApiKey;
   return (key && key.trim() !== '') ? key.trim() : localStorage.getItem('youtubeApiKey') || '';
 }
+// ======================================================================
+// SELECCIÓN DE IA — Gemini o Claude
+// ======================================================================
+function getActiveIA() {
+  return localStorage.getItem('activeIA') || 'gemini';
+}
+
+function getClaudeKey() {
+  const fromConfig = window.APP_CONFIG && window.APP_CONFIG.claudeApiKey;
+  if (fromConfig && fromConfig.trim()) return fromConfig.trim();
+  return localStorage.getItem('claudeApiKey') || '';
+}
+
+function getClaudeModel() {
+  return localStorage.getItem('claudeModel') || 'claude-sonnet-4-20250514';
+}
+
+function seleccionarIA(nombre) {
+  localStorage.setItem('activeIA', nombre);
+
+  // UI del selector
+  document.getElementById('aiBtnGemini').classList.toggle('active', nombre === 'gemini');
+  document.getElementById('aiBtnClaude').classList.toggle('active', nombre === 'claude');
+  document.getElementById('aiBtnClaude').classList.toggle('claude-active', nombre === 'claude');
+
+  // Mostrar sección correspondiente
+  document.getElementById('sectionGemini').style.display = nombre === 'gemini' ? '' : 'none';
+  document.getElementById('sectionClaude').style.display = nombre === 'claude'  ? '' : 'none';
+
+  updateAIStatusUI();
+  logMessage(`[IA] Cerebro cambiado a: ${nombre === 'claude' ? 'Claude (Anthropic)' : 'Gemini (Google)'}`);
+}
+
+// ======================================================================
+// LLAMADA A CLAUDE API
+// ======================================================================
+async function llamarClaude(texto, name) {
+  const apiKey = getClaudeKey();
+  if (!apiKey) {
+    responderVoz('Configura tu Claude API Key en el panel de configuración.');
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
+  const model = getClaudeModel();
+  const systemPrompt = `Eres ${name}, un asistente personal inteligente, amigable y muy capaz. 
+Hablas en español. Responde de forma natural y concisa (máximo 3 oraciones para respuestas de voz).
+También tienes habilidades domóticas. Si el usuario pide controlar hardware (luces, ventiladores, puertas, TV), 
+responde de forma natural e incluye al final el comando MQTT con el formato exacto: MQTT[topic|payload].
+Ejemplo: "Encendiendo las luces. MQTT[casa/sala/luces|ON]"`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type':            'application/json',
+        'x-api-key':               apiKey,
+        'anthropic-version':       '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: texto }]
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      logMessage(`[CLAUDE] ❌ Error ${response.status}: ${data.error?.message || 'desconocido'}`);
+      throw new Error(data.error?.message || response.status);
+    }
+
+    let aiResponse = data.content?.[0]?.text || '';
+
+    // Extraer comandos MQTT
+    const mqttRegex = /MQTT\[(.*?)\]/g;
+    let match;
+    while ((match = mqttRegex.exec(aiResponse)) !== null) {
+      const cmd = match[1].split('|');
+      if (cmd.length === 2) enviarComandoMQTT(cmd[0], cmd[1]);
+    }
+    aiResponse = aiResponse.replace(/MQTT\[.*?\]/g, '').trim();
+
+    logMessage(`[CLAUDE] ✅ Modelo: ${model}`);
+    if (window.scallOrb) window.scallOrb.setState('speaking');
+    responderVoz(aiResponse);
+
+  } catch (err) {
+    logMessage(`[CLAUDE] ❌ ${err.message}`);
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    responderVoz('Hubo un error al conectar con Claude.');
+  }
+}
+
+
 
 function updateAIStatusUI() {
   const badge     = document.getElementById('aiStatusBadge');
@@ -24,26 +122,30 @@ function updateAIStatusUI() {
   const cardDesc  = document.getElementById('aiStatusCardDesc');
   const hint      = document.getElementById('aiHint');
   const icon      = card && card.querySelector('.ai-status-icon');
-  if (isKeyPreConfigured()) {
-    if (badge)     badge.className = 'ai-status-badge ready';
-    if (badgeText) badgeText.textContent = 'IA Gemini activa';
+
+  const ia       = getActiveIA();
+  const hasGemini = isKeyPreConfigured();
+  const hasClaude = !!getClaudeKey();
+  const hasKey    = ia === 'claude' ? hasClaude : hasGemini;
+  const iaLabel   = ia === 'claude' ? 'Claude (Anthropic)' : 'Gemini (Google)';
+
+  if (hasKey) {
+    if (badge)     badge.className = `ai-status-badge ready${ia === 'claude' ? ' claude-active' : ''}`;
+    if (badgeText) badgeText.textContent = `${iaLabel} · activo`;
     if (card)      card.className = 'ai-status-card ready';
     if (icon)      icon.textContent = '✅';
-    if (cardTitle) cardTitle.textContent = 'IA configurada vía servidor';
-    if (cardDesc)  cardDesc.textContent = 'Gemini API Key inyectada por GitHub Actions (segura)';
+    if (cardTitle) cardTitle.textContent = `${iaLabel} configurado`;
+    if (cardDesc)  cardDesc.textContent  = `API Key guardada en tu navegador · lista para usar.`;
     if (hint)      hint.style.display = 'none';
-    logMessage('[SEGURIDAD] ✅ Gemini API Key cargada desde GitHub Secrets');
+    logMessage(`[IA] ✅ ${iaLabel} activo`);
   } else {
     if (badge)     badge.className = 'ai-status-badge warn';
     if (badgeText) badgeText.textContent = 'Sin IA · modo local';
     if (card)      card.className = 'ai-status-card warn';
     if (icon)      icon.textContent = '⚠️';
-    if (cardTitle) cardTitle.textContent = 'Sin clave de IA configurada';
-    if (cardDesc)  cardDesc.textContent = 'Modo local activo. Sólo comandos predefinidos.';
-    if (hint) {
-      hint.style.display = 'block';
-      hint.innerHTML = 'Para activar Gemini, agrega <code>GEMINI_API_KEY</code> en <strong>GitHub → Settings → Secrets → Actions</strong> y redespliega.';
-    }
+    if (cardTitle) cardTitle.textContent = 'Sin API Key configurada';
+    if (cardDesc)  cardDesc.textContent  = `Ingresa tu ${iaLabel} API Key en Configuración.`;
+    if (hint)      { hint.style.display = 'block'; hint.textContent = `Ve a ⚙️ Config → selecciona ${iaLabel} → pega tu API Key.`; }
   }
 }
 
@@ -240,6 +342,17 @@ function saveAssistantConfig() {
     keyInput.value = '';
     logMessage('[CONFIG] ✅ Gemini API Key guardada localmente.');
   }
+  const claudeInput = document.getElementById('claudeKeyInput');
+  if (claudeInput && claudeInput.value.trim() !== '') {
+    localStorage.setItem('claudeApiKey', claudeInput.value.trim());
+    claudeInput.value = '';
+    logMessage('[CONFIG] ✅ Claude API Key guardada localmente.');
+  }
+  const claudeModelSel = document.getElementById('claudeModel');
+  if (claudeModelSel) {
+    localStorage.setItem('claudeModel', claudeModelSel.value);
+    logMessage(`[CONFIG] Modelo Claude: ${claudeModelSel.value}`);
+  }
   updateAIStatusUI();
   logMessage(`[CONFIG] Asistente: "${name}"`);
   document.getElementById('configModal').style.display = 'none';
@@ -269,6 +382,16 @@ async function ejecutarHabilidad(texto) {
   logMessage(`Usuario dijo: "${texto}"`);
   const apiKey = getApiKey();
   const name   = localStorage.getItem('assistantName') || 'SCALL';
+
+  // ── Enrutar a Claude o Gemini según selección ──
+  const iaActiva = getActiveIA();
+  if (iaActiva === 'claude' && getClaudeKey()) {
+    logMessage('[IA] Usando Claude (Anthropic)...');
+    transcriptText.innerText = 'Pensando...';
+    if (window.scallOrb) window.scallOrb.setState('processing');
+    await llamarClaude(texto, name);
+    return;
+  }
 
   if (apiKey) {
     if (geminiCooldown) { logMessage('[GEMINI] ⏳ Espera un momento.'); responderVoz('Un momento por favor.'); return; }
@@ -440,6 +563,27 @@ window.onload = () => {
     if (h) h.value = savedHost;
     if (u) u.value = localStorage.getItem('mqttUser') || '';
     if (p) p.value = localStorage.getItem('mqttPassword') || '';
+  }
+
+  // Restaurar selector de IA
+  const savedIA = localStorage.getItem('activeIA') || 'gemini';
+  seleccionarIA(savedIA);
+
+  // Restaurar modelo Claude si fue guardado
+  const savedModel = localStorage.getItem('claudeModel');
+  const claudeModelSel = document.getElementById('claudeModel');
+  if (savedModel && claudeModelSel) claudeModelSel.value = savedModel;
+
+  // Mostrar placeholder si ya hay key guardada
+  const geminiSaved = localStorage.getItem('geminiApiKey');
+  if (geminiSaved) {
+    const gi = document.getElementById('geminiKeyInput');
+    if (gi) gi.placeholder = '●●●●●●●● (key guardada)';
+  }
+  const claudeSaved = localStorage.getItem('claudeApiKey');
+  if (claudeSaved) {
+    const ci = document.getElementById('claudeKeyInput');
+    if (ci) ci.placeholder = '●●●●●●●● (key guardada)';
   }
 
   updateAIStatusUI();
