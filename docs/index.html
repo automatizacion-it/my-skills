@@ -1,16 +1,43 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SCALL — Asistente IIT</title>
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* ── Orbe 3D ── */
+    .orb-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto;
+      cursor: pointer;
+      /* elimina el fondo CSS anterior si existía */
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    #orb-canvas {
+      border-radius: 50%;
+      display: block;
+      /* Permite que el canvas capture clicks */
+      pointer-events: none;
+    }
+    /* Oculta los hijos CSS originales del orbe */
+    .orb-container > .orb,
+    .orb-container > .ring {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ── Top Bar ── -->
+  <!-- Barra superior -->
   <header class="top-bar">
     <div class="top-bar-left">
       <div class="ai-status-badge" id="aiStatusBadge">
@@ -19,160 +46,14 @@
       </div>
     </div>
     <div class="top-bar-right">
-      <!-- MQTT -->
-      <div class="icon-btn mqtt-status-btn" id="mqttStatusBtn" title="MQTT">
-        <span id="mqttStatusDot" class="mqtt-dot"></span>
-        <span id="mqttStatusLabel">MQTT</span>
-      </div>
-      <!-- Skills -->
-      <button class="icon-btn" onclick="togglePanel('alarmaPanel')" title="Alarmas">⏰</button>
-      <button class="icon-btn" onclick="togglePanel('noticiasPanel')" title="Noticias">📰</button>
-      <button class="icon-btn" onclick="togglePanel('climaPanel')" title="Clima">🌤️</button>
-      <button class="icon-btn" onclick="togglePanel('tradPanel')" title="Traductor">🌍</button>
-      <button class="icon-btn" onclick="togglePanel('corpusPanel')" title="Log Corpus">📋</button>
-      <!-- Utils -->
-      <button class="icon-btn theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema">☀️</button>
+      <button class="icon-btn" onclick="abrirModalAlarmas()" title="Alarmas y recordatorios">🔔</button>
       <button class="icon-btn" onclick="abrirModalCumpleanos()" title="Cumpleaños">🎂</button>
-      <button class="icon-btn btn-sos" id="sosBtn" onclick="activarSOS()" title="SOS">🆘</button>
-      <button class="icon-btn" onclick="document.getElementById('configModal').style.display='flex'" title="Config">⚙️</button>
+      <button class="icon-btn btn-stop" id="stopBtn" onclick="detenerTodaActividad()" title="Parar todo">⏹️</button>
+      <button class="icon-btn" onclick="showCommandToggle('Prueba manual')" title="Probar Toggle">🔧</button>
+      <button class="icon-btn" onclick="document.getElementById('configModal').style.display='flex'" title="Configurar">⚙️</button>
     </div>
   </header>
 
-  <!-- ── Panels flotantes ── -->
-
-  <!-- ALARMA -->
-  <div class="skill-panel" id="alarmaPanel" style="display:none;">
-    <div class="skill-panel-header">
-      <span>⏰ Alarmas & Recordatorios</span>
-      <button onclick="togglePanel('alarmaPanel')">✕</button>
-    </div>
-    <div class="skill-panel-body">
-      <!-- Calendario -->
-      <div class="alarm-calendar" id="alarmCalendar"></div>
-      <!-- Hora -->
-      <div class="alarm-time-row">
-        <div class="alarm-time-group">
-          <label>Hora</label>
-          <input type="number" id="alarmHora" min="0" max="23" value="7" class="alarm-input">
-        </div>
-        <div class="alarm-time-group">
-          <label>Min</label>
-          <input type="number" id="alarmMin" min="0" max="59" value="0" class="alarm-input">
-        </div>
-        <div class="alarm-time-group">
-          <label>Tipo</label>
-          <select id="alarmTipo" class="alarm-input">
-            <option value="alarma">⏰ Alarma</option>
-            <option value="recordatorio">📌 Recordatorio</option>
-            <option value="medicamento">💊 Medicamento</option>
-          </select>
-        </div>
-      </div>
-      <input type="text" id="alarmMsg" placeholder="Mensaje (opcional)" class="alarm-msg-input">
-      <!-- Toggle bocina -->
-      <div class="alarm-sound-row">
-        <span>🔊 Sonido</span>
-        <button class="sound-toggle on" id="soundToggle" onclick="toggleSonido()">ON</button>
-        <label class="alarm-repeat">
-          <input type="checkbox" id="alarmRepetir"> Repetir diario
-        </label>
-      </div>
-      <button class="btn btn-primary" onclick="guardarAlarmaUI()">+ Agregar alarma</button>
-      <!-- Lista -->
-      <div id="alarmaLista" class="alarm-list"></div>
-    </div>
-  </div>
-
-  <!-- NOTICIAS -->
-  <div class="skill-panel" id="noticiasPanel" style="display:none;">
-    <div class="skill-panel-header">
-      <span>📰 Noticias Colombia</span>
-      <button onclick="togglePanel('noticiasPanel')">✕</button>
-    </div>
-    <div class="skill-panel-body">
-      <!-- Pestañas -->
-      <div class="skill-tabs">
-        <button class="skill-tab active" onclick="switchTab('radio-noticias','noticiasPanel',this)">📻 Radio</button>
-        <button class="skill-tab" onclick="switchTab('rss-noticias','noticiasPanel',this)">📄 Texto</button>
-      </div>
-      <!-- Radio noticias -->
-      <div id="radio-noticias" class="skill-tab-content active">
-        <div class="news-radio-grid" id="newsRadioGrid"></div>
-      </div>
-      <!-- RSS -->
-      <div id="rss-noticias" class="skill-tab-content">
-        <div class="rss-cat-row">
-          <button class="rss-cat-btn active" onclick="cargarRSS('general',this)">General</button>
-          <button class="rss-cat-btn" onclick="cargarRSS('tecnologia',this)">Tech</button>
-          <button class="rss-cat-btn" onclick="cargarRSS('economia',this)">Eco</button>
-          <button class="rss-cat-btn" onclick="cargarRSS('deportes',this)">Dep</button>
-        </div>
-        <div id="rssList" class="rss-list"><p style="color:var(--text-muted);font-size:0.8rem;padding:16px;text-align:center;">Selecciona una categoría</p></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CLIMA -->
-  <div class="skill-panel" id="climaPanel" style="display:none;">
-    <div class="skill-panel-header">
-      <span>🌤️ Clima</span>
-      <button onclick="togglePanel('climaPanel')">✕</button>
-    </div>
-    <div class="skill-panel-body">
-      <label class="skill-label">OpenWeatherMap API Key</label>
-      <div style="display:flex;gap:8px;">
-        <input type="password" id="owmKeyInput" placeholder="Pega tu API Key" style="flex:1;" class="alarm-msg-input">
-        <button class="btn btn-blue" style="width:auto;padding:10px 14px;" onclick="guardarOwmKey()">✓</button>
-      </div>
-      <div id="owmStatus" class="owm-status"></div>
-      <label class="skill-label" style="margin-top:12px;">Ciudad</label>
-      <div class="ciudad-grid" id="ciudadGrid"></div>
-      <div id="climaResult" class="clima-result"></div>
-    </div>
-  </div>
-
-  <!-- TRADUCTOR -->
-  <div class="skill-panel" id="tradPanel" style="display:none;">
-    <div class="skill-panel-header">
-      <span>🌍 Traductor</span>
-      <button onclick="togglePanel('tradPanel')">✕</button>
-    </div>
-    <div class="skill-panel-body">
-      <label class="skill-label">Texto a traducir</label>
-      <textarea id="tradInput" placeholder="Escribe o di el texto..." class="trad-textarea" rows="3"></textarea>
-      <div class="trad-lang-row">
-        <select id="tradLang" class="alarm-input">
-          <option value="en">🇺🇸 Inglés</option>
-          <option value="fr">🇫🇷 Francés</option>
-          <option value="pt">🇧🇷 Portugués</option>
-          <option value="de">🇩🇪 Alemán</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="zh">🇨🇳 Chino</option>
-          <option value="ja">🇯🇵 Japonés</option>
-        </select>
-        <button class="btn btn-primary" style="width:auto;padding:10px 18px;" onclick="traducirUI()">Traducir</button>
-      </div>
-      <div id="tradResult" class="trad-result"></div>
-    </div>
-  </div>
-
-  <!-- CORPUS LOG -->
-  <div class="skill-panel" id="corpusPanel" style="display:none;">
-    <div class="skill-panel-header">
-      <span>📋 Corpus de Entrenamiento</span>
-      <button onclick="togglePanel('corpusPanel')">✕</button>
-    </div>
-    <div class="skill-panel-body">
-      <p class="skill-hint">Frases no reconocidas — úsalas para crear nuevos intents.</p>
-      <div id="corpusList" class="corpus-list"></div>
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="btn btn-primary" onclick="exportarCorpus()">⬇ Exportar .txt</button>
-        <button class="btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);" onclick="limpiarCorpus()">🗑 Limpiar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Main ── -->
   <main class="main-content">
 
     <h1>
@@ -180,16 +61,15 @@
       <span class="subtitle">Asistente Autónomo · IIT</span>
     </h1>
 
-    <!-- Orbe holográfico -->
+    <!-- ── Orbe 3D ── -->
     <div class="orb-container" id="orbBtn">
-      <div class="orb">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-        </svg>
-      </div>
+      <!-- hijos originales (ocultos por CSS, pero no borrados para no romper app.js) -->
+      <div class="orb"></div>
       <div class="ring"></div>
       <div class="ring"></div>
+      <!-- Canvas Three.js montado encima -->
+      <canvas id="orb-canvas" width="220" height="220"
+              style="position:absolute;top:0;left:0;pointer-events:none;border-radius:50%;"></canvas>
     </div>
 
     <!-- Transcript -->
@@ -198,7 +78,7 @@
       <div id="transcriptText">Esperando comando...</div>
     </div>
 
-    <!-- Comandos -->
+    <!-- Comandos disponibles -->
     <div class="intent-dropdown-wrapper">
       <label class="intent-dropdown-label">🎙️ Comandos disponibles</label>
       <select id="intentDropdown" class="intent-dropdown">
@@ -208,31 +88,7 @@
 
     <div id="togglesContainer"></div>
 
-    <!-- Panel Dispositivos -->
-    <div class="devices-panel">
-      <div class="devices-panel-header open" onclick="toggleDevicesPanel()">
-        <h4>🏠 Dispositivos IoT</h4>
-        <span>▾</span>
-      </div>
-      <div class="devices-grid" id="devicesGrid"></div>
-    </div>
-
-    <!-- Historial -->
-    <div class="history-panel">
-      <div class="devices-panel-header" onclick="toggleHistoryPanel()">
-        <h4>💬 Historial</h4>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button onclick="event.stopPropagation();clearHistory()"
-            style="background:none;border:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:var(--font-mono);">
-            Limpiar
-          </button>
-          <span>▾</span>
-        </div>
-      </div>
-      <div id="historyList" style="display:none;"></div>
-    </div>
-
-    <!-- Log sistema -->
+    <!-- Log -->
     <div class="log-box" id="systemLog">&gt; Sistema Frontend Iniciado...</div>
 
   </main>
@@ -244,55 +100,310 @@
         <h3>⚙️ Configuración</h3>
         <button class="modal-close" onclick="document.getElementById('configModal').style.display='none'">✕</button>
       </div>
+
       <div class="form-group">
         <label>Nombre del Asistente</label>
         <input type="text" id="assistantName" placeholder="Ej: SCALL, Jarvis, Cortana">
       </div>
+
       <div class="form-group">
         <label>Estado del Cerebro IA</label>
         <div class="ai-status-card" id="aiStatusCard">
           <div class="ai-status-icon">🔄</div>
           <div class="ai-status-info">
             <strong id="aiStatusCardTitle">Verificando...</strong>
-            <small id="aiStatusCardDesc">Comprobando configuración</small>
+            <small id="aiStatusCardDesc">Comprobando configuración del servidor</small>
           </div>
         </div>
-        <label style="margin-top:12px;">Gemini API Key</label>
-        <input type="password" id="geminiKeyInput" placeholder="AIzaSy... (guardada solo en tu dispositivo)">
-        <p class="form-hint">La key se guarda en tu navegador. Nunca se sube al repositorio.</p>
+        <p class="form-hint" id="aiHint" style="display:none;"></p>
       </div>
+
       <hr class="modal-divider">
+
       <div class="form-group">
         <label class="label-accent-blue">🌐 Broker MQTT (ESP32)</label>
-        <input type="text" id="mqttHost" placeholder="abc123.s1.eu.hivemq.cloud">
+        <input type="text" id="mqttHost" placeholder="Ej: abc123.s1.eu.hivemq.cloud">
         <div class="input-row">
           <input type="text" id="mqttUser" placeholder="Usuario MQTT">
           <input type="password" id="mqttPassword" placeholder="Contraseña MQTT">
         </div>
         <button class="btn btn-blue" onclick="guardarYConectarMQTT()">⚡ Conectar ESP32 vía MQTT</button>
       </div>
+
       <hr class="modal-divider">
+
       <div class="form-group">
         <label class="label-accent-green">🎵 YouTube API (Música)</label>
-        <input type="password" id="spotifyClientId" placeholder="YouTube Data API v3 Key">
+        <input type="text" id="spotifyClientId" placeholder="YouTube Data API v3 Key">
         <button class="btn btn-green" onclick="conectarSpotify()">Conectar Música</button>
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="saveAssistantConfig()">Guardar Configuración</button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- ── Scripts originales ── -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="js/config.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/skills.js"></script>
   <script src="js/spotify.js"></script>
   <script src="js/radio.js"></script>
   <script src="js/cumpleanos.js"></script>
   <script src="js/sos.js"></script>
+  <script src="js/alarms.js"></script>
   <script src="js/intents.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- ── Three.js Orbe 3D ── -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  /**
+   * SCALL Orbe 3D
+   * ------------
+   * Se engancha al ciclo de vida del orbe original de app.js
+   * mediante la API pública: window.scallOrb.setState(name)
+   *
+   * Estados: 'idle' | 'listening' | 'speaking' | 'processing'
+   *
+   * app.js puede llamar en cualquier momento:
+   *   window.scallOrb.setState('listening')
+   *   window.scallOrb.setState('speaking')
+   *   window.scallOrb.setState('idle')
+   *
+   * También lee el analyser de Web Audio si app.js lo expone en
+   *   window.scallAudioAnalyser  (AudioAnalyserNode)
+   */
+  (function () {
+
+    /* ── Paleta por estado ── */
+    const STATES = {
+      idle:       { hex: 0x1D9E75, emHex: 0x0a5c42, pulse: 0.028, speed: 0.003, rings: false, label: 'Esperando comando' },
+      listening:  { hex: 0x378ADD, emHex: 0x0d4a87, pulse: 0.10,  speed: 0.007, rings: true,  label: 'Escuchando...' },
+      speaking:   { hex: 0x7F77DD, emHex: 0x3a3490, pulse: 0.18,  speed: 0.014, rings: true,  label: 'Respondiendo...' },
+      processing: { hex: 0xEF9F27, emHex: 0x854F0B, pulse: 0.08,  speed: 0.010, rings: true,  label: 'Procesando...' },
+    };
+
+    /* ── Renderer ── */
+    const canvas = document.getElementById('orb-canvas');
+    const W = 220, H = 220;
+    canvas.width  = W;
+    canvas.height = H;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setClearColor(0x000000, 0);
+
+    /* ── Scene / Camera ── */
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.z = 3;
+
+    /* ── Esfera principal (geometría deformable) ── */
+    const geo      = new THREE.SphereGeometry(1, 128, 128);
+    const basePosArray = new Float32Array(geo.attributes.position.array);
+    const mat = new THREE.MeshPhongMaterial({
+      color:       new THREE.Color(STATES.idle.hex),
+      emissive:    new THREE.Color(STATES.idle.emHex),
+      shininess:   90,
+      transparent: true,
+      opacity:     0.93,
+    });
+    const sphere = new THREE.Mesh(geo, mat);
+    scene.add(sphere);
+
+    /* ── Esfera interior (glow) ── */
+    const innerMat = new THREE.MeshPhongMaterial({
+      color:       0xffffff,
+      emissive:    new THREE.Color(STATES.idle.emHex),
+      shininess:   150,
+      transparent: true,
+      opacity:     0.18,
+    });
+    const inner = new THREE.Mesh(new THREE.SphereGeometry(0.85, 32, 32), innerMat);
+    scene.add(inner);
+
+    /* ── Anillos ── */
+    const rings = [];
+    for (let i = 0; i < 3; i++) {
+      const rm = new THREE.MeshBasicMaterial({
+        color:       new THREE.Color(STATES.idle.hex),
+        transparent: true,
+        opacity:     0,
+        side:        THREE.DoubleSide,
+      });
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.18 + i * 0.2, 0.011, 16, 120), rm);
+      ring.rotation.x = Math.PI / 2 + i * 0.4;
+      ring.rotation.y = i * 0.7;
+      scene.add(ring);
+      rings.push(ring);
+    }
+
+    /* ── Partículas ── */
+    const pCount = 260;
+    const pBase  = new Float32Array(pCount * 3);
+    const pPhase = new Float32Array(pCount);
+    for (let i = 0; i < pCount; i++) {
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      const r  = 1.35 + Math.random() * 0.85;
+      pBase[i*3]   = r * Math.sin(ph) * Math.cos(th);
+      pBase[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+      pBase[i*3+2] = r * Math.cos(ph);
+      pPhase[i] = Math.random() * Math.PI * 2;
+    }
+    const pGeo = new THREE.BufferGeometry();
+    const pArr = new Float32Array(pCount * 3);
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
+    const pMat = new THREE.PointsMaterial({
+      color:       new THREE.Color(STATES.idle.hex),
+      size:        0.026,
+      transparent: true,
+      opacity:     0.45,
+    });
+    const particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    /* ── Luces ── */
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const pl1 = new THREE.PointLight(0x88ccff, 1.3, 10);
+    pl1.position.set(3, 3, 3);
+    scene.add(pl1);
+    const pl2 = new THREE.PointLight(0xcc88ff, 0.7, 10);
+    pl2.position.set(-2, -2, 2);
+    scene.add(pl2);
+
+    /* ── Estado interno ── */
+    let currentKey  = 'idle';
+    let fromColor   = new THREE.Color(STATES.idle.hex);
+    let fromEmissive= new THREE.Color(STATES.idle.emHex);
+    let toColor     = new THREE.Color(STATES.idle.hex);
+    let toEmissive  = new THREE.Color(STATES.idle.emHex);
+    let lerpT       = 1;
+    let smoothVol   = 0;
+
+    /* ── Helpers ── */
+    function lerp(a, b, t)  { return a + (b - a) * t; }
+    function lerpC(c1, c2, t) {
+      return new THREE.Color(lerp(c1.r,c2.r,t), lerp(c1.g,c2.g,t), lerp(c1.b,c2.b,t));
+    }
+
+    /* ── API pública ── */
+    window.scallOrb = {
+      setState(name) {
+        if (!STATES[name] || name === currentKey) return;
+        fromColor    = mat.color.clone();
+        fromEmissive = mat.emissive.clone();
+        toColor      = new THREE.Color(STATES[name].hex);
+        toEmissive   = new THREE.Color(STATES[name].emHex);
+        currentKey   = name;
+        lerpT        = 0;
+        // Actualiza el statusText si app.js no lo hace
+        const st = document.getElementById('statusText');
+        if (st && st.textContent === STATES[currentKey]?.label) return;
+      }
+    };
+
+    /* ── Mouse parallax ── */
+    let mx = 0, my = 0;
+    const orbBtn = document.getElementById('orbBtn');
+    orbBtn.addEventListener('mousemove', (e) => {
+      const r = orbBtn.getBoundingClientRect();
+      mx = ((e.clientX - r.left) / W - 0.5) * 2;
+      my = -((e.clientY - r.top)  / H - 0.5) * 2;
+    });
+    orbBtn.addEventListener('mouseleave', () => { mx = 0; my = 0; });
+
+    /* ── Bucle de render ── */
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.016;
+      lerpT = Math.min(lerpT + 0.03, 1);
+
+      /* Volumen desde Web Audio (si app.js lo expone) */
+      let rawVol = 0;
+      if (window.scallAudioAnalyser) {
+        const data = new Uint8Array(window.scallAudioAnalyser.frequencyBinCount);
+        window.scallAudioAnalyser.getByteFrequencyData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += data[i];
+        rawVol = sum / (data.length * 255);
+      }
+      smoothVol = lerp(smoothVol, rawVol, 0.2);
+      const vol = smoothVol;
+
+      const st      = STATES[currentKey];
+      const curColor    = lerpC(fromColor, toColor, lerpT);
+      const curEmissive = lerpC(fromEmissive, toEmissive, lerpT);
+
+      /* Deformación de vértices */
+      const isIdle   = currentKey === 'idle';
+      const audioAmp = isIdle ? 0 : vol * 0.55;
+      const tScale   = currentKey === 'speaking' ? 3.8 : 1.8;
+      const baseScale = 1
+        + (isIdle ? 0 : vol * 0.22)
+        + Math.sin(time * 1.4) * (isIdle ? 0.022 : 0.05 + vol * 0.1);
+
+      const posAttr = geo.attributes.position;
+      for (let i = 0; i < posAttr.count; i++) {
+        const bx = basePosArray[i*3], by = basePosArray[i*3+1], bz = basePosArray[i*3+2];
+        const len = Math.sqrt(bx*bx + by*by + bz*bz);
+        const nx = bx/len, ny = by/len, nz = bz/len;
+        const noise = Math.sin(nx*4 + time*tScale) * Math.cos(ny*4 + time*tScale*0.8) * Math.sin(nz*3 + time*tScale*1.2);
+        const disp  = baseScale + noise * audioAmp;
+        posAttr.array[i*3]   = bx * disp;
+        posAttr.array[i*3+1] = by * disp;
+        posAttr.array[i*3+2] = bz * disp;
+      }
+      posAttr.needsUpdate = true;
+      geo.computeVertexNormals();
+
+      /* Rotación + parallax */
+      sphere.rotation.y += st.speed + vol * 0.018 + mx * 0.007;
+      sphere.rotation.x += st.speed * 0.3 + my * 0.007;
+
+      /* Colores */
+      mat.color.copy(curColor);
+      mat.emissive.copy(curEmissive);
+      innerMat.emissive.copy(curEmissive);
+      inner.scale.setScalar(1 + Math.sin(time * 2.2) * 0.02 + vol * 0.15);
+
+      /* Anillos */
+      const ringTarget = isIdle ? 0 : 0.5 + vol * 0.4;
+      rings.forEach((r, i) => {
+        r.material.color.copy(curColor);
+        r.material.opacity = lerp(r.material.opacity, ringTarget - i * 0.12, 0.07);
+        const sc = 1 + Math.sin(time * (1.4 + i * 0.6) + i) * 0.03 + vol * 0.12;
+        r.scale.setScalar(sc);
+        r.rotation.x += 0.004 + i * 0.002 + vol * 0.02;
+        r.rotation.z += 0.002 + i * 0.001 + vol * 0.01;
+      });
+
+      /* Partículas */
+      for (let i = 0; i < pCount; i++) {
+        const drift = 1 + Math.sin(time * 0.9 + pPhase[i]) * (isIdle ? 0.025 : 0.07 + vol * 0.18);
+        pArr[i*3]   = pBase[i*3]   * drift;
+        pArr[i*3+1] = pBase[i*3+1] * drift;
+        pArr[i*3+2] = pBase[i*3+2] * drift;
+      }
+      pGeo.attributes.position.needsUpdate = true;
+      pMat.color.copy(curColor);
+      pMat.opacity = 0.35 + vol * 0.55 + Math.sin(time * 1.3) * 0.08;
+      particles.rotation.y -= 0.002 + vol * 0.01;
+      particles.rotation.x += 0.001;
+
+      /* Luces */
+      pl1.intensity = 1.3 + Math.sin(time * 2) * 0.3 + vol * 1.5;
+      pl2.intensity = 0.7  + vol * 0.8;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+  })();
+  </script>
+
 </body>
 </html>
