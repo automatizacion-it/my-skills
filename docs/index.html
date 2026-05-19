@@ -19,11 +19,8 @@
 </head>
 <body>
 
-  <!-- ── Fondo de profundidad ── -->
-  <div class="depth-vortex"></div>
-  <div class="depth-fog"></div>
-  <div class="depth-grid"></div>
-  <div class="depth-horizon"></div>
+  <!-- ── Recinto 3D Three.js ── -->
+  <canvas id="scall-recinto" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
 
   <!-- ── Top Bar ── -->
   <header class="top-bar">
@@ -507,6 +504,7 @@
   <!-- 5. Módulos de utilidades -->
   <script src="js/cumpleanos.js"></script>
   <script src="js/sos.js"></script>
+  <script src="js/alarms.js"></script>
 
   <!-- 6. Intents — primero los específicos, luego los generales -->
   <script src="js/rutas.js"></script>           <!-- motor de navegación + panel mapa -->
@@ -520,6 +518,153 @@
 
   <!-- ── Three.js Orbe Wireframe (sin cambios) ── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- ── Recinto 3D — piso XY, paredes ZY y ZX ── -->
+  <script>
+  (function(){
+    const canvas = document.getElementById('scall-recinto');
+    if (!canvas || typeof THREE === 'undefined') return;
+
+    function init() {
+      const W = window.innerWidth, H = window.innerHeight;
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+      renderer.setSize(W, H);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setClearColor(0x04060c, 1);
+
+      const scene  = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(42, W/H, 0.1, 200);
+
+      let theta = 0.72, phi = 0.52, radius = 14;
+      function updateCam() {
+        camera.position.set(
+          radius*Math.sin(phi)*Math.sin(theta),
+          radius*Math.cos(phi)+1,
+          radius*Math.sin(phi)*Math.cos(theta)
+        );
+        camera.lookAt(0, 1.5, 0);
+      }
+      updateCam();
+
+      /* ── Grilla de líneas ── */
+      function makeGrid(size, divs, color, opacity) {
+        const verts=[], step=size/divs, half=size/2;
+        for(let i=0;i<=divs;i++){
+          const p=-half+i*step;
+          verts.push(-half,0,p, half,0,p);
+          verts.push(p,0,-half, p,0,half);
+        }
+        const g=new THREE.BufferGeometry();
+        g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+        return new THREE.LineSegments(g,
+          new THREE.LineBasicMaterial({color,transparent:true,opacity}));
+      }
+
+      /* Piso XY */
+      const pisoGrid=makeGrid(14,14,0x00d4ff,0.10);
+      scene.add(pisoGrid);
+
+      /* Pared ZY — izquierda (x=-7) */
+      const paredIzq=makeGrid(14,14,0x7b61ff,0.06);
+      paredIzq.rotation.z=Math.PI/2;
+      paredIzq.position.x=-7;
+      scene.add(paredIzq);
+
+      /* Pared ZX — fondo (z=-7) */
+      const paredFondo=makeGrid(14,14,0x00d4ff,0.06);
+      paredFondo.rotation.x=Math.PI/2;
+      paredFondo.position.z=-7;
+      scene.add(paredFondo);
+
+      /* Aristas del recinto */
+      const eM=new THREE.LineBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.22});
+      function edge(p1,p2){
+        const g=new THREE.BufferGeometry().setFromPoints(
+          [new THREE.Vector3(...p1),new THREE.Vector3(...p2)]);
+        scene.add(new THREE.Line(g,eM));
+      }
+      edge([-7,0,-7],[ 7,0,-7]);
+      edge([-7,0,-7],[-7,0, 7]);
+      edge([-7,0,-7],[-7,13,-7]);
+      edge([-7,0, 7],[-7,13, 7]);
+      edge([ 7,0,-7],[ 7,13,-7]);
+      edge([-7,13,-7],[ 7,13,-7]);
+      edge([-7,13,-7],[-7,13, 7]);
+
+      /* Superficie piso semitransparente */
+      const pisoMesh=new THREE.Mesh(
+        new THREE.PlaneGeometry(14,14),
+        new THREE.MeshStandardMaterial({color:0x000d1a,transparent:true,opacity:0.5,metalness:0.2,roughness:0.9})
+      );
+      pisoMesh.rotation.x=-Math.PI/2;
+      pisoMesh.position.y=-0.01;
+      scene.add(pisoMesh);
+
+      /* Partículas */
+      const pN=60, pPos=new Float32Array(pN*3);
+      for(let i=0;i<pN;i++){
+        pPos[i*3]=(Math.random()-.5)*12;
+        pPos[i*3+1]=Math.random()*10;
+        pPos[i*3+2]=(Math.random()-.5)*12;
+      }
+      const pGeo=new THREE.BufferGeometry();
+      pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+      const particles=new THREE.Points(pGeo,
+        new THREE.PointsMaterial({color:0x00d4ff,size:0.05,transparent:true,opacity:0.35}));
+      scene.add(particles);
+
+      /* Neblina volumétrica — dos esferas grandes transparentes */
+      [[0x00d4ff,[-3,4,-4],0.04],[ 0x7b61ff,[3,3,-3],0.035]].forEach(([col,pos,op])=>{
+        const m=new THREE.Mesh(
+          new THREE.SphereGeometry(3.5,16,16),
+          new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,side:THREE.BackSide})
+        );
+        m.position.set(...pos);
+        scene.add(m);
+      });
+
+      /* Luces */
+      scene.add(new THREE.AmbientLight(0xffffff,0.2));
+      const pl=new THREE.PointLight(0x00d4ff,1.5,20);
+      pl.position.set(0,5,0);
+      scene.add(pl);
+      const pl2=new THREE.PointLight(0x7b61ff,0.7,14);
+      pl2.position.set(-4,4,-3);
+      scene.add(pl2);
+
+      /* Horizonte en pared fondo */
+      const hGeo=new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-7,0.02,-7),new THREE.Vector3(7,0.02,-7)
+      ]);
+      scene.add(new THREE.Line(hGeo,
+        new THREE.LineBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.35})));
+
+      /* Auto-rotación lenta de cámara */
+      let t=0;
+      function animate(){
+        requestAnimationFrame(animate);
+        t+=0.003;
+        theta=0.72+Math.sin(t)*0.18;
+        phi=0.52+Math.sin(t*0.7)*0.06;
+        updateCam();
+        particles.rotation.y+=0.0005;
+        pl.intensity=1.5+Math.sin(t*2)*0.3;
+        renderer.render(scene,camera);
+      }
+      animate();
+
+      window.addEventListener('resize',()=>{
+        const w=window.innerWidth,h=window.innerHeight;
+        renderer.setSize(w,h);
+        camera.aspect=w/h;
+        camera.updateProjectionMatrix();
+      });
+    }
+
+    if(typeof THREE !== 'undefined') init();
+    else setTimeout(init,500);
+  })();
+  </script>
+
   <script>
   (function(){
     const STATES={

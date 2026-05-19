@@ -1,7 +1,8 @@
 // ================================================================
-// config.js — Las keys se configuran desde el formulario ⚙️
-// Se guardan en localStorage de tu dispositivo.
-// Nunca se suben al repositorio.
+// config.js — generado por GitHub Actions al desplegar.
+// Los valores reales vienen de GitHub Secrets.
+// Para desarrollo local, usa el modal ⚙️ — se guarda en localStorage.
+// NUNCA pongas keys reales aquí — este archivo se sube al repo.
 // ================================================================
 window.APP_CONFIG = {
   geminiApiKey:  "",
