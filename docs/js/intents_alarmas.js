@@ -23,8 +23,10 @@ const intentsAlarmas = [
     },
     action: (c) => {
       const datos = parsearAlarmaVoz(c);
-      if (datos) crearAlarma(datos);
-      else { togglePanel('alarmaPanel'); _alarVoz('Abriendo alarmas. ¿A qué hora la pongo?'); }
+      if (datos) {
+        sincronizarUIDesdeVoz(datos);
+        setTimeout(() => crearAlarma(datos), 400);
+      } else { togglePanel('alarmaPanel'); _alarVoz('Abriendo alarmas. ¿A qué hora la pongo?'); }
     }
   },
   {
@@ -64,8 +66,11 @@ const intentsAlarmas = [
     },
     action: (c) => {
       const datos = parsearAlarmaVoz(c);
-      if (datos) crearAlarma({ ...datos, tipo: 'recordatorio' });
-      else _alarVoz('No entendí la hora. Di por ejemplo: recuérdame la reunión a las 3 de la tarde.');
+      if (datos) {
+        const d = { ...datos, tipo: 'recordatorio' };
+        sincronizarUIDesdeVoz(d);
+        setTimeout(() => crearAlarma(d), 400);
+      } else _alarVoz('No entendí la hora. Di por ejemplo: recuérdame la reunión a las 3 de la tarde.');
     }
   },
   {
@@ -100,8 +105,11 @@ const intentsAlarmas = [
     },
     action: (c) => {
       const datos = parsearAlarmaVoz(c);
-      if (datos) crearAlarma({ ...datos, tipo: 'medicamento' });
-      else _alarVoz('No entendí la hora. Di por ejemplo: recuérdame tomar la pastilla a las 8 de la mañana.');
+      if (datos) {
+        const d = { ...datos, tipo: 'medicamento' };
+        sincronizarUIDesdeVoz(d);
+        setTimeout(() => crearAlarma(d), 400);
+      } else _alarVoz('No entendí la hora. Di por ejemplo: recuérdame tomar la pastilla a las 8 de la mañana.');
     }
   },
   {
@@ -116,8 +124,11 @@ const intentsAlarmas = [
     },
     action: (c) => {
       const datos = parsearAlarmaVoz(c);
-      if (datos) crearAlarma({ ...datos, tipo: 'medicamento', repetir: true });
-      else _alarVoz('Di por ejemplo: todos los días a las 8 de la mañana tomar la medicina.');
+      if (datos) {
+        const d = { ...datos, tipo: 'medicamento', repetir: true };
+        sincronizarUIDesdeVoz(d);
+        setTimeout(() => crearAlarma(d), 400);
+      } else _alarVoz('Di por ejemplo: todos los días a las 8 de la mañana tomar la medicina.');
     }
   },
 

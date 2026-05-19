@@ -604,3 +604,49 @@ h1 {
   box-shadow: 0 0 8px #e07040;
 }
 
+/* ── Selector de sonido de alarma ── */
+.alarm-sound-section {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.sound-selector {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+}
+.sound-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 4px;
+  background: rgba(0,212,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text-muted);
+  font-family: var(--font-mono); font-size: .6rem;
+  letter-spacing: .06em; text-transform: uppercase;
+  cursor: pointer; transition: all .2s;
+}
+.sound-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+.sound-btn:hover {
+  border-color: rgba(0,212,255,0.3);
+  background: rgba(0,212,255,0.07);
+  color: var(--glow);
+}
+.sound-btn.active {
+  border-color: var(--glow);
+  background: rgba(0,212,255,0.1);
+  color: var(--glow);
+  box-shadow: 0 0 8px rgba(0,212,255,0.15);
+}
+
+.sound-controls-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.sound-preview-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 8px;
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.2);
+  color: var(--glow); font-size: .7rem;
+  font-family: var(--font-mono); letter-spacing: .06em;
+  cursor: pointer; transition: all .2s;
+}
+.sound-preview-btn svg { width: 11px; height: 11px; fill: currentColor; stroke: none; }
+.sound-preview-btn:hover { background: rgba(0,212,255,0.14); }
+

@@ -1,7 +1,6 @@
 // =====================================================================
 // MÓDULO ALARMAS — SCALL
-// Alarmas, recordatorios, medicamentos, temporizador, cronómetro
-// Parser de voz mejorado: acepta lenguaje natural colombiano
+// Alarmas con sonidos Web Audio API, sincronización UI, voz→panel
 // =====================================================================
 
 const ALARMAS_KEY = 'scall_alarmas';
@@ -12,7 +11,217 @@ let cronometroInt    = null;
 let cronometroSeg    = 0;
 let cronometroActivo = false;
 
-// ── CRUD alarmas ──────────────────────────────────────────────────────
+// ── Sonido seleccionado actualmente en la UI ─────────────────────────
+let sonidoSeleccionado = 'beep';
+let sonidoActivado     = true;
+
+// ══════════════════════════════════════════════════════════════════════
+// MOTOR DE SONIDO — Web Audio API (sin archivos externos)
+// ══════════════════════════════════════════════════════════════════════
+
+function getAudioCtx() {
+  if (!window._scallAudioCtx) {
+    window._scallAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return window._scallAudioCtx;
+}
+
+// Generadores de sonido por tipo
+const SONIDOS = {
+
+  // ── Beep clásico de alarma ─────────────────────────────────────
+  beep(ctx) {
+    const secuencia = [880, 880, 0, 880, 880, 0, 880, 880];
+    let t = ctx.currentTime;
+    secuencia.forEach((freq, i) => {
+      if (freq === 0) { t += 0.1; return; }
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type      = 'square';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.start(t); osc.stop(t + 0.18);
+      t += 0.22;
+    });
+  },
+
+  // ── Urgente — sirena ascendente ────────────────────────────────
+  urgente(ctx) {
+    for (let rep = 0; rep < 3; rep++) {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      const t0 = ctx.currentTime + rep * 0.7;
+      osc.frequency.setValueAtTime(400, t0);
+      osc.frequency.linearRampToValueAtTime(900, t0 + 0.5);
+      gain.gain.setValueAtTime(0.35, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.6);
+      osc.start(t0); osc.stop(t0 + 0.6);
+    }
+  },
+
+  // ── Suave — tono amable ────────────────────────────────────────
+  suave(ctx) {
+    const notas = [523, 659, 784]; // Do-Mi-Sol
+    let t = ctx.currentTime;
+    notas.forEach(freq => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type      = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(0.25, t + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      osc.start(t); osc.stop(t + 0.55);
+      t += 0.3;
+    });
+  },
+
+  // ── Digital — pulsos rápidos estilo tech ───────────────────────
+  digital(ctx) {
+    const pulsos = [1200, 0, 1200, 0, 800, 0, 800, 0, 1000];
+    let t = ctx.currentTime;
+    pulsos.forEach(freq => {
+      if (freq === 0) { t += 0.06; return; }
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type      = 'square';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      osc.start(t); osc.stop(t + 0.08);
+      t += 0.1;
+    });
+  },
+
+  // ── Campana — resonancia larga ─────────────────────────────────
+  campana(ctx) {
+    const harmonicos = [523, 1046, 1568];
+    harmonicos.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type      = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      const vol = [0.35, 0.2, 0.1][i];
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.5);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 2.5);
+    });
+    // Segunda campanada
+    setTimeout(() => {
+      const ctx2 = getAudioCtx();
+      harmonicos.forEach((freq, i) => {
+        const osc  = ctx2.createOscillator();
+        const gain = ctx2.createGain();
+        osc.connect(gain); gain.connect(ctx2.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx2.currentTime);
+        gain.gain.setValueAtTime([0.3,0.18,0.09][i], ctx2.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + 2);
+        osc.start(ctx2.currentTime); osc.stop(ctx2.currentTime + 2);
+      });
+    }, 900);
+  },
+
+  // ── Medicina — melodía corta amable ───────────────────────────
+  medicina(ctx) {
+    // "ding-dong-ding" amable
+    const melodia = [
+      { f: 659, d: 0.25 },
+      { f: 784, d: 0.25 },
+      { f: 880, d: 0.4  },
+      { f: 0,   d: 0.15 },
+      { f: 659, d: 0.2  },
+      { f: 784, d: 0.35 },
+    ];
+    let t = ctx.currentTime;
+    melodia.forEach(({ f, d }) => {
+      if (f === 0) { t += d; return; }
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(0.28, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + d + 0.1);
+      osc.start(t); osc.stop(t + d + 0.1);
+      t += d + 0.05;
+    });
+  }
+};
+
+// Sonido por defecto según tipo de alarma
+const SONIDO_POR_TIPO = {
+  alarma:       'beep',
+  recordatorio: 'suave',
+  medicamento:  'medicina'
+};
+
+function tocarSonido(nombreSonido) {
+  if (!sonidoActivado) return;
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const fn = SONIDOS[nombreSonido] || SONIDOS.beep;
+    fn(ctx);
+  } catch(e) {
+    _alarLog(`[SONIDO] ⚠️ Error: ${e.message}`);
+  }
+}
+
+// Repetir el sonido N veces
+function tocarSonidoRepetido(nombre, veces = 3, intervalo = 1800) {
+  tocarSonido(nombre);
+  let count = 1;
+  const iv = setInterval(() => {
+    tocarSonido(nombre);
+    count++;
+    if (count >= veces) clearInterval(iv);
+  }, intervalo);
+}
+
+// ── UI del selector de sonido ─────────────────────────────────────────
+
+function seleccionarSonido(nombre, btn) {
+  sonidoSeleccionado = nombre;
+  document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  _alarLog(`[SONIDO] Seleccionado: ${nombre}`);
+}
+
+function previsualizarSonido() {
+  tocarSonido(sonidoSeleccionado);
+}
+
+function actualizarSonidoPorTipo() {
+  const tipo = document.getElementById('alarmTipo')?.value || 'alarma';
+  const sonido = SONIDO_POR_TIPO[tipo] || 'beep';
+  seleccionarSonidoUI(sonido);
+}
+
+function seleccionarSonidoUI(nombre) {
+  sonidoSeleccionado = nombre;
+  document.querySelectorAll('.sound-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sound === nombre);
+  });
+}
+
+function toggleSonido() {
+  // Compatibilidad con botón legacy — ahora usa el checkbox
+  const cb = document.getElementById('alarmSonidoOn');
+  if (cb) { cb.checked = !cb.checked; sonidoActivado = cb.checked; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// CRUD ALARMAS
+// ══════════════════════════════════════════════════════════════════════
 
 function getAlarmas() {
   try { return JSON.parse(localStorage.getItem(ALARMAS_KEY)) || []; }
@@ -22,31 +231,31 @@ function saveAlarmas(lista) {
   localStorage.setItem(ALARMAS_KEY, JSON.stringify(lista));
 }
 
-function crearAlarma({ hora, minuto, mensaje, tipo = 'alarma', repetir = false }) {
+function crearAlarma({ hora, minuto, mensaje, tipo = 'alarma', repetir = false, sonido = null }) {
   const lista = getAlarmas();
   const id    = Date.now();
-  lista.push({ id, hora, minuto, mensaje, tipo, repetir, activa: true });
+  const s     = sonido || SONIDO_POR_TIPO[tipo] || 'beep';
+  lista.push({ id, hora, minuto, mensaje, tipo, repetir, sonido: s, activa: true });
   saveAlarmas(lista);
-  iniciarChequeoAlarma({ id, hora, minuto, mensaje, tipo, repetir });
+  iniciarChequeoAlarma({ id, hora, minuto, mensaje, tipo, repetir, sonido: s });
   renderizarListaAlarmas();
 
   const horaStr = `${String(hora).padStart(2,'0')}:${String(minuto).padStart(2,'0')}`;
   const tipoLabel = tipo === 'medicamento' ? 'Recordatorio de medicamento' :
                     tipo === 'recordatorio' ? 'Recordatorio' : 'Alarma';
-  _alarVoz(`${tipoLabel} programado para las ${hora === 0 ? 'doce' : hora} ${minuto > 0 ? 'y ' + minuto : ''} ${hora < 12 ? 'de la mañana' : 'de la tarde'}.${mensaje ? ' ' + mensaje : ''}`);
-  _alarLog(`[ALARMA] ✅ ${tipo} → ${horaStr} "${mensaje}" repetir:${repetir}`);
+  const repLabel = repetir ? ' Repetición diaria activada.' : '';
+  _alarVoz(`${tipoLabel} programado para las ${horaStr}.${mensaje ? ' ' + mensaje : ''}${repLabel}`);
+  _alarLog(`[ALARMA] ✅ ${tipo} → ${horaStr} sonido:${s} repetir:${repetir}`);
   return id;
 }
 
 function iniciarChequeoAlarma(alarma) {
-  // Evitar duplicados
   if (alarmasActivas[alarma.id]) clearInterval(alarmasActivas[alarma.id]);
-
   const intervalo = setInterval(() => {
     const now = new Date();
-    if (now.getHours() === alarma.hora &&
+    if (now.getHours()   === alarma.hora   &&
         now.getMinutes() === alarma.minuto &&
-        now.getSeconds() < 30) {
+        now.getSeconds()  <  30) {
       dispararAlarma(alarma);
       if (!alarma.repetir) {
         clearInterval(intervalo);
@@ -65,8 +274,13 @@ function iniciarChequeoAlarma(alarma) {
 function dispararAlarma(alarma) {
   const icono = alarma.tipo === 'medicamento' ? '💊' :
                 alarma.tipo === 'recordatorio' ? '📌' : '⏰';
-  _alarVoz(alarma.mensaje || `Alarma. Son las ${alarma.hora} y ${alarma.minuto} minutos.`);
-  _alarLog(`[ALARMA] ${icono} DISPARADA: "${alarma.mensaje}"`);
+  // Tocar sonido 3 veces
+  tocarSonidoRepetido(alarma.sonido || 'beep', 3, 1800);
+  // Hablar después de 800ms para no solaparse con el sonido
+  setTimeout(() => {
+    _alarVoz(alarma.mensaje || `Alarma. Son las ${alarma.hora} y ${alarma.minuto} minutos.`);
+  }, 800);
+  _alarLog(`[ALARMA] ${icono} DISPARADA sonido:${alarma.sonido} "${alarma.mensaje}"`);
   mostrarToastAlarma(alarma);
   if (Notification.permission === 'granted') {
     new Notification(`SCALL ${icono}`, {
@@ -95,20 +309,15 @@ function toggleAlarma(id) {
   renderizarListaAlarmas();
 }
 
-// ── Listar alarmas por voz ────────────────────────────────────────────
-
 function listarAlarmasPorVoz() {
   const lista = getAlarmas().filter(a => a.activa);
-  if (lista.length === 0) {
-    _alarVoz('No tienes alarmas activas.');
-    return;
-  }
+  if (lista.length === 0) { _alarVoz('No tienes alarmas activas.'); return; }
   const res = lista.map(a => {
     const h = String(a.hora).padStart(2,'0');
     const m = String(a.minuto).padStart(2,'0');
     return `${a.tipo} a las ${h}:${m}${a.mensaje ? ', ' + a.mensaje : ''}`;
   }).join('. ');
-  _alarVoz(`Tienes ${lista.length} alarma${lista.length > 1 ? 's' : ''} activa${lista.length > 1 ? 's' : ''}: ${res}.`);
+  _alarVoz(`Tienes ${lista.length} alarma${lista.length > 1 ? 's' : ''}: ${res}.`);
 }
 
 function cancelarTodasAlarmas() {
@@ -117,231 +326,270 @@ function cancelarTodasAlarmas() {
   saveAlarmas([]);
   renderizarListaAlarmas();
   _alarVoz('Todas las alarmas han sido canceladas.');
-  _alarLog('[ALARMA] 🗑 Todas eliminadas');
 }
 
-// ── PARSER DE VOZ MEJORADO ────────────────────────────────────────────
-// Soporta:
-//   "pon alarma a las 7"
-//   "ponme una alarma a las 7 y media"
-//   "despiértame a las 6 de la mañana"
-//   "recuérdame tomar la medicina a las 8 de la noche"
-//   "recuérdame la reunión a las 3 y 30 de la tarde"
-//   "programa una alarma para las 10"
-//   "todos los días a las 7 recuérdame tomar el jarabe"
-//   "pastilla a las 8 todos los días"
+// ══════════════════════════════════════════════════════════════════════
+// SINCRONIZACIÓN VOZ → UI
+// Cuando un comando de voz crea una alarma, actualiza visualmente
+// los campos del panel para que el usuario vea qué se programó
+// ══════════════════════════════════════════════════════════════════════
+
+function sincronizarUIDesdeVoz({ hora, minuto, tipo, mensaje, repetir, sonido }) {
+  const elHora    = document.getElementById('alarmHora');
+  const elMin     = document.getElementById('alarmMin');
+  const elTipo    = document.getElementById('alarmTipo');
+  const elMsg     = document.getElementById('alarmMsg');
+  const elRepetir = document.getElementById('alarmRepetir');
+
+  if (elHora)    { elHora.value    = hora;    resaltarCampo(elHora); }
+  if (elMin)     { elMin.value     = minuto;  resaltarCampo(elMin); }
+  if (elTipo)    { elTipo.value    = tipo;    resaltarCampo(elTipo); }
+  if (elMsg)     { elMsg.value     = mensaje || ''; resaltarCampo(elMsg); }
+  if (elRepetir) elRepetir.checked = repetir || false;
+
+  // Actualizar selector de sonido en la UI
+  const s = sonido || SONIDO_POR_TIPO[tipo] || 'beep';
+  seleccionarSonidoUI(s);
+
+  // Abrir el panel si está cerrado
+  const panel = document.getElementById('alarmaPanel');
+  if (panel && panel.style.display === 'none') {
+    togglePanel('alarmaPanel');
+  }
+}
+
+function resaltarCampo(el) {
+  if (!el) return;
+  el.style.transition = 'border-color .3s, box-shadow .3s';
+  el.style.borderColor = 'var(--glow)';
+  el.style.boxShadow   = '0 0 0 3px var(--glow-dim)';
+  setTimeout(() => {
+    el.style.borderColor = '';
+    el.style.boxShadow   = '';
+  }, 2000);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PARSER DE VOZ MEJORADO
+// ══════════════════════════════════════════════════════════════════════
 
 function parsearAlarmaVoz(comando) {
+  // Normalizar — quitar tildes para matching más robusto
   const c = comando.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quitar tildes para matching
     .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
-    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ü/g,'u').replace(/ñ/g,'n');
 
   // ── 1. Extraer hora y minuto ──────────────────────────────────────
   let hora = null, minuto = 0;
 
   // "7 y media" → 7:30
-  const mediaMatch = c.match(/(\d{1,2})\s*y\s*media/);
-  if (mediaMatch) { hora = parseInt(mediaMatch[1]); minuto = 30; }
+  const mediaM = c.match(/(\d{1,2})\s*y\s*media/);
+  if (mediaM) { hora = parseInt(mediaM[1]); minuto = 30; }
 
   // "7 y cuarto" → 7:15
   if (hora === null) {
-    const cuartoMatch = c.match(/(\d{1,2})\s*y\s*cuarto/);
-    if (cuartoMatch) { hora = parseInt(cuartoMatch[1]); minuto = 15; }
+    const cuartoM = c.match(/(\d{1,2})\s*y\s*cuarto/);
+    if (cuartoM) { hora = parseInt(cuartoM[1]); minuto = 15; }
   }
 
-  // "7 y 45" o "7:45" o "7 con 45"
+  // "7 y 45" | "7:45" | "7 con 45"
   if (hora === null) {
-    const fullMatch = c.match(/(\d{1,2})\s*(?:y|con|:|\.)\s*(\d{1,2})/);
-    if (fullMatch) { hora = parseInt(fullMatch[1]); minuto = parseInt(fullMatch[2]); }
+    const fullM = c.match(/(\d{1,2})\s*(?:y|con|:|\.)\s*(\d{1,2})/);
+    if (fullM) { hora = parseInt(fullM[1]); minuto = parseInt(fullM[2]); }
   }
 
-  // solo hora "a las 7" "las 7" "7 en punto"
+  // Solo hora "a las 7" | "las 7" | "7 en punto"
   if (hora === null) {
-    const soloHora = c.match(/(?:a\s+las|las|para\s+las)?\s*(\d{1,2})\s*(?:en\s+punto)?/);
-    if (soloHora) { hora = parseInt(soloHora[1]); minuto = 0; }
+    const soloM = c.match(/(?:a\s+las?|las?|para\s+las?)\s*(\d{1,2})\s*(?:en\s+punto)?/);
+    if (soloM) { hora = parseInt(soloM[1]); minuto = 0; }
+  }
+  // Último recurso — cualquier número de 1-2 dígitos
+  if (hora === null) {
+    const anyM = c.match(/\b(\d{1,2})\b/);
+    if (anyM) { hora = parseInt(anyM[1]); minuto = 0; }
   }
 
-  if (hora === null) return null;
+  if (hora === null || hora > 23) return null;
 
-  // ── 2. Ajustar AM/PM ─────────────────────────────────────────────
-  const esTarde  = c.includes('tarde') || c.includes('noche');
-  const esMañana = c.includes('mañana') || c.includes('manana') || c.includes('am');
-  if (esTarde && hora < 12) hora += 12;
+  // ── 2. AM / PM ───────────────────────────────────────────────────
+  const esTarde  = c.includes('tarde') || c.includes('noche') || c.includes('pm');
+  const esMañana = c.includes('manana') || c.includes('madrugada') || c.includes('am');
+  if (esTarde  && hora < 12) hora += 12;
   if (esMañana && hora === 12) hora = 0;
-  // Heurística: si no dice mañana ni tarde y la hora es < 7, asumir PM
-  if (!esMañana && !esTarde && hora > 0 && hora < 7) hora += 12;
-
-  // Limitar rango
-  if (hora >= 24) hora = hora % 24;
+  // Heurística: sin contexto, horas 1-6 → PM (más probable en uso doméstico)
+  if (!esMañana && !esTarde && hora > 0 && hora <= 6) hora += 12;
+  if (hora >= 24) hora %= 24;
   if (minuto >= 60) minuto = 0;
 
-  // ── 3. Detectar tipo ─────────────────────────────────────────────
+  // ── 3. Tipo ──────────────────────────────────────────────────────
   let tipo = 'alarma';
   let msg  = '';
 
-  const esMedicamento = c.includes('medicamento') || c.includes('pastilla') ||
-                        c.includes('medicina') || c.includes('jarabe') ||
-                        c.includes('capsula') || c.includes('comprimido') ||
-                        c.includes('inyeccion') || c.includes('dosis');
+  const esMed = c.includes('pastilla') || c.includes('medicamento') ||
+                c.includes('medicina')  || c.includes('jarabe') ||
+                c.includes('capsula')   || c.includes('comprimido') ||
+                c.includes('dosis')     || c.includes('inyeccion');
 
-  const esRecordatorio = c.includes('recuerdame') || c.includes('recordatorio') ||
-                         c.includes('recuerda') || c.includes('no olvides') ||
-                         c.includes('avisame') || c.includes('notificame');
+  const esRec = c.includes('recuerdame') || c.includes('recordatorio') ||
+                c.includes('recuerda')   || c.includes('avisame') ||
+                c.includes('no olvides') || c.includes('notificame');
 
-  const esDespertar = c.includes('despiertame') || c.includes('despertarme') ||
-                      c.includes('despierta') || c.includes('levantarme') ||
-                      c.includes('levantame');
+  const esDes = c.includes('despiertame') || c.includes('despertarme') ||
+                c.includes('levantame')   || c.includes('levantarme');
 
-  if (esMedicamento) {
+  if (esMed) {
     tipo = 'medicamento';
-    // Intentar extraer qué medicamento
-    const medMatch = c.match(/(?:tomar|toma|teme)\s+((?:el|la|los|las)?\s*\w+)/);
-    const medNombre = medMatch ? medMatch[1].trim() : '';
-    msg = medNombre
-      ? `Es hora de tomar ${medNombre}.`
+    // Extraer nombre del medicamento si lo menciona
+    const medM = c.match(/(?:tomar?|toma|tome)\s+((?:el?|la|los|las|un[ao]?)?\s*\w+)/);
+    const medN = medM ? medM[1].trim() : '';
+    msg = medN && medN.length > 2 && !['la','el','un','una','los','las'].includes(medN)
+      ? `Es hora de tomar ${medN}.`
       : 'Es hora de tomar tu medicamento.';
-  } else if (esRecordatorio) {
+  } else if (esRec) {
     tipo = 'recordatorio';
-    // Extraer mensaje entre "recuérdame [MENSAJE] a las"
-    const msgPatterns = [
-      /recuerdame\s+(.+?)\s+(?:a\s+las|para\s+las|en)/i,
-      /recordatorio(?:\s+de)?\s+(.+?)\s+(?:a\s+las|para)/i,
-      /avisame\s+(?:de\s+)?(.+?)\s+(?:a\s+las|para)/i,
+    // Extraer mensaje entre trigger y "a las"
+    const pats = [
+      /recuerdame\s+(.+?)\s+(?:a\s+las?|para\s+las?|en)/i,
+      /avisame\s+(?:de\s+|sobre\s+)?(.+?)\s+(?:a\s+las?|para)/i,
+      /recordatorio\s+(?:de\s+|sobre\s+)?(.+?)\s+(?:a\s+las?|para)/i,
     ];
-    for (const pat of msgPatterns) {
+    for (const pat of pats) {
       const m = c.match(pat);
       if (m && m[1].trim().length > 1) { msg = m[1].trim(); break; }
     }
     if (!msg) msg = 'Tienes un recordatorio.';
-    // Capitalizar primera letra
     msg = msg.charAt(0).toUpperCase() + msg.slice(1);
     if (!msg.endsWith('.')) msg += '.';
-  } else if (esDespertar) {
-    tipo = 'alarma';
-    msg  = '¡Buenos días! Es hora de levantarse.';
-  } else {
-    msg = '';
+  } else if (esDes) {
+    tipo  = 'alarma';
+    msg   = '¡Buenos días! Es hora de levantarse.';
   }
 
   // ── 4. Repetir ───────────────────────────────────────────────────
   const repetir = c.includes('todos los dias') || c.includes('cada dia') ||
-                  c.includes('diario') || c.includes('siempre') ||
-                  c.includes('de lunes a viernes') || c.includes('cada manana');
+                  c.includes('diario')          || c.includes('siempre') ||
+                  c.includes('cada manana')     || c.includes('de lunes a viernes');
 
-  return { hora, minuto, tipo, mensaje: msg, repetir };
+  // ── 5. Sonido automático según tipo ──────────────────────────────
+  const sonido = SONIDO_POR_TIPO[tipo] || 'beep';
+
+  return { hora, minuto, tipo, mensaje: msg, repetir, sonido };
 }
 
-// ── UI del panel de alarmas ───────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// UI PANEL
+// ══════════════════════════════════════════════════════════════════════
 
 function guardarAlarmaUI() {
-  const hora   = parseInt(document.getElementById('alarmHora').value);
-  const minuto = parseInt(document.getElementById('alarmMin').value);
-  const tipo   = document.getElementById('alarmTipo').value;
-  const msg    = document.getElementById('alarmMsg').value.trim();
-  const repetir = document.getElementById('alarmRepetir').checked;
+  const hora    = parseInt(document.getElementById('alarmHora')?.value);
+  const minuto  = parseInt(document.getElementById('alarmMin')?.value);
+  const tipo    = document.getElementById('alarmTipo')?.value  || 'alarma';
+  const msg     = document.getElementById('alarmMsg')?.value.trim() || '';
+  const repetir = document.getElementById('alarmRepetir')?.checked || false;
+  const sonOn   = document.getElementById('alarmSonidoOn')?.checked;
+  sonidoActivado = sonOn !== undefined ? sonOn : true;
+
   if (isNaN(hora) || hora < 0 || hora > 23) { alert('Hora inválida (0-23)'); return; }
   if (isNaN(minuto) || minuto < 0 || minuto > 59) { alert('Minutos inválidos (0-59)'); return; }
-  crearAlarma({ hora, minuto, tipo,
-    mensaje: msg || (tipo === 'medicamento' ? 'Es hora de tomar tu medicamento.' :
-                     tipo === 'recordatorio' ? 'Tienes un recordatorio.' : ''),
-    repetir
-  });
+
+  const defMsg = tipo === 'medicamento' ? 'Es hora de tomar tu medicamento.' :
+                 tipo === 'recordatorio' ? 'Tienes un recordatorio.' : '';
+
+  crearAlarma({ hora, minuto, tipo, mensaje: msg || defMsg, repetir, sonido: sonidoSeleccionado });
 }
 
-let sonidoActivado = true;
 function toggleSonido() {
   sonidoActivado = !sonidoActivado;
-  const btn = document.getElementById('soundToggle');
-  if (btn) {
-    btn.textContent   = sonidoActivado ? 'ON' : 'OFF';
-    btn.className     = `sound-toggle ${sonidoActivado ? 'on' : 'off'}`;
-  }
+  const cb = document.getElementById('alarmSonidoOn');
+  if (cb) cb.checked = sonidoActivado;
 }
 
 function renderizarListaAlarmas() {
   const el = document.getElementById('alarmaLista');
   if (!el) return;
   const lista = getAlarmas();
-  if (lista.length === 0) { el.innerHTML = '<p style="color:var(--text-muted);font-size:.75rem;text-align:center;padding:8px;">Sin alarmas guardadas</p>'; return; }
+  if (lista.length === 0) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:.75rem;text-align:center;padding:10px;">Sin alarmas guardadas</p>';
+    return;
+  }
+
+  const ICONOS_SONIDO = { beep:'◉', urgente:'▲', suave:'♪', digital:'⌁', campana:'♔', medicina:'✦' };
 
   el.innerHTML = lista.map(a => {
-    const h     = String(a.hora).padStart(2,'0');
-    const m     = String(a.minuto).padStart(2,'0');
-    const icono = a.tipo === 'medicamento' ? '💊' : a.tipo === 'recordatorio' ? '📌' : '⏰';
-    const repLabel = a.repetir ? ' · diario' : '';
+    const h      = String(a.hora).padStart(2,'0');
+    const m      = String(a.minuto).padStart(2,'0');
+    const icono  = a.tipo === 'medicamento' ? '💊' : a.tipo === 'recordatorio' ? '📌' : '⏰';
+    const sIcon  = ICONOS_SONIDO[a.sonido] || '◉';
+    const repLbl = a.repetir ? ' · diario' : '';
     return `
       <div class="alarm-item ${a.activa ? '' : 'alarm-inactive'}">
-        <span style="font-size:1.1rem;">${icono}</span>
-        <div class="alarm-item-info">
-          <strong>${h}:${m}${repLabel}</strong>
-          <small>${a.mensaje || a.tipo}</small>
+        <span style="font-size:1rem;flex-shrink:0;">${icono}</span>
+        <div class="alarm-item-info" style="flex:1;min-width:0;">
+          <strong style="display:flex;align-items:center;gap:5px;">
+            ${h}:${m}
+            <span style="font-size:.6rem;color:var(--text-muted);font-family:var(--font-mono);">${sIcon} ${a.sonido || 'beep'}${repLbl}</span>
+          </strong>
+          <small style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">${a.mensaje || a.tipo}</small>
         </div>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:.7rem;color:var(--text-muted);">
-          <input type="checkbox" ${a.activa ? 'checked' : ''} onchange="toggleAlarma(${a.id})">
-          ${a.activa ? 'ON' : 'OFF'}
-        </label>
-        <button onclick="eliminarAlarma(${a.id})"
-          style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.9rem;padding:0 4px;"
-          title="Eliminar">✕</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <button onclick="tocarSonido('${a.sonido || 'beep'}')"
+            style="background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:3px 7px;cursor:pointer;font-size:.7rem;"
+            title="Escuchar sonido">▶</button>
+          <label style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:.68rem;color:var(--text-muted);">
+            <input type="checkbox" ${a.activa ? 'checked' : ''} onchange="toggleAlarma(${a.id})">
+            ${a.activa ? 'ON' : 'OFF'}
+          </label>
+          <button onclick="eliminarAlarma(${a.id})"
+            style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.9rem;padding:0 2px;"
+            title="Eliminar">✕</button>
+        </div>
       </div>`;
   }).join('');
 }
 
-// Renderizar cuando se abre el panel
-function togglePanel(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const visible = el.style.display !== 'none';
-  // Cerrar todos
-  ['alarmaPanel','noticiasPanel','climaPanel','tradPanel','corpusPanel'].forEach(p => {
-    const pe = document.getElementById(p);
-    if (pe) pe.style.display = 'none';
-  });
-  if (!visible) {
-    el.style.display = 'flex';
-    if (id === 'alarmaPanel') {
-      renderCalendario();
-      renderizarListaAlarmas();
-    }
-  }
-}
-
-// ── Calendario mini ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// CALENDARIO MINI
+// ══════════════════════════════════════════════════════════════════════
 
 function renderCalendario() {
   const el = document.getElementById('alarmCalendar');
   if (!el) return;
-  const hoy   = new Date();
-  const año   = hoy.getFullYear();
-  const mes   = hoy.getMonth();
-  const dias  = new Date(año, mes + 1, 0).getDate();
-  const inicio = new Date(año, mes, 1).getDay();
-  const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const DIAS   = ['D','L','M','X','J','V','S'];
+  const hoy  = new Date();
+  const año  = hoy.getFullYear();
+  const mes  = hoy.getMonth();
+  const dias = new Date(año, mes + 1, 0).getDate();
+  const ini  = new Date(año, mes, 1).getDay();
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const alarmasDia = {};
+  getAlarmas().filter(a => a.activa).forEach(a => {
+    const key = a.dia || 0;
+    alarmasDia[key] = (alarmasDia[key] || 0) + 1;
+  });
 
-  let html = `<div class="cal-header">${MESES[mes]} ${año}</div>
+  el.innerHTML = `
+    <div class="cal-header">${MESES[mes]} ${año}</div>
     <div class="cal-grid">
-      ${DIAS.map(d => `<div class="cal-cell cal-day-name">${d}</div>`).join('')}
-      ${Array(inicio).fill('<div class="cal-cell"></div>').join('')}
-      ${Array.from({length: dias}, (_,i) => {
+      ${['D','L','M','X','J','V','S'].map(d => `<div class="cal-cell cal-day-name">${d}</div>`).join('')}
+      ${Array(ini).fill('<div class="cal-cell"></div>').join('')}
+      ${Array.from({length: dias}, (_, i) => {
         const d = i + 1;
         const esHoy = d === hoy.getDate();
         return `<div class="cal-cell ${esHoy ? 'cal-hoy' : ''}">${d}</div>`;
       }).join('')}
     </div>`;
-  el.innerHTML = html;
 }
 
-// ── TEMPORIZADOR ──────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// TEMPORIZADOR
+// ══════════════════════════════════════════════════════════════════════
 
 function iniciarTimer(segundos) {
   if (timerInterval) clearInterval(timerInterval);
   timerSegundos = segundos;
   const min = Math.floor(segundos / 60);
   const seg = segundos % 60;
-  _alarVoz(`Temporizador de ${min > 0 ? min + ' minutos' : ''}${seg > 0 ? (min > 0 ? ' y ' : '') + seg + ' segundos' : ''} iniciado.`);
+  _alarVoz(`Temporizador de ${min > 0 ? min + ' minuto' + (min > 1 ? 's' : '') : ''}${seg > 0 ? (min > 0 ? ' y ' : '') + seg + ' segundo' + (seg > 1 ? 's' : '') : ''} iniciado.`);
   _alarLog(`[TIMER] ⏱ ${segundos}s iniciado`);
   mostrarToastTimer(segundos);
   timerInterval = setInterval(() => {
@@ -349,7 +597,8 @@ function iniciarTimer(segundos) {
     actualizarToastTimer(timerSegundos);
     if (timerSegundos <= 0) {
       clearInterval(timerInterval); timerInterval = null;
-      _alarVoz('¡El temporizador terminó!');
+      tocarSonidoRepetido('urgente', 2, 1000);
+      setTimeout(() => _alarVoz('¡El temporizador terminó!'), 600);
       _alarLog('[TIMER] ✅ Completado');
       if (Notification.permission === 'granted')
         new Notification('SCALL ⏱', { body: '¡Temporizador completado!' });
@@ -358,11 +607,11 @@ function iniciarTimer(segundos) {
   }, 1000);
 }
 
-function parsearTimer(comando) {
+function parsearTimer(c) {
   let total = 0;
-  const h = comando.match(/(\d+)\s*hora/);
-  const m = comando.match(/(\d+)\s*minuto/);
-  const s = comando.match(/(\d+)\s*segundo/);
+  const h = c.match(/(\d+)\s*hora/);
+  const m = c.match(/(\d+)\s*minuto/);
+  const s = c.match(/(\d+)\s*segundo/);
   if (h) total += parseInt(h[1]) * 3600;
   if (m) total += parseInt(m[1]) * 60;
   if (s) total += parseInt(s[1]);
@@ -375,33 +624,30 @@ function cancelarTimer() {
   _alarVoz('Temporizador cancelado.');
 }
 
-// ── CRONÓMETRO ────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// CRONÓMETRO
+// ══════════════════════════════════════════════════════════════════════
 
 function iniciarCronometro() {
   if (cronometroActivo) { _alarVoz('El cronómetro ya está corriendo.'); return; }
   cronometroSeg = 0; cronometroActivo = true;
   cronometroInt = setInterval(() => { cronometroSeg++; actualizarToastCronometro(); }, 1000);
   _alarVoz('Cronómetro iniciado.');
-  _alarLog('[CRONÓMETRO] ▶ Iniciado');
   mostrarToastCronometro();
 }
-
 function pausarCronometro() {
   if (cronometroInt) { clearInterval(cronometroInt); cronometroInt = null; }
   cronometroActivo = false;
   _alarVoz(`Cronómetro pausado en ${formatTiempo(cronometroSeg)}.`);
 }
-
 function reiniciarCronometro() {
   pausarCronometro(); cronometroSeg = 0;
   _alarVoz('Cronómetro reiniciado.');
   actualizarToastCronometro();
 }
-
 function leerCronometro() {
   _alarVoz(`El cronómetro lleva ${formatTiempo(cronometroSeg)}.`);
 }
-
 function formatTiempo(seg) {
   const h = Math.floor(seg / 3600);
   const m = Math.floor((seg % 3600) / 60);
@@ -413,7 +659,9 @@ function formatTiempo(seg) {
   return p.join(' y ');
 }
 
-// ── TOASTS ────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// TOASTS
+// ══════════════════════════════════════════════════════════════════════
 
 function mostrarToastAlarma(alarma) {
   const icono = alarma.tipo === 'medicamento' ? '💊' :
@@ -426,12 +674,11 @@ function mostrarToastAlarma(alarma) {
       <strong>${alarma.mensaje || 'Alarma'}</strong>
       <small style="display:block;color:#94a3b8;margin-top:2px;">
         ${String(alarma.hora).padStart(2,'0')}:${String(alarma.minuto).padStart(2,'0')}
-        ${alarma.repetir ? ' · repetición diaria' : ''}
+        · ${alarma.sonido || 'beep'}${alarma.repetir ? ' · diario' : ''}
       </small>
     </div>
     <button onclick="this.parentElement.remove()"
-      style="background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;">✕</button>
-  `;
+      style="background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;">✕</button>`;
   document.body.appendChild(toast);
   setTimeout(() => { if (toast.parentElement) toast.remove(); }, 15000);
 }
@@ -443,10 +690,9 @@ function mostrarToastTimer(seg) {
   timerToast.id = 'timerWidget';
   timerToast.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
     width:min(280px,calc(100vw - 32px));background:var(--surface,#1e293b);
-    border:1px solid rgba(0,212,255,0.3);border-radius:16px;
-    padding:16px 20px;z-index:19998;color:var(--text,#f8fafc);
-    box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;
-    font-family:var(--font-display,monospace);`;
+    border:1px solid rgba(0,212,255,0.3);border-radius:16px;padding:16px 20px;
+    z-index:19998;color:var(--text,#f8fafc);box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    text-align:center;font-family:var(--font-display,monospace);`;
   timerToast.innerHTML = `
     <div style="font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">⏱ Temporizador</div>
     <div id="timerDisplay" style="font-size:2.2rem;font-weight:700;color:var(--glow,#00d4ff);">${formatTiempoPadded(seg)}</div>
@@ -465,13 +711,11 @@ let cronToast = null;
 function mostrarToastCronometro() {
   if (cronToast) cronToast.remove();
   cronToast = document.createElement('div');
-  cronToast.id = 'cronWidget';
   cronToast.style.cssText = `position:fixed;bottom:90px;right:16px;
     width:min(240px,calc(100vw - 32px));background:var(--surface,#1e293b);
-    border:1px solid rgba(16,185,129,0.3);border-radius:16px;
-    padding:16px 20px;z-index:19997;color:var(--text,#f8fafc);
-    box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;
-    font-family:var(--font-display,monospace);`;
+    border:1px solid rgba(16,185,129,0.3);border-radius:16px;padding:16px 20px;
+    z-index:19997;color:var(--text,#f8fafc);box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    text-align:center;font-family:var(--font-display,monospace);`;
   cronToast.innerHTML = `
     <div style="font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">⏱ Cronómetro</div>
     <div id="cronDisplay" style="font-size:1.8rem;font-weight:700;color:#10b981;">00:00:00</div>
@@ -494,12 +738,30 @@ function formatTiempoPadded(seg) {
   return `${String(Math.floor(seg/60)).padStart(2,'0')}:${String(seg%60).padStart(2,'0')}`;
 }
 
-// ── PERMISOS Y INIT ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════
 
 function pedirPermisoNotificacion() {
   if ('Notification' in window && Notification.permission === 'default')
     Notification.requestPermission();
 }
+
+// togglePanel centralizado — reemplaza el de ui.js si existe
+window.togglePanel = function(id) {
+  const paneles = ['alarmaPanel','noticiasPanel','climaPanel','tradPanel','corpusPanel'];
+  const target  = document.getElementById(id);
+  if (!target) return;
+  const visible = target.style.display !== 'none';
+  paneles.forEach(p => {
+    const pe = document.getElementById(p);
+    if (pe) pe.style.display = 'none';
+  });
+  if (!visible) {
+    target.style.display = 'flex';
+    if (id === 'alarmaPanel') { renderCalendario(); renderizarListaAlarmas(); }
+  }
+};
 
 window.addEventListener('load', () => {
   pedirPermisoNotificacion();
