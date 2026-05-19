@@ -1,3 +1,8 @@
+if (window._SCALL_ALARMS_LOADED) {
+  console.warn('[ALARMS] Módulo ya cargado — ignorando carga doble');
+} else {
+window._SCALL_ALARMS_LOADED = true;
+
 // =====================================================================
 // MÓDULO ALARMAS — SCALL
 // Alarmas con sonidos Web Audio API, sincronización UI, voz→panel
@@ -777,3 +782,6 @@ window.addEventListener('load', () => {
 
 function _alarLog(m) { typeof logMessage  === 'function' ? logMessage(m)  : console.log(m); }
 function _alarVoz(m) { typeof responderVoz === 'function' ? responderVoz(m) : console.warn('[VOZ]', m); }
+
+
+} // fin guard _SCALL_ALARMS_LOADED
