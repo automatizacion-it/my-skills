@@ -51,6 +51,57 @@ function seleccionarIA(nombre) {
 // ======================================================================
 // LLAMADA A CLAUDE API
 // ======================================================================
+// ======================================================================
+// CLASIFICADOR DE INTENCIÓN
+// Decide si el texto va a la IA o a los intents locales de SCALL.
+// Retorna: 'local' | 'ia'
+// ======================================================================
+function clasificarIntencion(texto) {
+  const c = texto.toLowerCase()
+    .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
+    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+
+  // ── Palabras que siempre van a intents locales ──────────────────
+  const LOCAL_KEYWORDS = [
+    // Música
+    'pon ','ponme ','reproduce ','coloca ','quiero escuchar','dame musica','toca ',
+    'pausa','pausar','siguiente cancion','anterior','sube volumen','baja volumen',
+    'detener la musica','apaga la musica','para la musica',
+    // Radio
+    'radio','emisora','sintoniza','caracol','blu','rcn','la fm','tropicana',
+    'olimpica','w radio','los 40','oxigeno','rumba','amor stereo',
+    // Alarmas y tiempo
+    'alarma','despiertame','despertarme','levantame','recuerdame','recordatorio',
+    'pastilla','medicamento','medicina','jarabe','dosis',
+    'timer','temporizador','cronometro','cuenta regresiva',
+    // Dispositivos IoT
+    'enciende','apaga','prende','luces','luz','sala','cuarto','television',
+    'tele','persiana','cortina','ventilador','encender','apagar',
+    // Clima y noticias
+    'clima ','temperatura','llueve','pronostico','noticias','titulares',
+    // Utilidades
+    'traduce','traducir','como se dice',
+    'cumpleanos','sos','auxilio','emergencia','ayuda','me cai',
+    // Hora y fecha
+    'que hora','dime la hora','que dia es','fecha de hoy',
+    // Sistema
+    'corpus','frases no reconocidas',
+    // Chistes / básicos (van a intents locales rápido)
+    'chiste','broma','hazme reir','hola','buenos dias','adios','hasta luego',
+  ];
+
+  if (LOCAL_KEYWORDS.some(k => c.includes(k))) return 'local';
+
+  // ── Patrones de hora → siempre local ───────────────────────────
+  if (/\d{1,2}\s*(y\s*\d{1,2}|y\s*media|y\s*cuarto|en\s*punto|de\s*la\s*(manana|tarde|noche))/.test(c)) return 'local';
+
+  // ── Todo lo demás va a la IA ────────────────────────────────────
+  return 'ia';
+}
+
+// ======================================================================
+// LLAMADA A CLAUDE — encasillado como cerebro de SCALL
+// ======================================================================
 async function llamarClaude(texto, name) {
   const apiKey = getClaudeKey();
   if (!apiKey) {
@@ -59,12 +110,35 @@ async function llamarClaude(texto, name) {
     return;
   }
 
+  // Clasificar antes de gastar la API
+  const intencion = clasificarIntencion(texto);
+  if (intencion === 'local') {
+    logMessage('[CLAUDE] ↩ Redirigiendo a intent local (no gasta API)');
+    ejecutarIntentLocal(texto);
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
   const model = getClaudeModel();
-  const systemPrompt = `Eres ${name}, un asistente personal inteligente, amigable y muy capaz. 
-Hablas en español. Responde de forma natural y concisa (máximo 3 oraciones para respuestas de voz).
-También tienes habilidades domóticas. Si el usuario pide controlar hardware (luces, ventiladores, puertas, TV), 
-responde de forma natural e incluye al final el comando MQTT con el formato exacto: MQTT[topic|payload].
-Ejemplo: "Encendiendo las luces. MQTT[casa/sala/luces|ON]"`;
+
+  // System prompt encasillado: Claude es SCALL y solo hace conversación
+  const systemPrompt = `Eres ${name}, el asistente de voz personal del sistema SCALL desarrollado por IIT.
+
+ROL ESTRICTO:
+- Eres el cerebro de conversación de SCALL. Respondes preguntas, explicas conceptos, haces chistes, das consejos y charlas con el usuario en español colombiano.
+- Eres conciso: máximo 2-3 oraciones por respuesta (es audio, no texto).
+- Nunca ofreces hacer cosas que SCALL ya maneja localmente: música, alarmas, radio, luces, clima, noticias, traductor. Si el usuario lo pide, dile que lo active directamente con voz ("di 'pon música' para reproducir").
+- Si el usuario menciona hardware domótico que requiere MQTT, responde naturalmente e incluye exactamente: MQTT[topic|payload]
+
+PERSONALIDAD:
+- Amigable, inteligente, directo. Hablas en español colombiano informal.
+- Nunca dices que eres un modelo de lenguaje ni mencionas Anthropic ni Claude.
+- Si te preguntan qué eres, dices: "Soy ${name}, tu asistente personal de IIT."
+
+RESTRICCIONES:
+- No generes listas largas ni texto formateado (es voz).
+- No hagas promesas de funciones que no tienes.
+- Si no sabes algo, dilo brevemente y ofrece ayuda alternativa.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -77,14 +151,13 @@ Ejemplo: "Encendiendo las luces. MQTT[casa/sala/luces|ON]"`;
       },
       body: JSON.stringify({
         model,
-        max_tokens: 300,
+        max_tokens: 250,
         system: systemPrompt,
         messages: [{ role: 'user', content: texto }]
       })
     });
 
     const data = await response.json();
-
     if (!response.ok) {
       logMessage(`[CLAUDE] ❌ Error ${response.status}: ${data.error?.message || 'desconocido'}`);
       throw new Error(data.error?.message || response.status);
@@ -92,7 +165,7 @@ Ejemplo: "Encendiendo las luces. MQTT[casa/sala/luces|ON]"`;
 
     let aiResponse = data.content?.[0]?.text || '';
 
-    // Extraer comandos MQTT
+    // Extraer comandos MQTT si los hay
     const mqttRegex = /MQTT\[(.*?)\]/g;
     let match;
     while ((match = mqttRegex.exec(aiResponse)) !== null) {
@@ -101,14 +174,16 @@ Ejemplo: "Encendiendo las luces. MQTT[casa/sala/luces|ON]"`;
     }
     aiResponse = aiResponse.replace(/MQTT\[.*?\]/g, '').trim();
 
-    logMessage(`[CLAUDE] ✅ Modelo: ${model}`);
+    logMessage(`[CLAUDE] ✅ ${model} | intención: conversación`);
     if (window.scallOrb) window.scallOrb.setState('speaking');
     responderVoz(aiResponse);
 
   } catch (err) {
     logMessage(`[CLAUDE] ❌ ${err.message}`);
     if (window.scallOrb) window.scallOrb.setState('idle');
-    responderVoz('Hubo un error al conectar con Claude.');
+    // Fallback a intent local si Claude falla
+    logMessage('[CLAUDE] ↩ Fallback a intent local');
+    ejecutarIntentLocal(texto);
   }
 }
 
