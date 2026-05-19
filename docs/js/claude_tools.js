@@ -457,7 +457,6 @@ async function llamarClaudeConTools(texto, nombre) {
   var model      = typeof getClaudeModel === 'function' ? getClaudeModel() : 'claude-sonnet-4-20250514';
   var nombre_bot = nombre || localStorage.getItem('assistantName') || 'SCALL';
 
-  // System prompt — Claude sabe qué módulos tiene disponibles
   var systemPrompt =
     'Eres ' + nombre_bot + ', el asistente personal inteligente del sistema SCALL desarrollado por IIT. ' +
     'Tienes acceso completo a todos los módulos: navegación, alarmas, música, radio, bluetooth, ' +
@@ -465,21 +464,57 @@ async function llamarClaudeConTools(texto, nombre) {
     '\n\nCUANDO EL USUARIO PIDA ALGO:' +
     '\n1. Usa las herramientas disponibles para ejecutar la acción.' +
     '\n2. SIEMPRE usa la herramienta "hablar" para confirmar lo que hiciste.' +
-    '\n3. Para navegación: usa abrir_navegacion con narrar=true para la experiencia completa.' +
-    '\n4. Para alarmas: extrae hora y minuto del texto del usuario.' +
-    '\n5. Para dispositivos: usa controlar_dispositivo con el topic MQTT correcto.' +
-    '\n\nPERSONALIDAD: Amigable, directo, en español colombiano informal. ' +
-    'Máximo 2 oraciones en el hablar(). Nunca digas que eres Claude o que eres de Anthropic. ' +
-    'Si te preguntan qué eres, di: Soy ' + nombre_bot + ', tu asistente personal de IIT.';
+    '\n3. Para navegación: usa abrir_navegacion con narrar=true.' +
+    '\n4. Para alarmas: extrae hora y minuto del texto.' +
+    '\n5. Para dispositivos: usa controlar_dispositivo.' +
+    '\n\nPERSONALIDAD: Amigable, directo, español colombiano informal. ' +
+    'Máximo 2 oraciones en hablar(). Nunca digas que eres Claude o Anthropic. ' +
+    'Si te preguntan qué eres: Soy ' + nombre_bot + ', tu asistente personal de IIT.';
+
+  // ── Validar y limpiar historial antes de cada llamada ────────────
+  // Regla API: cada tool_use DEBE tener su tool_result inmediatamente después
+  // Si el historial está corrupto, limpiarlo para evitar error 400
+  if (!window._scallChatHistory) window._scallChatHistory = [];
+
+  function historialeValido(hist) {
+    for (var i = 0; i < hist.length; i++) {
+      var msg = hist[i];
+      if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+        var tieneToolUse = msg.content.some(function(b) { return b.type === 'tool_use'; });
+        if (tieneToolUse) {
+          // El siguiente mensaje debe ser user con tool_result
+          var next = hist[i + 1];
+          if (!next || next.role !== 'user' || !Array.isArray(next.content) ||
+              !next.content.some(function(b) { return b.type === 'tool_result'; })) {
+            return false; // historial corrupto
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  if (!historialeValido(window._scallChatHistory)) {
+    _toolLog('[CLAUDE_TOOLS] ⚠️ Historial corrupto detectado — limpiando');
+    window._scallChatHistory = [];
+  }
+
+  // Mantener máximo 10 turnos (20 mensajes)
+  window._scallChatHistory.push({ role: 'user', content: texto });
+  if (window._scallChatHistory.length > 20) {
+    window._scallChatHistory = window._scallChatHistory.slice(-20);
+    // Asegurar que empiece con 'user'
+    while (window._scallChatHistory.length > 0 &&
+           window._scallChatHistory[0].role !== 'user') {
+      window._scallChatHistory.shift();
+    }
+  }
 
   _toolLog('[CLAUDE_TOOLS] Enviando a Claude con ' + SCALL_TOOLS.length + ' herramientas...');
-
   if (window.scallOrb) window.scallOrb.setState('processing');
 
-  // Historial de conversación (máximo 10 turnos)
-  if (!window._scallChatHistory) window._scallChatHistory = [];
-  window._scallChatHistory.push({ role: 'user', content: texto });
-  if (window._scallChatHistory.length > 20) window._scallChatHistory = window._scallChatHistory.slice(-20);
+  // Snapshot del historial antes de la llamada — para rollback si falla
+  var histSnapshot = JSON.parse(JSON.stringify(window._scallChatHistory));
 
   try {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -503,18 +538,21 @@ async function llamarClaudeConTools(texto, nombre) {
 
     if (!response.ok) {
       _toolLog('[CLAUDE_TOOLS] Error ' + response.status + ': ' + (data.error && data.error.message));
+      // Rollback al snapshot antes del error
+      window._scallChatHistory = histSnapshot.slice(0, -1); // quitar el mensaje que causó el error
       if (typeof responderVoz === 'function') responderVoz('Error al conectar con Claude.');
       if (window.scallOrb) window.scallOrb.setState('idle');
       return;
     }
 
-    // ── Procesar respuesta — puede contener text + tool_use ──────────
-    var assistantMessage = { role: 'assistant', content: data.content };
-    window._scallChatHistory.push(assistantMessage);
+    // ── Agregar respuesta del asistente al historial ──────────────
+    var assistantMsg = { role: 'assistant', content: data.content };
+    window._scallChatHistory.push(assistantMsg);
 
-    var toolResults = [];
+    var toolResults    = [];
     var textoRespuesta = '';
 
+    // ── Procesar bloques de la respuesta ─────────────────────────
     for (var i = 0; i < data.content.length; i++) {
       var bloque = data.content[i];
 
@@ -523,8 +561,9 @@ async function llamarClaudeConTools(texto, nombre) {
       }
 
       if (bloque.type === 'tool_use') {
-        _toolLog('[CLAUDE_TOOLS] Tool: ' + bloque.name + ' input: ' + JSON.stringify(bloque.input));
+        _toolLog('[CLAUDE_TOOLS] Tool: ' + bloque.name + ' → ' + JSON.stringify(bloque.input));
         var resultado = ejecutarHerramienta(bloque.name, bloque.input);
+        // CRÍTICO: guardar tool_result con el mismo id del tool_use
         toolResults.push({
           type:        'tool_result',
           tool_use_id: bloque.id,
@@ -533,8 +572,9 @@ async function llamarClaudeConTools(texto, nombre) {
       }
     }
 
-    // ── Si hubo tool calls, enviar los resultados de vuelta ──────────
+    // ── Si hubo tool_use, SIEMPRE enviar tool_results de vuelta ──
     if (toolResults.length > 0) {
+      // Agregar tool_results al historial (mismo turno user)
       window._scallChatHistory.push({ role: 'user', content: toolResults });
 
       var response2 = await fetch('https://api.anthropic.com/v1/messages', {
@@ -556,34 +596,51 @@ async function llamarClaudeConTools(texto, nombre) {
 
       var data2 = await response2.json();
 
-      if (response2.ok && data2.content) {
+      if (!response2.ok) {
+        _toolLog('[CLAUDE_TOOLS] Error en segunda llamada: ' + (data2.error && data2.error.message));
+        // No limpiar el historial aquí — los tool_results están correctos
+      } else if (data2.content) {
         window._scallChatHistory.push({ role: 'assistant', content: data2.content });
+
         for (var j = 0; j < data2.content.length; j++) {
-          if (data2.content[j].type === 'text') textoRespuesta += data2.content[j].text;
-          if (data2.content[j].type === 'tool_use') {
-            var r2 = ejecutarHerramienta(data2.content[j].name, data2.content[j].input);
-            _toolLog('[CLAUDE_TOOLS] Tool2: ' + data2.content[j].name + ' → ' + JSON.stringify(r2));
+          var b2 = data2.content[j];
+          if (b2.type === 'text') {
+            textoRespuesta += b2.text;
+          }
+          if (b2.type === 'tool_use') {
+            // Claude pidió otra herramienta en la segunda vuelta
+            var r2 = ejecutarHerramienta(b2.name, b2.input);
+            _toolLog('[CLAUDE_TOOLS] Tool2: ' + b2.name + ' → ' + JSON.stringify(r2));
+            // Agregar tool_result para mantener historial válido
+            window._scallChatHistory.push({
+              role: 'user',
+              content: [{
+                type:        'tool_result',
+                tool_use_id: b2.id,
+                content:     JSON.stringify(r2)
+              }]
+            });
           }
         }
       }
     }
 
-    // ── Hablar texto final si Claude lo incluyó ──────────────────────
+    // ── Hablar respuesta de texto si no usó herramienta "hablar" ─
     if (textoRespuesta.trim() && typeof responderVoz === 'function') {
-      // No hablar si ya usó herramienta "hablar" para no duplicar
-      var yaHabló = toolResults.some(function(tr) {
-        return tr.content && tr.content.includes('"ok":true');
-      }) && data.content.some(function(b) {
+      var usoHablar = data.content.some(function(b) {
         return b.type === 'tool_use' && b.name === 'hablar';
       });
-      if (!yaHabló) responderVoz(textoRespuesta.trim());
+      if (!usoHablar) responderVoz(textoRespuesta.trim());
     }
 
-    _toolLog('[CLAUDE_TOOLS] Completado. Stop: ' + data.stop_reason);
+    _toolLog('[CLAUDE_TOOLS] Completado. Stop: ' + data.stop_reason +
+             ' | Historial: ' + window._scallChatHistory.length + ' mensajes');
     if (window.scallOrb) window.scallOrb.setState('idle');
 
   } catch (err) {
-    _toolLog('[CLAUDE_TOOLS] Error: ' + err.message);
+    _toolLog('[CLAUDE_TOOLS] Excepción: ' + err.message);
+    // Rollback al snapshot — deshacer cambios al historial
+    window._scallChatHistory = histSnapshot.slice(0, -1);
     if (typeof responderVoz === 'function') responderVoz('No pude conectar con Claude. Revisa tu conexión.');
     if (window.scallOrb) window.scallOrb.setState('idle');
   }

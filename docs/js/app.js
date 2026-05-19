@@ -312,7 +312,7 @@ if (!SpeechRecognition) {
   let fraseAcumulada = '';             // texto completo mientras habla
   let debounceTimer  = null;           // espera antes de procesar
   let barraTimer     = null;
-  const DEBOUNCE_MS  = 2500;           // 2.5s de silencio → procesar
+  const DEBOUNCE_MS  = 4000;           // 4s de silencio → procesar
 
   // ── Web Audio para el orbe ─────────────────────────────────────────
   let audioCtx = null, analyserNode = null;
@@ -343,7 +343,7 @@ if (!SpeechRecognition) {
         'position:fixed','bottom:0','left:0',
         'height:3px','width:0%',
         'background:rgba(0,212,255,0.8)',
-        'transition:width ' + (DEBOUNCE_MS/1000) + 's linear',
+        'transition:width ' + (DEBOUNCE_MS/1000) + 's linear',  // se actualiza con DEBOUNCE_MS
         'z-index:9999','pointer-events:none'
       ].join(';');
       document.body.appendChild(barra);
@@ -352,7 +352,7 @@ if (!SpeechRecognition) {
     barra.style.transition = 'none';
     barra.style.width = '0%';
     void barra.offsetWidth; // forzar reflow
-    barra.style.transition = 'width ' + (DEBOUNCE_MS/1000) + 's linear';
+    barra.style.transition = 'width ' + (DEBOUNCE_MS/1000) + 's linear'; // 4s
     barra.style.width = '100%';
   }
 
