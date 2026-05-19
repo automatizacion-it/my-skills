@@ -77,6 +77,8 @@ function clasificarIntencion(texto) {
     // Dispositivos IoT
     'enciende','apaga','prende','luces','luz','sala','cuarto','television',
     'tele','persiana','cortina','ventilador','encender','apagar',
+    // Bluetooth
+    'bluetooth','audifono','auricular','parlante','bocina','emparejar','vincular',
     // Rutas y navegación
     'llevame a ','llevame al ','llevame hasta ','llevame donde ',
     'navega a ','navega al ','ruta a ','ruta al ','ruta hasta ','ruta hacia ',
@@ -496,6 +498,8 @@ async function ejecutarHabilidad(texto) {
     'timer_iniciar', 'timer_cancelar',
     'cronometro', 'cronometro_iniciar', 'cronometro_pausar', 'cronometro_reiniciar', 'cronometro_leer',
     // SOS
+    // Bluetooth
+    'bt_abrir', 'bt_escanear', 'bt_volumen_max', 'bt_volumen_normal',
     // Rutas
     'ruta_navegar', 'ruta_abrir_mapa', 'ruta_cerrar',
     'ruta_google_maps', 'ruta_mi_ubicacion', 'ruta_configurar_casa',
@@ -506,6 +510,26 @@ async function ejecutarHabilidad(texto) {
     'traducir', 'cumpleanos_abrir', 'cumpleanos_hoy', 'cumpleanos_proximo',
     'corpus_ver'
   ];
+
+  // Intents de Bluetooth inline (no requieren archivo separado)
+  const BT_INTENTS = [
+    { name:'bt_abrir',       match: c => c.includes('bluetooth') || c.includes('audifono') || c.includes('auricular') || c.includes('parlante') || c.includes('bocina'),
+      action: () => { if(typeof sideMenuActivar==='function') sideMenuActivar(document.getElementById('smBluetooth')); if(typeof abrirPanelBluetooth==='function') abrirPanelBluetooth(); } },
+    { name:'bt_escanear',    match: c => (c.includes('conectar')||c.includes('emparejar')||c.includes('vincular')||c.includes('buscar')) && (c.includes('bluetooth')||c.includes('audifono')||c.includes('parlante')),
+      action: () => { if(typeof abrirPanelBluetooth==='function') abrirPanelBluetooth(); setTimeout(()=>{if(typeof escanearBluetooth==='function') escanearBluetooth();},400); } },
+    { name:'bt_volumen_max', match: c => c.includes('volumen maximo')||c.includes('amplifica')||(c.includes('mas fuerte')&&c.includes('maximo')),
+      action: () => { if(typeof setGain==='function') setGain(3.0); responderVoz('Volumen al máximo.'); } },
+    { name:'bt_normal',      match: c => c.includes('volumen normal')&&(c.includes('bluetooth')||c.includes('audifono')),
+      action: () => { if(typeof setGain==='function') setGain(1.0); responderVoz('Volumen normal.'); } },
+  ];
+  for (const intent of BT_INTENTS) {
+    if (intent.match(comandoLower)) {
+      logMessage(\`[Intent BT] → [\${intent.name}]\`);
+      intent.action(comandoLower);
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      return;
+    }
+  }
 
   if (typeof intents !== 'undefined') {
     for (const intent of intents) {
