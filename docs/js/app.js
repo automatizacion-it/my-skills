@@ -61,6 +61,16 @@ function clasificarIntencion(texto) {
     .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
     .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
 
+  // Alarmas con fecha específica (nombre de mes) → siempre IA
+  const mesesEs = ['enero','febrero','marzo','abril','mayo','junio',
+                   'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const esAlarmaConFecha = (c.includes('alarma') || c.includes('recordatorio') ||
+                             c.includes('recuerdame') || c.includes('programa') ||
+                             c.includes('cita') || c.includes('medicamento') ||
+                             c.includes('pastilla')) &&
+                            mesesEs.some(m => c.includes(m));
+  if (esAlarmaConFecha) return 'ia';
+
   // ── Palabras que siempre van a intents locales ──────────────────
   // Palabras que activan SIEMPRE un intent local — NUNCA van a la IA
   // Regla: solo hardware, media y comandos sin respuesta de conversación
@@ -73,7 +83,8 @@ function clasificarIntencion(texto) {
     // Radio
     'radio','emisora','sintoniza','caracol','blu radio','rcn','la fm','tropicana',
     'olimpica','w radio','los 40','oxigeno','rumba','amor stereo',
-    // Alarmas
+    // Alarmas SIN fecha (con fecha específica → Claude)
+    // Nota: frases con nombre de mes se manejan en el filtro prioritario
     'alarma a las','pon alarma','ponme alarma','despiertame',
     'recuerdame tomar','pastilla a las','medicamento a las',
     'timer de','temporizador de','cronometro',
@@ -653,8 +664,19 @@ async function ejecutarHabilidad(texto) {
     }
   }
 
+  // Intents de alarma con fecha específica → van SIEMPRE a Claude
+  // El parser local no puede distinguir día=27 de hora=27
+  const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio',
+                    'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const INTENTS_ALARMA = ['alarma_crear','recordatorio_crear','recordatorio_diario',
+                           'medicamento_crear','medicamento_diario','medicamento'];
+  const tieneMesEnFrase = MESES_ES.some(m => comandoLower.includes(m));
+
   if (typeof intents !== 'undefined') {
     for (const intent of intents) {
+      // Si el intent es de alarma Y la frase tiene un mes → saltar al enrutador IA
+      if (INTENTS_ALARMA.includes(intent.name) && tieneMesEnFrase) continue;
+
       if (INTENTS_PRIORITARIOS.includes(intent.name) && intent.match(comandoLower)) {
         logMessage(`[Intent local prioritario] → [${intent.name}]`);
         intent.action(comandoLower);
