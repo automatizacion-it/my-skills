@@ -390,11 +390,18 @@ function sincronizarUIDesdeVoz({ hora, minuto, tipo, mensaje, repetir, sonido, d
   const s = sonido || SONIDO_POR_TIPO[tipo] || 'beep';
   seleccionarSonidoUI(s);
 
-  // Abrir el panel si está cerrado
+  // Abrir el panel si está cerrado (solo si no fue abierto ya por quien llamó)
   const panel = document.getElementById('alarmaPanel');
   if (panel && panel.style.display === 'none') {
     togglePanel('alarmaPanel');
+  } else if (panel && panel.style.display !== 'none') {
+    // Panel ya abierto — solo actualizar lista y calendario
+    renderizarListaAlarmas();
+    renderCalendario();
   }
+
+  // Actualizar contador en panel SISTEMA siempre
+  if (typeof actualizarContadorAlarmas === 'function') actualizarContadorAlarmas();
 }
 
 function resaltarCampo(el) {
@@ -833,7 +840,11 @@ window.togglePanel = function(id) {
   });
   if (!visible) {
     target.style.display = 'flex';
-    if (id === 'alarmaPanel') { renderCalendario(); renderizarListaAlarmas(); }
+    if (id === 'alarmaPanel') {
+      renderCalendario();
+      renderizarListaAlarmas();
+      if (typeof actualizarContadorAlarmas === 'function') actualizarContadorAlarmas();
+    }
   }
 };
 

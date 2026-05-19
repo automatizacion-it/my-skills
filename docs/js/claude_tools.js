@@ -319,7 +319,7 @@ function ejecutarHerramienta(nombre, input) {
     // ── Alarmas ─────────────────────────────────────────────────────
     case 'crear_alarma': {
       if (typeof crearAlarma === 'function') {
-        crearAlarma({
+        var alarmaData = {
           hora:    input.hora,
           minuto:  input.minuto,
           tipo:    input.tipo    || 'alarma',
@@ -329,20 +329,41 @@ function ejecutarHerramienta(nombre, input) {
           dia:     input.dia     || null,
           mes:     input.mes     || null,
           anio:    input.anio    || null
-        });
-        // Sincronizar UI del panel de alarmas
+        };
+
+        // 1. Crear la alarma
+        crearAlarma(alarmaData);
+
+        // 2. Abrir el panel de alarmas para que el usuario vea
+        if (typeof togglePanel === 'function') togglePanel('alarmaPanel');
+
+        // 3. Activar ítem del menú lateral
+        var btnAlarma = document.getElementById('smAlarmas');
+        if (btnAlarma && typeof sideMenuActivar === 'function') sideMenuActivar(btnAlarma);
+
+        // 4. Sincronizar campos del formulario con los valores de la alarma
         if (typeof sincronizarUIDesdeVoz === 'function') {
-          sincronizarUIDesdeVoz({
-            hora: input.hora, minuto: input.minuto,
-            tipo: input.tipo || 'alarma',
-            mensaje: input.mensaje || '',
-            repetir: input.repetir || false,
-            dia: input.dia || null, mes: input.mes || null, anio: input.anio || null
-          });
+          setTimeout(function() {
+            sincronizarUIDesdeVoz(alarmaData);
+          }, 300);
         }
+
+        // 5. Renderizar lista de alarmas
+        setTimeout(function() {
+          if (typeof renderizarListaAlarmas === 'function') renderizarListaAlarmas();
+          if (typeof renderCalendario        === 'function') renderCalendario();
+          // 6. Actualizar contador en panel SISTEMA
+          if (typeof actualizarContadorAlarmas === 'function') actualizarContadorAlarmas();
+        }, 400);
       }
-      var fechaStr = input.dia && input.mes ? ' el ' + input.dia + '/' + input.mes : '';
-      return { ok: true, hora: input.hora + ':' + String(input.minuto).padStart(2,'0') + fechaStr };
+
+      var MESES_NOMBRE = ['','enero','febrero','marzo','abril','mayo','junio',
+                          'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      var fechaStr = (input.dia && input.mes)
+        ? ' el ' + input.dia + ' de ' + (MESES_NOMBRE[input.mes] || input.mes)
+        : '';
+      var horaStr  = String(input.hora).padStart(2,'0') + ':' + String(input.minuto).padStart(2,'0');
+      return { ok: true, programado: horaStr + fechaStr };
     }
 
     case 'listar_alarmas': {
