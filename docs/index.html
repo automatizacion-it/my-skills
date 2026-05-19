@@ -102,6 +102,13 @@
         </svg>
       </button>
 
+      <!-- Rutas / Mapa -->
+      <button class="icon-btn" onclick="mostrarPanelRutas()" title="Navegación">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+        </svg>
+      </button>
+
       <!-- SOS -->
       <button class="icon-btn btn-sos" id="sosBtn" onclick="activarSOS()" title="SOS">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -502,6 +509,8 @@
   <script src="js/sos.js"></script>
 
   <!-- 6. Intents — primero los específicos, luego los generales -->
+  <script src="js/rutas.js"></script>           <!-- motor de navegación + panel mapa -->
+  <script src="js/intents_rutas.js"></script>    <!-- intents de navegación por voz -->
   <script src="js/intents_alarmas.js"></script> <!-- alarmas, recordatorios, medicamentos, SOS -->
   <script src="js/intents_musica.js"></script>  <!-- géneros, artistas, volumen -->
   <script src="js/intents.js"></script>          <!-- resto de intents -->

@@ -77,6 +77,12 @@ function clasificarIntencion(texto) {
     // Dispositivos IoT
     'enciende','apaga','prende','luces','luz','sala','cuarto','television',
     'tele','persiana','cortina','ventilador','encender','apagar',
+    // Rutas y navegación
+    'llevame a ','llevame al ','llevame hasta ','llevame donde ',
+    'navega a ','navega al ','ruta a ','ruta al ','ruta hasta ','ruta hacia ',
+    'como llego','ir a ','ir al ','ir hasta ','dirigeme a ',
+    'donde queda ','donde esta ','abre el mapa','muestra el mapa',
+    'ver mapa','abrir mapa','google maps','mi ubicacion','donde estoy',
     // Clima y noticias
     'clima ','temperatura','llueve','pronostico','noticias','titulares',
     // Utilidades
@@ -489,6 +495,10 @@ async function ejecutarHabilidad(texto) {
     // Timer y cronómetro
     'timer_iniciar', 'timer_cancelar',
     'cronometro', 'cronometro_iniciar', 'cronometro_pausar', 'cronometro_reiniciar', 'cronometro_leer',
+    // SOS
+    // Rutas
+    'ruta_navegar', 'ruta_abrir_mapa', 'ruta_cerrar',
+    'ruta_google_maps', 'ruta_mi_ubicacion', 'ruta_configurar_casa',
     // SOS
     'sos_activar', 'sos_cancelar', 'sos_contactos',
     // Otras utilidades
