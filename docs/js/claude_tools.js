@@ -89,7 +89,10 @@ const SCALL_TOOLS = [
         tipo:     { type: 'string', enum: ['alarma', 'recordatorio', 'medicamento'], description: 'Tipo de alarma' },
         mensaje:  { type: 'string', description: 'Mensaje que se mostrará cuando suene' },
         repetir:  { type: 'boolean', description: 'Si true, se repite todos los días' },
-        sonido:   { type: 'string', enum: ['beep', 'urgente', 'suave', 'digital', 'campana', 'medicina'], description: 'Sonido de la alarma' }
+        sonido:   { type: 'string', enum: ['beep', 'urgente', 'suave', 'digital', 'campana', 'medicina'], description: 'Sonido de la alarma' },
+        dia:      { type: 'integer', description: 'Día del mes (1-31) si es para una fecha específica' },
+        mes:      { type: 'integer', description: 'Mes del año (1-12) si es para una fecha específica' },
+        anio:     { type: 'integer', description: 'Año (ej: 2026) si es para una fecha específica' }
       },
       required: ['hora', 'minuto']
     }
@@ -322,10 +325,24 @@ function ejecutarHerramienta(nombre, input) {
           tipo:    input.tipo    || 'alarma',
           mensaje: input.mensaje || '',
           repetir: input.repetir || false,
-          sonido:  input.sonido  || (input.tipo === 'medicamento' ? 'medicina' : 'beep')
+          sonido:  input.sonido  || (input.tipo === 'medicamento' ? 'medicina' : 'beep'),
+          dia:     input.dia     || null,
+          mes:     input.mes     || null,
+          anio:    input.anio    || null
         });
+        // Sincronizar UI del panel de alarmas
+        if (typeof sincronizarUIDesdeVoz === 'function') {
+          sincronizarUIDesdeVoz({
+            hora: input.hora, minuto: input.minuto,
+            tipo: input.tipo || 'alarma',
+            mensaje: input.mensaje || '',
+            repetir: input.repetir || false,
+            dia: input.dia || null, mes: input.mes || null, anio: input.anio || null
+          });
+        }
       }
-      return { ok: true, hora: input.hora + ':' + String(input.minuto).padStart(2,'0') };
+      var fechaStr = input.dia && input.mes ? ' el ' + input.dia + '/' + input.mes : '';
+      return { ok: true, hora: input.hora + ':' + String(input.minuto).padStart(2,'0') + fechaStr };
     }
 
     case 'listar_alarmas': {

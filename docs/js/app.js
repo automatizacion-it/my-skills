@@ -189,36 +189,63 @@ RESTRICCIONES:
 
 function updateAIStatusUI() {
   const badge     = document.getElementById('aiStatusBadge');
-  const badgeText = document.getElementById('aiStatusText');
   const card      = document.getElementById('aiStatusCard');
   const cardTitle = document.getElementById('aiStatusCardTitle');
   const cardDesc  = document.getElementById('aiStatusCardDesc');
   const hint      = document.getElementById('aiHint');
   const icon      = card && card.querySelector('.ai-status-icon');
 
-  const ia       = getActiveIA();
+  const ia        = getActiveIA();
   const hasGemini = isKeyPreConfigured();
   const hasClaude = !!getClaudeKey();
   const hasKey    = ia === 'claude' ? hasClaude : hasGemini;
   const iaLabel   = ia === 'claude' ? 'Claude (Anthropic)' : 'Gemini (Google)';
+  const iaCorto   = ia === 'claude' ? 'Claude' : 'Gemini';
+
+  // ── Panel lateral SISTEMA — todos los elementos con estos IDs ──
+  // aiStatusText  → fila "IA" del panel lateral
+  // aiStatusDot   → punto verde/naranja del header del panel
+  // ai-status-text dentro del badge → texto del badge inferior
+  const sideIAText  = document.getElementById('aiStatusText');
+  const sideIADot   = document.getElementById('aiStatusDot');
+  const sideBadgeTexts = badge ? badge.querySelectorAll('.ai-status-text') : [];
 
   if (hasKey) {
-    if (badge)     badge.className = `ai-status-badge ready${ia === 'claude' ? ' claude-active' : ''}`;
-    if (badgeText) badgeText.textContent = `${iaLabel} · activo`;
+    // Panel lateral — fila IA
+    if (sideIAText) sideIAText.textContent = iaCorto;
+    if (sideIAText) sideIAText.style.color = ia === 'claude' ? 'rgba(224,112,64,0.85)' : 'rgba(0,212,255,0.75)';
+
+    // Punto del header
+    if (sideIADot) {
+      sideIADot.style.background  = ia === 'claude' ? '#e07040' : '#10b981';
+      sideIADot.style.boxShadow   = ia === 'claude' ? '0 0 7px #e07040' : '0 0 7px #10b981';
+    }
+
+    // Badge inferior del panel SISTEMA
+    if (badge) badge.className = 'side-ai-badge' + (ia === 'claude' ? ' claude-active' : '');
+    sideBadgeTexts.forEach(el => el.textContent = iaLabel + ' · activo');
+
+    // Panel de configuración (modal)
     if (card)      card.className = 'ai-status-card ready';
     if (icon)      icon.textContent = '✅';
-    if (cardTitle) cardTitle.textContent = `${iaLabel} configurado`;
-    if (cardDesc)  cardDesc.textContent  = `API Key guardada en tu navegador · lista para usar.`;
+    if (cardTitle) cardTitle.textContent = iaLabel + ' configurado';
+    if (cardDesc)  cardDesc.textContent  = 'API Key guardada en tu navegador · lista para usar.';
     if (hint)      hint.style.display = 'none';
-    logMessage(`[IA] ✅ ${iaLabel} activo`);
+
+    logMessage('[IA] ✅ ' + iaLabel + ' activo');
   } else {
-    if (badge)     badge.className = 'ai-status-badge warn';
-    if (badgeText) badgeText.textContent = 'Sin IA · modo local';
+    // Panel lateral
+    if (sideIAText) { sideIAText.textContent = 'Sin IA'; sideIAText.style.color = 'rgba(239,68,68,0.7)'; }
+    if (sideIADot)  { sideIADot.style.background = '#ef4444'; sideIADot.style.boxShadow = '0 0 7px #ef4444'; }
+    if (badge) badge.className = 'side-ai-badge';
+    sideBadgeTexts.forEach(el => el.textContent = 'Sin IA · configurar en ⚙️');
+
+    // Panel de configuración
     if (card)      card.className = 'ai-status-card warn';
     if (icon)      icon.textContent = '⚠️';
     if (cardTitle) cardTitle.textContent = 'Sin API Key configurada';
-    if (cardDesc)  cardDesc.textContent  = `Ingresa tu ${iaLabel} API Key en Configuración.`;
-    if (hint)      { hint.style.display = 'block'; hint.textContent = `Ve a ⚙️ Config → selecciona ${iaLabel} → pega tu API Key.`; }
+    if (cardDesc)  cardDesc.textContent  = 'Ingresa tu ' + iaLabel + ' API Key en Configuración.';
+    if (hint)      { hint.style.display = 'block'; hint.textContent = 'Ve a ⚙️ Config → selecciona ' + iaLabel + ' → pega tu API Key.'; }
   }
 }
 

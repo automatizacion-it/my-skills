@@ -241,21 +241,37 @@ function saveAlarmas(lista) {
   localStorage.setItem(ALARMAS_KEY, JSON.stringify(lista));
 }
 
-function crearAlarma({ hora, minuto, mensaje, tipo = 'alarma', repetir = false, sonido = null }) {
+function crearAlarma({ hora, minuto, mensaje, tipo = 'alarma', repetir = false, sonido = null, dia = null, mes = null, anio = null }) {
   const lista = getAlarmas();
   const id    = Date.now();
   const s     = sonido || SONIDO_POR_TIPO[tipo] || 'beep';
-  lista.push({ id, hora, minuto, mensaje, tipo, repetir, sonido: s, activa: true });
-  saveAlarmas(lista);
-  iniciarChequeoAlarma({ id, hora, minuto, mensaje, tipo, repetir, sonido: s });
-  renderizarListaAlarmas();
+  const MESES_VOZ = ['','enero','febrero','marzo','abril','mayo','junio',
+                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
-  const horaStr = `${String(hora).padStart(2,'0')}:${String(minuto).padStart(2,'0')}`;
+  // Si tiene fecha específica, no se repite
+  const tieneFecha = dia && mes;
+  const repetirFinal = tieneFecha ? false : repetir;
+
+  const alarma = { id, hora, minuto, mensaje, tipo, repetir: repetirFinal, sonido: s, activa: true };
+  if (tieneFecha) {
+    alarma.dia  = parseInt(dia);
+    alarma.mes  = parseInt(mes);
+    alarma.anio = anio ? parseInt(anio) : new Date().getFullYear();
+  }
+
+  lista.push(alarma);
+  saveAlarmas(lista);
+  iniciarChequeoAlarma(alarma);
+  renderizarListaAlarmas();
+  renderCalendario(); // marcar el día en el calendario
+
+  const horaStr   = `${String(hora).padStart(2,'0')}:${String(minuto).padStart(2,'0')}`;
   const tipoLabel = tipo === 'medicamento' ? 'Recordatorio de medicamento' :
                     tipo === 'recordatorio' ? 'Recordatorio' : 'Alarma';
-  const repLabel = repetir ? ' Repetición diaria activada.' : '';
-  _alarVoz(`${tipoLabel} programado para las ${horaStr}.${mensaje ? ' ' + mensaje : ''}${repLabel}`);
-  _alarLog(`[ALARMA] ✅ ${tipo} → ${horaStr} sonido:${s} repetir:${repetir}`);
+  const fechaStr  = tieneFecha ? ` para el ${dia} de ${MESES_VOZ[parseInt(mes)]}` : '';
+  const repLabel  = repetirFinal ? ' Repetición diaria activada.' : '';
+  _alarVoz(`${tipoLabel} programado${fechaStr} a las ${horaStr}.${mensaje ? ' ' + mensaje : ''}${repLabel}`);
+  _alarLog(`[ALARMA] ✅ ${tipo} → ${fechaStr || 'diario'} ${horaStr} sonido:${s}`);
   return id;
 }
 
@@ -263,19 +279,24 @@ function iniciarChequeoAlarma(alarma) {
   if (alarmasActivas[alarma.id]) clearInterval(alarmasActivas[alarma.id]);
   const intervalo = setInterval(() => {
     const now = new Date();
-    if (now.getHours()   === alarma.hora   &&
-        now.getMinutes() === alarma.minuto &&
-        now.getSeconds()  <  30) {
-      dispararAlarma(alarma);
-      if (!alarma.repetir) {
-        clearInterval(intervalo);
-        delete alarmasActivas[alarma.id];
-        const lista = getAlarmas().map(a =>
-          a.id === alarma.id ? { ...a, activa: false } : a
-        );
-        saveAlarmas(lista);
-        renderizarListaAlarmas();
-      }
+    if (now.getHours()   !== alarma.hora)   return;
+    if (now.getMinutes() !== alarma.minuto) return;
+    if (now.getSeconds()  >= 30)            return;
+    // Verificar fecha específica
+    if (alarma.dia && alarma.mes) {
+      if (now.getDate()          !== alarma.dia) return;
+      if ((now.getMonth() + 1)   !== alarma.mes) return;
+      if (alarma.anio && now.getFullYear() !== alarma.anio) return;
+    }
+    dispararAlarma(alarma);
+    if (!alarma.repetir) {
+      clearInterval(intervalo);
+      delete alarmasActivas[alarma.id];
+      const lista = getAlarmas().map(a =>
+        a.id === alarma.id ? { ...a, activa: false } : a
+      );
+      saveAlarmas(lista);
+      renderizarListaAlarmas();
     }
   }, 15000);
   alarmasActivas[alarma.id] = intervalo;
@@ -344,7 +365,7 @@ function cancelarTodasAlarmas() {
 // los campos del panel para que el usuario vea qué se programó
 // ══════════════════════════════════════════════════════════════════════
 
-function sincronizarUIDesdeVoz({ hora, minuto, tipo, mensaje, repetir, sonido }) {
+function sincronizarUIDesdeVoz({ hora, minuto, tipo, mensaje, repetir, sonido, dia, mes, anio }) {
   const elHora    = document.getElementById('alarmHora');
   const elMin     = document.getElementById('alarmMin');
   const elTipo    = document.getElementById('alarmTipo');
@@ -356,6 +377,14 @@ function sincronizarUIDesdeVoz({ hora, minuto, tipo, mensaje, repetir, sonido })
   if (elTipo)    { elTipo.value    = tipo;    resaltarCampo(elTipo); }
   if (elMsg)     { elMsg.value     = mensaje || ''; resaltarCampo(elMsg); }
   if (elRepetir) elRepetir.checked = repetir || false;
+
+  // Rellenar fecha si viene del parser de voz
+  const elDia  = document.getElementById('alarmDia');
+  const elMes  = document.getElementById('alarmMes');
+  const elAnio = document.getElementById('alarmAnio');
+  if (elDia  && dia)  { elDia.value  = dia;  resaltarCampo(elDia); }
+  if (elMes  && mes)  { elMes.value  = mes;  resaltarCampo(elMes); }
+  if (elAnio && anio) { elAnio.value = anio; resaltarCampo(elAnio); }
 
   // Actualizar selector de sonido en la UI
   const s = sonido || SONIDO_POR_TIPO[tipo] || 'beep';
@@ -483,7 +512,27 @@ function parsearAlarmaVoz(comando) {
   // ── 5. Sonido automático según tipo ──────────────────────────────
   const sonido = SONIDO_POR_TIPO[tipo] || 'beep';
 
-  return { hora, minuto, tipo, mensaje: msg, repetir, sonido };
+  // ── 5. Extraer fecha específica del comando ──────────────────────
+  var dia = null, mesNum = null, anioNum = null;
+  var MESES_MAP = {
+    'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,
+    'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12,
+    'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,
+    'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12
+  };
+  // "25 de mayo", "el 25 de mayo", "mayo 25"
+  var fechaMatch = c.match(/(?:el\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+(?:de\s+)?(\d{4}))?/);
+  if (!fechaMatch) fechaMatch = c.match(/([a-z]+)\s+(\d{1,2})(?:\s+(?:de\s+)?(\d{4}))?/);
+  if (fechaMatch) {
+    var posibleDia  = parseInt(fechaMatch[1]);
+    var posibleMes  = MESES_MAP[fechaMatch[2]] || null;
+    var posibleAnio = fechaMatch[3] ? parseInt(fechaMatch[3]) : null;
+    if (posibleDia >= 1 && posibleDia <= 31 && posibleMes) {
+      dia = posibleDia; mesNum = posibleMes; anioNum = posibleAnio;
+    }
+  }
+
+  return { hora, minuto, tipo, mensaje: msg, repetir, sonido, dia, mes: mesNum, anio: anioNum };
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -499,13 +548,21 @@ function guardarAlarmaUI() {
   const sonOn   = document.getElementById('alarmSonidoOn')?.checked;
   sonidoActivado = sonOn !== undefined ? sonOn : true;
 
+  // Leer fecha específica
+  const diaEl  = document.getElementById('alarmDia');
+  const mesEl  = document.getElementById('alarmMes');
+  const anioEl = document.getElementById('alarmAnio');
+  const dia    = diaEl  && diaEl.value  ? parseInt(diaEl.value)  : null;
+  const mes    = mesEl  && mesEl.value  ? parseInt(mesEl.value)  : null;
+  const anio   = anioEl && anioEl.value ? parseInt(anioEl.value) : null;
+
   if (isNaN(hora) || hora < 0 || hora > 23) { alert('Hora inválida (0-23)'); return; }
   if (isNaN(minuto) || minuto < 0 || minuto > 59) { alert('Minutos inválidos (0-59)'); return; }
 
   const defMsg = tipo === 'medicamento' ? 'Es hora de tomar tu medicamento.' :
                  tipo === 'recordatorio' ? 'Tienes un recordatorio.' : '';
 
-  crearAlarma({ hora, minuto, tipo, mensaje: msg || defMsg, repetir, sonido: sonidoSeleccionado });
+  crearAlarma({ hora, minuto, tipo, mensaje: msg || defMsg, repetir, sonido: sonidoSeleccionado, dia, mes, anio });
 }
 
 function toggleSonido() {
@@ -585,7 +642,8 @@ function renderCalendario() {
       ${Array.from({length: dias}, (_, i) => {
         const d = i + 1;
         const esHoy = d === hoy.getDate();
-        return `<div class="cal-cell ${esHoy ? 'cal-hoy' : ''}">${d}</div>`;
+        const tieneAlarma = getAlarmas().some(a => a.activa && a.dia === d && a.mes === mes+1);
+        return `<div class="cal-cell ${esHoy ? 'cal-hoy' : ''}" style="${tieneAlarma ? 'position:relative' : ''}">${d}${tieneAlarma ? '<span style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:rgba(0,212,255,0.8);"></span>' : ''}</div>`;
       }).join('')}
     </div>`;
 }

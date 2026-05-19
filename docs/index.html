@@ -201,6 +201,38 @@
       <!-- Calendario -->
       <div class="alarm-calendar" id="alarmCalendar"></div>
 
+      <!-- Fecha específica (opcional) -->
+      <div style="padding:0 4px;margin-bottom:4px;">
+        <label style="font-family:var(--font-mono);font-size:.6rem;color:var(--text-muted);
+                       text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:4px;">
+          Fecha (opcional — vacío = diario)
+        </label>
+        <div style="display:flex;gap:6px;">
+          <div style="flex:1;">
+            <label style="font-family:var(--font-mono);font-size:.58rem;color:var(--text-muted);">Día</label>
+            <input type="number" id="alarmDia" min="1" max="31" placeholder="—"
+              class="alarm-input" style="width:100%;">
+          </div>
+          <div style="flex:2;">
+            <label style="font-family:var(--font-mono);font-size:.58rem;color:var(--text-muted);">Mes</label>
+            <select id="alarmMes" class="alarm-input" style="width:100%;font-size:.75rem;">
+              <option value="">— cualquier día —</option>
+              <option value="1">Enero</option><option value="2">Febrero</option>
+              <option value="3">Marzo</option><option value="4">Abril</option>
+              <option value="5">Mayo</option><option value="6">Junio</option>
+              <option value="7">Julio</option><option value="8">Agosto</option>
+              <option value="9">Septiembre</option><option value="10">Octubre</option>
+              <option value="11">Noviembre</option><option value="12">Diciembre</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label style="font-family:var(--font-mono);font-size:.58rem;color:var(--text-muted);">Año</label>
+            <input type="number" id="alarmAnio" min="2025" max="2030" placeholder="—"
+              class="alarm-input" style="width:100%;font-size:.75rem;">
+          </div>
+        </div>
+      </div>
+
       <!-- Hora y tipo -->
       <div class="alarm-time-row">
         <div class="alarm-time-group">
