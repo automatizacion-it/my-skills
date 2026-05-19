@@ -9,6 +9,109 @@ function getCasaLat()    { return parseFloat(localStorage.getItem('scall_casa_la
 function getCasaLng()    { return parseFloat(localStorage.getItem('scall_casa_lng'))    || -74.0721; }
 function getCasaNombre() { return localStorage.getItem('scall_casa_nombre') || 'Mi casa'; }
 
+const DESTINOS_KEY = 'scall_destinos_recurrentes';
+
+// ── Historial de destinos recurrentes ────────────────────────────────
+function getDestinosRecurrentes() {
+  try { return JSON.parse(localStorage.getItem(DESTINOS_KEY)) || []; }
+  catch { return []; }
+}
+
+function guardarDestinoRecurrente(nombre, origen) {
+  const lista = getDestinosRecurrentes();
+  const idx   = lista.findIndex(d =>
+    d.nombre.toLowerCase() === nombre.toLowerCase()
+  );
+  if (idx >= 0) {
+    lista[idx].veces++;
+    lista[idx].ultimaVez = new Date().toLocaleDateString('es-CO');
+    lista[idx].origen    = origen || getCasaNombre();
+  } else {
+    lista.unshift({
+      nombre,
+      origen:    origen || getCasaNombre(),
+      veces:     1,
+      ultimaVez: new Date().toLocaleDateString('es-CO')
+    });
+  }
+  lista.sort((a, b) => b.veces - a.veces);
+  localStorage.setItem(DESTINOS_KEY, JSON.stringify(lista.slice(0, 10)));
+  _rutaLog('[RUTAS] Destino guardado: "' + nombre + '"');
+}
+
+// ── Haversine: distancia real entre dos puntos GPS ───────────────────
+function calcularDistanciaKm(lat1, lng1, lat2, lng2) {
+  const R    = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a    = Math.sin(dLat/2) * Math.sin(dLat/2) +
+               Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+               Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// 30 km/h promedio ciudad colombiana con tráfico
+function estimarTiempoMin(distanciaKm) {
+  return Math.ceil((distanciaKm / 30) * 60);
+}
+
+function formatearDistancia(km) {
+  if (km < 1) return Math.round(km * 1000) + ' metros';
+  return km.toFixed(1) + ' kilómetros';
+}
+
+function formatearTiempo(minutos) {
+  if (minutos < 60) return minutos + ' minuto' + (minutos !== 1 ? 's' : '');
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  if (m === 0) return h + ' hora' + (h !== 1 ? 's' : '');
+  return h + ' hora' + (h !== 1 ? 's' : '') + ' y ' + m + ' minuto' + (m !== 1 ? 's' : '');
+}
+
+// ── Informe completo de ruta por voz ────────────────────────────────
+function informarRutaVoz() {
+  const oNombre = getCasaNombre();
+  if (!_destinoActual) {
+    _rutaVoz('No hay destino activo. Di: llévame a, seguido de la dirección.');
+    return;
+  }
+  const oLat = parseFloat(localStorage.getItem('scall_casa_lat')) || getCasaLat();
+  const oLng = parseFloat(localStorage.getItem('scall_casa_lng')) || getCasaLng();
+  const dLat = window._rutaDestLat;
+  const dLng = window._rutaDestLng;
+
+  let msg;
+  if (dLat && dLng) {
+    const distKm  = calcularDistanciaKm(oLat, oLng, dLat, dLng);
+    const minutos = estimarTiempoMin(distKm);
+    msg = 'Ruta desde ' + oNombre + ' hasta ' + _destinoActual + '. ' +
+          'Distancia aproximada: ' + formatearDistancia(distKm) + '. ' +
+          'Tiempo estimado en carro: ' + formatearTiempo(minutos) + ' con tráfico normal.';
+    // Actualizar barra del panel
+    const el = document.getElementById('rutaEstado');
+    if (el) el.textContent = '📏 ' + formatearDistancia(distKm) + ' · ⏱ ~' + formatearTiempo(minutos);
+    _rutaLog('[RUTAS] Informe: ' + formatearDistancia(distKm) + ' · ' + formatearTiempo(minutos));
+  } else {
+    msg = 'La ruta activa es desde ' + oNombre + ' hasta ' + _destinoActual + '. ' +
+          'Abre el mapa y presiona Ir para calcular la distancia exacta.';
+  }
+  _rutaVoz(msg);
+}
+
+// ── Listar destinos recurrentes por voz ──────────────────────────────
+function listarDestinosRecurrentesVoz() {
+  const lista = getDestinosRecurrentes();
+  if (lista.length === 0) {
+    _rutaVoz('No tienes destinos guardados aún. Cada vez que navegues a un lugar lo recordaré.');
+    return;
+  }
+  const top3 = lista.slice(0, 3)
+    .map(d => d.nombre + ' — ' + d.veces + ' vez' + (d.veces > 1 ? 'es' : ''))
+    .join(', ');
+  _rutaVoz('Tus destinos más frecuentes son: ' + top3 + '.');
+}
+
+
 // ── Estado ───────────────────────────────────────────────────────────
 let mapaPanel       = null;
 let _destinoActual  = '';
@@ -25,6 +128,7 @@ async function navegarA(destino) {
   }
 
   _destinoActual = destino.trim();
+  guardarDestinoRecurrente(_destinoActual, getCasaNombre());
   _rutaLog(`[RUTAS] 🗺 Navegando a: "${_destinoActual}"`);
 
   mostrarPanelRutas();
@@ -56,14 +160,25 @@ function cargarMapa() {
   }
 
   // URL de ruta embebida — Google Maps Directions embed
-  // Formato: /maps?saddr=ORIGEN&daddr=DESTINO&output=embed
   const url = `https://maps.google.com/maps?saddr=${encodeURIComponent(origen)}&daddr=${encodeURIComponent(destino)}&output=embed&hl=es`;
 
   if (iframe) {
     iframe.src = 'about:blank';
     setTimeout(() => {
       iframe.src = url;
-      if (estado) estado.textContent = `📍 ${getCasaNombre()} → ${destino}`;
+      // Calcular y mostrar distancia estimada
+      const oLat  = parseFloat(localStorage.getItem('scall_casa_lat')) || getCasaLat();
+      const oLng  = parseFloat(localStorage.getItem('scall_casa_lng')) || getCasaLng();
+      const dLat  = window._rutaDestLat;
+      const dLng  = window._rutaDestLng;
+      if (dLat && dLng) {
+        const distKm  = calcularDistanciaKm(oLat, oLng, dLat, dLng);
+        const minutos = estimarTiempoMin(distKm);
+        if (estado) estado.textContent =
+          `📍 ${getCasaNombre()} → ${destino} · 📏 ${formatearDistancia(distKm)} · ⏱ ~${formatearTiempo(minutos)}`;
+      } else {
+        if (estado) estado.textContent = `📍 ${getCasaNombre()} → ${destino}`;
+      }
     }, 100);
   }
   actualizarInfoBar(getCasaNombre(), destino);
@@ -87,8 +202,38 @@ function mostrarPanelRutas() {
   mapaPanel.style.display = 'flex';
   const inputOrigen = document.getElementById('rutaInputOrigen');
   if (inputOrigen) inputOrigen.value = getCasaNombre();
-  // Si no hay destino aún, solo centrar el mapa en el origen
   if (!_destinoActual) cargarMapa();
+  renderDestinosRecurrentes();
+}
+
+function renderDestinosRecurrentes() {
+  const el = document.getElementById('rutaDestinosList');
+  if (!el) return;
+  const lista = getDestinosRecurrentes();
+  if (lista.length === 0) {
+    el.innerHTML = '<span style="font-size:.62rem;color:rgba(255,255,255,0.18);' +
+      'font-family:var(--font-mono,monospace);">Sin destinos aun</span>';
+    return;
+  }
+  el.innerHTML = lista.slice(0, 5).map(function(d) {
+    var nom = d.nombre.length > 22 ? d.nombre.slice(0,22)+'...' : d.nombre;
+    var safe = d.nombre.replace(/'/g, "\'");
+    return '<button onclick="navegarA('' + safe + '')" ' +
+      'style="display:inline-flex;align-items:center;gap:5px;' +
+      'background:rgba(0,212,255,0.06);' +
+      'border:1px solid rgba(0,212,255,0.15);' +
+      'border-radius:6px;padding:4px 8px;' +
+      'cursor:pointer;font-size:.64rem;' +
+      'font-family:var(--font-mono,monospace);' +
+      'color:rgba(0,212,255,0.7);' +
+      'margin:0 4px 4px 0;transition:all .15s;">' +
+      '<svg width="9" height="9" viewBox="0 0 24 24" fill="none"' +
+      ' stroke="currentColor" stroke-width="2.5" stroke-linecap="round">' +
+      '<polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>' +
+      nom +
+      '<span style="color:rgba(255,255,255,0.2);font-size:.55rem;">' + d.veces + 'x</span>' +
+      '</button>';
+  }).join('');
 }
 
 function cerrarPanelRutas() {
@@ -226,6 +371,16 @@ function crearPanelRutas() {
       loading="lazy"
       referrerpolicy="no-referrer-when-downgrade">
     </iframe>
+
+    <!-- Destinos recurrentes -->
+    <div id="rutaDestRecurrentes" style="padding:8px 14px;flex-shrink:0;
+      border-top:1px solid rgba(255,255,255,0.05);max-height:110px;overflow-y:auto;">
+      <div style="font-family:var(--font-mono,monospace);font-size:.58rem;
+                  letter-spacing:.14em;color:rgba(255,255,255,0.2);margin-bottom:5px;">
+        DESTINOS FRECUENTES
+      </div>
+      <div id="rutaDestinosList"></div>
+    </div>
 
     <!-- Leyenda -->
     <div style="padding:7px 14px;background:rgba(0,0,0,0.25);flex-shrink:0;

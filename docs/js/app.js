@@ -77,6 +77,9 @@ function clasificarIntencion(texto) {
     // Dispositivos IoT
     'enciende','apaga','prende','luces','luz','sala','cuarto','television',
     'tele','persiana','cortina','ventilador','encender','apagar',
+    'cuanto tarda','cuanto demora','cuanto falta','cuanto tiempo falta',
+    'a que distancia','que tan lejos','distancia al destino','mis destinos',
+    'destinos frecuentes','destinos guardados','lugares frecuentes',
     // Bluetooth
     'bluetooth','audifono','auricular','parlante','bocina','emparejar','vincular',
     // Rutas y navegación
@@ -503,6 +506,7 @@ async function ejecutarHabilidad(texto) {
     // Rutas
     'ruta_navegar', 'ruta_abrir_mapa', 'ruta_cerrar',
     'ruta_google_maps', 'ruta_mi_ubicacion', 'ruta_configurar_casa',
+    'ruta_informar', 'ruta_destinos_frecuentes',
     // SOS
     'sos_activar', 'sos_cancelar', 'sos_contactos',
     // Otras utilidades

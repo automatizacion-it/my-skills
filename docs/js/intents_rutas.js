@@ -124,6 +124,42 @@ const intentsRutas = [
     }
   },
 
+
+  // ── Informe de ruta activa ────────────────────────────────────────
+  {
+    name: 'ruta_informar',
+    description: 'Informar distancia y tiempo de ruta activa (Ej: "¿Cuánto tarda?", "¿A qué distancia está?", "¿Cuánto falta?")',
+    match: (c) => {
+      const triggers = [
+        'cuanto tarda','cuanto demora','cuanto falta','cuanto tiempo',
+        'a que distancia','que tan lejos','cuanto hay','cuanto queda',
+        'distancia al destino','tiempo de viaje','tiempo de ruta',
+        'cuanto es el recorrido','informame la ruta','info de ruta',
+        'cuanto me demoro','cuanto me tarda'
+      ];
+      return triggers.some(t => c.includes(t));
+    },
+    action: () => {
+      if (typeof informarRutaVoz === 'function') informarRutaVoz();
+      else if (typeof responderVoz === 'function')
+        responderVoz('Módulo de rutas no disponible.');
+    }
+  },
+
+  // ── Destinos frecuentes ──────────────────────────────────────────
+  {
+    name: 'ruta_destinos_frecuentes',
+    description: 'Ver destinos frecuentes (Ej: "¿A dónde voy seguido?", "Mis destinos")',
+    match: (c) =>
+      c.includes('destinos frecuentes') || c.includes('mis destinos') ||
+      c.includes('donde voy seguido') || c.includes('destinos guardados') ||
+      c.includes('lugares frecuentes') || c.includes('mis lugares'),
+    action: () => {
+      if (typeof listarDestinosRecurrentesVoz === 'function') listarDestinosRecurrentesVoz();
+      else if (typeof mostrarPanelRutas === 'function') mostrarPanelRutas();
+    }
+  },
+
   // ── Configurar punto de inicio (casa) ─────────────────────────────
   {
     name: 'ruta_configurar_casa',
