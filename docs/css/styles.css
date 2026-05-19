@@ -581,58 +581,67 @@ h1 {
 .sound-preview-btn:hover { background: rgba(0,212,255,0.14); }
 
 /* ══════════════════════════════════════════════════════════
-   PANELES LATERALES DE CRISTAL — lado-menu y lado-status
+   PANELES LATERALES DE CRISTAL
    ══════════════════════════════════════════════════════════ */
 
-/* Base compartida */
+/* Los paneles son fixed — flotan sobre el recinto 3D */
 .side-panel {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
-  width: 172px;
-  background: rgba(6, 14, 28, 0.72);
-  border: 1px solid rgba(0, 212, 255, 0.14);
+  width: 168px;
+  background: rgba(6, 14, 28, 0.75);
+  border: 1px solid rgba(0, 212, 255, 0.15);
   border-radius: 14px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   box-shadow:
     inset 0 0 0 1px rgba(0,212,255,0.07),
-    0 20px 60px rgba(0,0,0,0.55);
-  overflow: hidden;
+    0 20px 60px rgba(0,0,0,0.6);
   display: flex;
   flex-direction: column;
-  gap: 0;
+  overflow: hidden;
   padding-bottom: 8px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+.side-panel::-webkit-scrollbar { display: none; }
 
-.side-panel-left  { left: 14px; }
-.side-panel-right { right: 14px; }
+.side-panel-left  { left: 12px; }
+.side-panel-right { right: 12px; }
 
-/* Header del panel */
+/* Header */
 .side-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 14px 10px;
+  padding: 11px 14px 9px;
   border-bottom: 1px solid rgba(0,212,255,0.1);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: rgba(6,14,28,0.9);
+  z-index: 2;
 }
 .side-panel-label {
   font-family: var(--font-mono);
-  font-size: .65rem;
+  font-size: .62rem;
   letter-spacing: .22em;
   color: rgba(0,212,255,0.6);
   text-transform: uppercase;
 }
 
-/* Dot de estado vivo */
+/* Dot de estado */
 .side-status-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
   background: #10b981;
   box-shadow: 0 0 7px #10b981;
-  animation: sideDotPulse 2s ease-in-out infinite;
+  animation: sideDotPulse 2.2s ease-in-out infinite;
+  flex-shrink: 0;
 }
 @keyframes sideDotPulse {
   0%,100% { box-shadow: 0 0 4px #10b981; }
@@ -643,19 +652,20 @@ h1 {
 .side-menu-item {
   display: flex;
   align-items: center;
-  gap: 11px;
-  width: calc(100% - 16px);
-  margin: 2px 8px;
-  padding: 9px 10px;
+  gap: 9px;
+  width: calc(100% - 14px);
+  margin: 1px 7px;
+  padding: 8px 9px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 9px;
   cursor: pointer;
-  transition: all .18s ease;
+  transition: all .16s ease;
   text-align: left;
+  flex-shrink: 0;
 }
 .side-menu-item:hover {
-  background: rgba(0,212,255,0.07);
+  background: rgba(0,212,255,0.06);
   border-color: rgba(0,212,255,0.14);
 }
 .side-menu-item.active {
@@ -666,127 +676,129 @@ h1 {
   border-color: rgba(0,212,255,0.4);
   background: rgba(0,212,255,0.12);
 }
-.side-menu-item.active .smi-icon svg {
-  stroke: rgba(0,212,255,1);
-}
-.side-menu-item.active .smi-label {
-  color: rgba(0,212,255,0.95);
-}
+.side-menu-item.active .smi-icon svg { stroke: rgba(0,212,255,1); }
+.side-menu-item.active .smi-label   { color: rgba(0,212,255,0.95); }
 
-/* Icono del item */
+/* Icono */
 .smi-icon {
-  width: 30px; height: 30px;
-  border-radius: 8px;
-  border: 1px solid rgba(0,212,255,0.16);
-  background: rgba(0,212,255,0.05);
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  border: 1px solid rgba(0,212,255,0.15);
+  background: rgba(0,212,255,0.04);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  transition: all .18s;
+  transition: all .16s;
 }
 .smi-icon svg {
-  width: 13px; height: 13px;
-  stroke: rgba(0,212,255,0.55);
+  width: 12px; height: 12px;
+  stroke: rgba(0,212,255,0.5);
   fill: none;
-  transition: stroke .18s;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke .16s;
 }
 
-/* Label del item */
+/* Label */
 .smi-label {
   font-family: var(--font-mono);
-  font-size: .72rem;
-  letter-spacing: .05em;
-  color: rgba(255,255,255,0.5);
-  transition: color .18s;
+  font-size: .7rem;
+  letter-spacing: .04em;
+  color: rgba(255,255,255,0.48);
+  transition: color .16s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Separador */
 .smi-sep {
-  width: calc(100% - 28px);
-  margin: 6px 14px;
+  width: calc(100% - 24px);
+  margin: 4px 12px;
   height: 1px;
   background: rgba(255,255,255,0.06);
+  flex-shrink: 0;
 }
 
-/* SOS item */
-.smi-sos {
-  margin-top: auto;
-}
-.smi-sos .smi-icon {
-  border-color: rgba(239,68,68,0.25);
-  background: rgba(239,68,68,0.08);
-}
-.smi-sos .smi-icon svg { stroke: rgba(239,68,68,0.7); }
-.smi-sos .smi-label    { color: rgba(239,68,68,0.6); }
+/* SOS */
+.smi-sos .smi-icon { border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.07); }
+.smi-sos .smi-icon svg { stroke: rgba(239,68,68,0.65); }
+.smi-sos .smi-label    { color: rgba(239,68,68,0.55); }
 .smi-sos:hover {
-  background: rgba(239,68,68,0.08);
-  border-color: rgba(239,68,68,0.25);
+  background: rgba(239,68,68,0.07);
+  border-color: rgba(239,68,68,0.22);
 }
-.smi-sos.sos-activo .smi-icon {
-  background: #ef4444;
-  border-color: #ef4444;
-}
-.smi-sos.sos-activo .smi-icon svg { stroke: #fff; }
+.smi-sos.sos-activo .smi-icon { background:#ef4444; border-color:#ef4444; }
+.smi-sos.sos-activo .smi-icon svg { stroke:#fff; }
 
 /* ── Panel derecho: filas de status ── */
 .side-stat-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 14px;
+  padding: 5px 14px;
+  flex-shrink: 0;
 }
 .side-stat-lbl {
   font-family: var(--font-mono);
-  font-size: .62rem;
+  font-size: .6rem;
   letter-spacing: .12em;
-  color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.27);
 }
 .side-stat-val {
   font-family: var(--font-mono);
-  font-size: .7rem;
+  font-size: .68rem;
   letter-spacing: .04em;
   color: rgba(0,212,255,0.75);
 }
 .side-stat-val.green { color: rgba(16,185,129,0.85); }
 
-/* Reloj lateral */
+/* Reloj */
 .side-clock {
   font-family: var(--font-mono);
-  font-size: 1.05rem;
+  font-size: .95rem;
   font-weight: 700;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
   color: rgba(0,212,255,0.7);
   text-align: center;
-  padding: 8px 14px 2px;
+  padding: 8px 14px 1px;
+  flex-shrink: 0;
 }
 .side-clock-date {
   font-family: var(--font-mono);
-  font-size: .58rem;
-  letter-spacing: .1em;
-  color: rgba(255,255,255,0.22);
+  font-size: .56rem;
+  letter-spacing: .09em;
+  color: rgba(255,255,255,0.2);
   text-align: center;
-  padding-bottom: 6px;
+  padding-bottom: 5px;
+  flex-shrink: 0;
 }
 
-/* Botones de utilidad (tema, calendario, corpus) */
+/* Botones de utilidad */
 .side-utils {
   display: flex;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 5px;
+  padding: 5px 8px;
+  flex-shrink: 0;
 }
 .side-util-btn {
-  width: 30px; height: 30px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.09);
   background: rgba(255,255,255,0.03);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: all .18s;
+  transition: all .16s;
+  flex-shrink: 0;
 }
 .side-util-btn svg {
-  width: 13px; height: 13px;
-  stroke: rgba(255,255,255,0.4);
+  width: 12px; height: 12px;
+  stroke: rgba(255,255,255,0.38);
   fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .side-util-btn:hover {
   background: rgba(0,212,255,0.08);
@@ -794,16 +806,17 @@ h1 {
 }
 .side-util-btn:hover svg { stroke: rgba(0,212,255,0.8); }
 
-/* Badge IA — esquina inferior del panel status */
+/* Badge IA */
 .side-ai-badge {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin: 4px 10px 0;
+  margin: 3px 8px 0;
   padding: 5px 8px;
   border-radius: 7px;
-  background: rgba(0,212,255,0.06);
-  border: 1px solid rgba(0,212,255,0.14);
+  background: rgba(0,212,255,0.05);
+  border: 1px solid rgba(0,212,255,0.12);
+  flex-shrink: 0;
 }
 .side-ai-badge .ai-status-dot {
   width: 5px; height: 5px;
@@ -813,38 +826,33 @@ h1 {
 }
 .side-ai-badge .ai-status-text {
   font-family: var(--font-mono);
-  font-size: .6rem;
-  letter-spacing: .06em;
+  font-size: .58rem;
+  letter-spacing: .05em;
   color: rgba(0,212,255,0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Ajuste MQTT dot dentro del panel lateral */
-#mqttStatusLabel {
-  font-family: var(--font-mono);
-  font-size: .7rem;
-  letter-spacing: .04em;
-}
-
-/* Ocultar top-bar si quedó algún remanente */
+/* Ocultar top-bar legacy */
 .top-bar { display: none !important; }
 
-/* ── Área central — dar espacio a los paneles laterales ── */
-.main-content {
-  margin-left: 200px;
-  margin-right: 200px;
+/* ── Contenido central — ocupa todo el ancho disponible ── */
+/* NO usar margin — los paneles son fixed y no afectan el flujo */
+
+/* ── Mobile: colapsar a solo iconos ── */
+@media (max-width: 540px) {
+  .side-panel { width: 48px; }
+  .smi-label,
+  .side-stat-lbl, .side-stat-val,
+  .side-panel-label,
+  .side-clock, .side-clock-date,
+  .side-utils, .side-ai-badge { display: none; }
+  .smi-icon { margin: 0 auto; }
+  .side-menu-item { justify-content: center; padding: 7px 2px; gap: 0; width: calc(100% - 8px); margin: 1px 4px; }
+  .side-panel-header { justify-content: center; padding: 10px 6px; }
+  .side-panel-left  { left: 4px; }
+  .side-panel-right { right: 4px; }
 }
 
-/* Mobile: colapsar paneles a iconos solamente */
-@media (max-width: 600px) {
-  .side-panel { width: 52px; }
-  .smi-label, .side-stat-lbl, .side-stat-val,
-  .side-panel-label, .side-clock, .side-clock-date,
-  .side-utils, .side-ai-badge, .side-clock-date { display: none; }
-  .smi-icon { margin: 0 auto; }
-  .side-menu-item { justify-content: center; padding: 8px 4px; gap: 0; }
-  .side-panel-header { justify-content: center; }
-  .side-panel-left  { left: 6px; }
-  .side-panel-right { right: 6px; }
-  .main-content { margin-left: 64px; margin-right: 64px; }
-}
 
