@@ -524,7 +524,7 @@ async function ejecutarHabilidad(texto) {
   ];
   for (const intent of BT_INTENTS) {
     if (intent.match(comandoLower)) {
-      logMessage(\`[Intent BT] → [\${intent.name}]\`);
+      logMessage('[Intent BT] → [' + intent.name + ']');
       intent.action(comandoLower);
       if (window.scallOrb) window.scallOrb.setState('idle');
       return;
@@ -787,4 +787,11 @@ window.onload = () => {
   setTimeout(() => prepareToggleListener(), 100);
   setTimeout(() => conectarMQTT(), 500);
   setTimeout(() => showCommandToggle('Sistema listo'), 1500);
+
+  // Conectar funciones reales a los stubs del <head>
+  window._toggleTheme          = typeof toggleTheme          === 'function' ? toggleTheme          : null;
+  window._abrirModalCumpleanos = typeof abrirModalCumpleanos === 'function' ? abrirModalCumpleanos : null;
+  window._activarSOS           = typeof activarSOS           === 'function' ? activarSOS           : null;
+  window._mostrarPanelRutas    = typeof mostrarPanelRutas    === 'function' ? mostrarPanelRutas    : null;
+  window._abrirPanelBluetooth  = typeof abrirPanelBluetooth  === 'function' ? abrirPanelBluetooth  : null;
 };

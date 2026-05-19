@@ -16,6 +16,41 @@
       border-radius:50%; pointer-events:none; display:block;
     }
   </style>
+
+  <!-- Funciones críticas inline — disponibles antes de cargar app.js -->
+  <script>
+    // sideMenuActivar necesita estar disponible antes del primer click
+    function sideMenuActivar(el) {
+      document.querySelectorAll('.side-menu-item')
+        .forEach(function(i){ i.classList.remove('active'); });
+      if (el) el.classList.add('active');
+    }
+    function abrirAsistente() {
+      ['alarmaPanel','noticiasPanel','climaPanel','tradPanel','corpusPanel']
+        .forEach(function(id){
+          var p = document.getElementById(id);
+          if (p) p.style.display = 'none';
+        });
+    }
+    // togglePanel básico — será reemplazado por alarms.js cuando cargue
+    function togglePanel(id) {
+      var paneles = ['alarmaPanel','noticiasPanel','climaPanel','tradPanel','corpusPanel'];
+      var target  = document.getElementById(id);
+      if (!target) return;
+      var visible = target.style.display !== 'none';
+      paneles.forEach(function(p){
+        var pe = document.getElementById(p);
+        if (pe) pe.style.display = 'none';
+      });
+      if (!visible) target.style.display = 'flex';
+    }
+    // Stub para funciones que cargan después
+    function mostrarPanelRutas()    { if(window._mostrarPanelRutas)    window._mostrarPanelRutas();    }
+    function abrirPanelBluetooth()  { if(window._abrirPanelBluetooth)  window._abrirPanelBluetooth();  }
+    function abrirModalCumpleanos() { if(window._abrirModalCumpleanos) window._abrirModalCumpleanos(); }
+    function activarSOS()           { if(window._activarSOS)           window._activarSOS();           }
+    function toggleTheme()          { if(window._toggleTheme)          window._toggleTheme();          }
+  </script>
 </head>
 <body>
 

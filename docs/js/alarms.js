@@ -3,17 +3,27 @@
 // Alarmas con sonidos Web Audio API, sincronización UI, voz→panel
 // =====================================================================
 
-const ALARMAS_KEY = 'scall_alarmas';
-let alarmasActivas   = {};
-let timerInterval    = null;
-let timerSegundos    = 0;
-let cronometroInt    = null;
-let cronometroSeg    = 0;
-let cronometroActivo = false;
+// Guard contra carga doble del módulo
+if (typeof window._scallAlarmasLoaded !== 'undefined') {
+  console.warn('[ALARMS] Módulo ya cargado — saltando redeclaración');
+} else {
+  window._scallAlarmasLoaded = true;
+}
+
+const ALARMAS_KEY = window._ALARMAS_KEY_REG
+  ? window._ALARMAS_KEY_REG
+  : (window._ALARMAS_KEY_REG = 'scall_alarmas');
+
+if (typeof alarmasActivas   === 'undefined') var alarmasActivas   = {};
+if (typeof timerInterval    === 'undefined') var timerInterval    = null;
+if (typeof timerSegundos    === 'undefined') var timerSegundos    = 0;
+if (typeof cronometroInt    === 'undefined') var cronometroInt    = null;
+if (typeof cronometroSeg    === 'undefined') var cronometroSeg    = 0;
+if (typeof cronometroActivo === 'undefined') var cronometroActivo = false;
 
 // ── Sonido seleccionado actualmente en la UI ─────────────────────────
-let sonidoSeleccionado = 'beep';
-let sonidoActivado     = true;
+if (typeof sonidoSeleccionado === 'undefined') var sonidoSeleccionado = 'beep';
+if (typeof sonidoActivado     === 'undefined') var sonidoActivado     = true;
 
 // ══════════════════════════════════════════════════════════════════════
 // MOTOR DE SONIDO — Web Audio API (sin archivos externos)
