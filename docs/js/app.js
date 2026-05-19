@@ -406,10 +406,20 @@ async function ejecutarHabilidad(texto) {
     'encender_luz_general', 'apagar_luz_general', 'encender_tv', 'apagar_tv',
     'abrir_persianas', 'cerrar_persianas',
     // Utilidades locales
-    'hora', 'fecha', 'alarma_crear', 'recordatorio_crear', 'medicamento',
-    'timer_iniciar', 'cronometro', 'clima_consultar', 'noticias_consultar',
+    'hora', 'fecha',
+    // Alarmas, recordatorios, medicamentos
+    'alarma_crear', 'alarma_listar', 'alarma_cancelar_todas', 'alarma_abrir_panel',
+    'recordatorio_crear', 'recordatorio_diario',
+    'medicamento_crear', 'medicamento_diario', 'medicamento',
+    // Timer y cronómetro
+    'timer_iniciar', 'timer_cancelar',
+    'cronometro', 'cronometro_iniciar', 'cronometro_pausar', 'cronometro_reiniciar', 'cronometro_leer',
+    // SOS
+    'sos_activar', 'sos_cancelar', 'sos_contactos',
+    // Otras utilidades
+    'clima_consultar', 'noticias_consultar',
     'traducir', 'cumpleanos_abrir', 'cumpleanos_hoy', 'cumpleanos_proximo',
-    'corpus_ver', 'sos_activar', 'sos_cancelar'
+    'corpus_ver'
   ];
 
   if (typeof intents !== 'undefined') {
