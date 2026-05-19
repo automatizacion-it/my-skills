@@ -62,43 +62,37 @@ function clasificarIntencion(texto) {
     .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
 
   // ── Palabras que siempre van a intents locales ──────────────────
+  // Palabras que activan SIEMPRE un intent local — NUNCA van a la IA
+  // Regla: solo hardware, media y comandos sin respuesta de conversación
   const LOCAL_KEYWORDS = [
     // Música
-    'pon ','ponme ','reproduce ','coloca ','quiero escuchar','dame musica','toca ',
-    'pausa','pausar','siguiente cancion','anterior','sube volumen','baja volumen',
-    'detener la musica','apaga la musica','para la musica',
+    'pon musica','ponme musica','reproduce musica','pon algo de musica',
+    'pon ','ponme ','reproduce ','coloca musica',
+    'pausa la musica','para la musica','apaga la musica',
+    'siguiente cancion','cancion anterior','sube volumen','baja volumen',
     // Radio
-    'radio','emisora','sintoniza','caracol','blu','rcn','la fm','tropicana',
+    'radio','emisora','sintoniza','caracol','blu radio','rcn','la fm','tropicana',
     'olimpica','w radio','los 40','oxigeno','rumba','amor stereo',
-    // Alarmas y tiempo
-    'alarma','despiertame','despertarme','levantame','recuerdame','recordatorio',
-    'pastilla','medicamento','medicina','jarabe','dosis',
-    'timer','temporizador','cronometro','cuenta regresiva',
-    // Dispositivos IoT
-    'enciende','apaga','prende','luces','luz','sala','cuarto','television',
-    'tele','persiana','cortina','ventilador','encender','apagar',
-    'cuanto tarda','cuanto demora','cuanto falta','cuanto tiempo falta',
-    'a que distancia','que tan lejos','distancia al destino','mis destinos',
-    'destinos frecuentes','destinos guardados','lugares frecuentes',
+    // Alarmas
+    'alarma a las','pon alarma','ponme alarma','despiertame',
+    'recuerdame tomar','pastilla a las','medicamento a las',
+    'timer de','temporizador de','cronometro',
+    // IoT / Dispositivos
+    'enciende la luz','apaga la luz','enciende el televisor','apaga el televisor',
+    'enciende las luces','apaga las luces','prende la luz',
+    'abre la persiana','cierra la persiana','abre las cortinas',
+    // Rutas
+    'llevame a ','llevame al ','navega a ','navega al ',
+    'ruta a ','ruta al ','ruta hasta ','dirigeme a ',
+    'abre el mapa','muestra el mapa','ver mapa','abrir mapa',
+    'cuanto tarda ir','cuanto demora ir','distancia al destino',
+    'destinos frecuentes','mis destinos',
     // Bluetooth
-    'bluetooth','audifono','auricular','parlante','bocina','emparejar','vincular',
-    // Rutas y navegación
-    'llevame a ','llevame al ','llevame hasta ','llevame donde ',
-    'navega a ','navega al ','ruta a ','ruta al ','ruta hasta ','ruta hacia ',
-    'como llego','ir a ','ir al ','ir hasta ','dirigeme a ',
-    'donde queda ','donde esta ','abre el mapa','muestra el mapa',
-    'ver mapa','abrir mapa','google maps','mi ubicacion','donde estoy',
-    // Clima y noticias
-    'clima ','temperatura','llueve','pronostico','noticias','titulares',
-    // Utilidades
-    'traduce','traducir','como se dice',
-    'cumpleanos','sos','auxilio','emergencia','ayuda','me cai',
-    // Hora y fecha
-    'que hora','dime la hora','que dia es','fecha de hoy',
-    // Sistema
-    'corpus','frases no reconocidas',
-    // Chistes / básicos (van a intents locales rápido)
-    'chiste','broma','hazme reir','hola','buenos dias','adios','hasta luego',
+    'conectar bluetooth','emparejar bluetooth','vincular bluetooth',
+    // Utilidades puntuales
+    'que hora es','dime la hora','que dia es hoy','fecha de hoy',
+    'clima en','temperatura en',
+    'auxilio','sos emergencia',
   ];
 
   if (LOCAL_KEYWORDS.some(k => c.includes(k))) return 'local';
@@ -117,15 +111,6 @@ async function llamarClaude(texto, name) {
   const apiKey = getClaudeKey();
   if (!apiKey) {
     responderVoz('Configura tu Claude API Key en el panel de configuración.');
-    if (window.scallOrb) window.scallOrb.setState('idle');
-    return;
-  }
-
-  // Clasificar antes de gastar la API
-  const intencion = clasificarIntencion(texto);
-  if (intencion === 'local') {
-    logMessage('[CLAUDE] ↩ Redirigiendo a intent local (no gasta API)');
-    ejecutarIntentLocal(texto);
     if (window.scallOrb) window.scallOrb.setState('idle');
     return;
   }
@@ -546,17 +531,31 @@ async function ejecutarHabilidad(texto) {
     }
   }
 
-  // ── Enrutar a Claude o Gemini para todo lo demás ──
-  const iaActiva = getActiveIA();
-  if (iaActiva === 'claude' && getClaudeKey()) {
-    logMessage('[IA] Usando Claude (Anthropic)...');
+  // ── Diagnóstico del enrutador ──
+  const iaActiva   = getActiveIA();
+  const claudeKey  = getClaudeKey();
+  const geminiKey  = apiKey;
+  logMessage(`[ENRUTADOR] IA activa: ${iaActiva} | Claude key: ${claudeKey ? 'OK' : 'NO'} | Gemini key: ${geminiKey ? 'OK' : 'NO'}`);
+
+  // Prioridad 1: Claude si está seleccionado y tiene key
+  if (iaActiva === 'claude' && claudeKey) {
+    logMessage('[IA] → Claude (Anthropic)');
     transcriptText.innerText = 'Pensando...';
     if (window.scallOrb) window.scallOrb.setState('processing');
     await llamarClaude(texto, name);
     return;
   }
 
-  if (apiKey) {
+  // Prioridad 2: Claude tiene key aunque no esté seleccionado — advertir
+  if (iaActiva !== 'claude' && claudeKey && !geminiKey) {
+    logMessage('[IA] ⚠️ Gemini seleccionado pero sin key — usando Claude como respaldo');
+    transcriptText.innerText = 'Pensando...';
+    if (window.scallOrb) window.scallOrb.setState('processing');
+    await llamarClaude(texto, name);
+    return;
+  }
+
+  if (geminiKey) {
     if (geminiCooldown) { logMessage('[GEMINI] ⏳ Espera un momento.'); responderVoz('Un momento por favor.'); return; }
     geminiCooldown = true;
     setTimeout(() => { geminiCooldown = false; }, 3000);
@@ -610,19 +609,10 @@ MENSAJE DEL USUARIO: "${texto}"`;
     return;
   }
 
-  /* Fallback intents locales */
-  const comando = texto.toLowerCase();
-  let found = false;
-  if (typeof intents !== 'undefined') {
-    for (const intent of intents) {
-      if (intent.match(comando)) { logMessage(`Intent local: [${intent.name}]`); intent.action(comando); found = true; break; }
-    }
-  }
-  if (!found) {
-    if (typeof agregarAlCorpus === 'function') agregarAlCorpus(texto);
-    logMessage(`[CORPUS] 📝 "${texto}"`);
-    responderVoz('En modo local no tengo registrado ese comando. Lo guardé para aprender.');
-  }
+  // Sin IA disponible — modo local completo
+  logMessage('[IA] ⚠️ Sin IA configurada — usando intents locales. Ve a Config ⚙️ para agregar una API Key.');
+  responderVoz('No tengo IA configurada. Configura una API Key en el menú de ajustes para respuestas inteligentes.');
+  ejecutarIntentLocal(texto);
 }
 
 function ejecutarIntentLocal(texto) {
