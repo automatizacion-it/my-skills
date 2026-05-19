@@ -301,72 +301,175 @@ if (!SpeechRecognition) {
   statusText.innerText = 'Error: Navegador no soporta API de Voz (usa Chrome o Edge).';
   statusText.style.color = 'red';
 } else {
+  // ── Reconocimiento de voz — configuración ─────────────────────────
   const recognition = new SpeechRecognition();
-  recognition.lang = 'es-ES';
-  recognition.continuous = false;
-  recognition.interimResults = true;
-  let isListening = false;
+  recognition.lang           = 'es-ES';
+  recognition.continuous     = true;   // continúa escuchando hasta que el usuario pare
+  recognition.interimResults = true;   // muestra texto mientras habla
+  recognition.maxAlternatives = 1;
 
-  /* ── Web Audio para reacción al audio real ── */
+  let isListening    = false;
+  let fraseAcumulada = '';             // texto completo mientras habla
+  let debounceTimer  = null;           // espera antes de procesar
+  let barraTimer     = null;
+  const DEBOUNCE_MS  = 2500;           // 2.5s de silencio → procesar
+
+  // ── Web Audio para el orbe ─────────────────────────────────────────
   let audioCtx = null, analyserNode = null;
   async function iniciarAudioOrbe() {
     if (analyserNode) return;
     try {
-      const stream  = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      audioCtx      = new (window.AudioContext || window.webkitAudioContext)();
-      const src     = audioCtx.createMediaStreamSource(stream);
-      analyserNode  = audioCtx.createAnalyser();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      audioCtx     = new (window.AudioContext || window.webkitAudioContext)();
+      const src    = audioCtx.createMediaStreamSource(stream);
+      analyserNode = audioCtx.createAnalyser();
       analyserNode.fftSize = 256;
       analyserNode.smoothingTimeConstant = 0.75;
       src.connect(analyserNode);
       window.scallAudioAnalyser = analyserNode;
-      logMessage('[ORBE] 🎙️ Audio conectado al orbe wireframe');
+      logMessage('[ORBE] 🎙️ Audio conectado');
     } catch (e) {
-      logMessage('[ORBE] ⚠️ No se pudo acceder al micrófono para el orbe.');
+      logMessage('[ORBE] ⚠️ Sin acceso al micrófono para el orbe');
     }
   }
 
+  // ── Barra de progreso de espera ────────────────────────────────────
+  function mostrarBarraEspera() {
+    let barra = document.getElementById('scall-debounce-bar');
+    if (!barra) {
+      barra = document.createElement('div');
+      barra.id = 'scall-debounce-bar';
+      barra.style.cssText = [
+        'position:fixed','bottom:0','left:0',
+        'height:3px','width:0%',
+        'background:rgba(0,212,255,0.8)',
+        'transition:width ' + (DEBOUNCE_MS/1000) + 's linear',
+        'z-index:9999','pointer-events:none'
+      ].join(';');
+      document.body.appendChild(barra);
+    }
+    // Reset y animar
+    barra.style.transition = 'none';
+    barra.style.width = '0%';
+    void barra.offsetWidth; // forzar reflow
+    barra.style.transition = 'width ' + (DEBOUNCE_MS/1000) + 's linear';
+    barra.style.width = '100%';
+  }
+
+  function ocultarBarraEspera() {
+    const barra = document.getElementById('scall-debounce-bar');
+    if (barra) { barra.style.width = '0%'; barra.style.transition = 'none'; }
+  }
+
+  // ── Procesar frase completa ────────────────────────────────────────
+  function procesarFraseCompleta() {
+    const frase = fraseAcumulada.trim();
+    fraseAcumulada = '';
+    ocultarBarraEspera();
+
+    if (!frase || frase.length < 2) return;
+
+    logMessage('[VOZ] Frase completa: "' + frase + '"');
+    transcriptText.innerText = frase;
+    if (window.scallOrb) window.scallOrb.setState('processing');
+    ejecutarHabilidad(frase);
+  }
+
+  // ── Botón del orbe ─────────────────────────────────────────────────
   orbBtn.addEventListener('click', () => {
     if (!isListening) {
       try {
+        fraseAcumulada = '';
+        clearTimeout(debounceTimer);
+        ocultarBarraEspera();
         recognition.start();
         orbBtn.classList.add('listening');
-        statusText.innerText = 'Escuchando...';
+        statusText.innerText = 'Escuchando... habla con naturalidad';
         transcriptText.innerText = '';
         isListening = true;
-        /* ── ORBE: listening ── */
         if (window.scallOrb) window.scallOrb.setState('listening');
         iniciarAudioOrbe();
-      } catch(e) { console.error('No se pudo iniciar:', e); }
+      } catch(e) { console.error('[VOZ] No se pudo iniciar:', e); }
     } else {
+      // Parar manualmente → procesar lo que hay
+      clearTimeout(debounceTimer);
       recognition.stop();
+      if (fraseAcumulada.trim()) procesarFraseCompleta();
     }
   });
 
+  // ── Resultado de voz ───────────────────────────────────────────────
   recognition.onresult = (event) => {
-    const result = event.results[event.results.length - 1];
-    if (!result.isFinal) { transcriptText.innerText = result[0].transcript; return; }
-    const texto = result[0].transcript;
-    logMessage(`Frase completa: "${texto}"`);
-    transcriptText.innerText = texto;
-    /* ── ORBE: processing ── */
-    if (window.scallOrb) window.scallOrb.setState('processing');
-    ejecutarHabilidad(texto);
+    let interimText = '';
+    let finalText   = '';
+
+    // Recorrer todos los resultados del evento
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const r = event.results[i];
+      if (r.isFinal) {
+        finalText   += r[0].transcript + ' ';
+      } else {
+        interimText += r[0].transcript;
+      }
+    }
+
+    // Acumular texto final
+    if (finalText) {
+      fraseAcumulada += finalText;
+    }
+
+    // Mostrar texto en pantalla (acumulado + interim)
+    const textoMostrar = (fraseAcumulada + interimText).trim();
+    transcriptText.innerText = textoMostrar || '...';
+
+    // Reiniciar debounce — esperar silencio antes de procesar
+    clearTimeout(debounceTimer);
+
+    if (fraseAcumulada.trim()) {
+      // Iniciar barra de progreso visual
+      mostrarBarraEspera();
+      statusText.innerText = 'Esperando... (habla más o espera)';
+
+      debounceTimer = setTimeout(() => {
+        procesarFraseCompleta();
+        // Detener reconocimiento después de procesar
+        recognition.stop();
+      }, DEBOUNCE_MS);
+    }
   };
 
+  // ── Errores ────────────────────────────────────────────────────────
   recognition.onerror = (event) => {
+    if (event.error === 'no-speech') {
+      // Sin voz detectada → procesar si hay frase acumulada
+      if (fraseAcumulada.trim()) {
+        clearTimeout(debounceTimer);
+        procesarFraseCompleta();
+      }
+      return;
+    }
+    logMessage('[VOZ] Error: ' + event.error);
     statusText.innerText = 'Error de voz: ' + event.error;
     orbBtn.classList.remove('listening');
     isListening = false;
-    /* ── ORBE: idle en error ── */
+    fraseAcumulada = '';
+    clearTimeout(debounceTimer);
+    ocultarBarraEspera();
     if (window.scallOrb) window.scallOrb.setState('idle');
   };
 
+  // ── Fin del reconocimiento ─────────────────────────────────────────
   recognition.onend = () => {
-    statusText.innerText = 'Procesando...';
     orbBtn.classList.remove('listening');
     isListening = false;
-    setTimeout(() => { statusText.innerText = 'Presiona el orbe para hablar'; }, 2000);
+    ocultarBarraEspera();
+    clearTimeout(debounceTimer);
+    setTimeout(() => {
+      if (statusText.innerText.startsWith('Esperando') ||
+          statusText.innerText.startsWith('Escuchando')) {
+        statusText.innerText = 'Presiona el orbe para hablar';
+      }
+    }, 2500);
   };
 }
 
