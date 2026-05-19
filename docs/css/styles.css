@@ -580,3 +580,271 @@ h1 {
 .sound-preview-btn svg { width: 11px; height: 11px; fill: currentColor; stroke: none; }
 .sound-preview-btn:hover { background: rgba(0,212,255,0.14); }
 
+/* ══════════════════════════════════════════════════════════
+   PANELES LATERALES DE CRISTAL — lado-menu y lado-status
+   ══════════════════════════════════════════════════════════ */
+
+/* Base compartida */
+.side-panel {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  width: 172px;
+  background: rgba(6, 14, 28, 0.72);
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  border-radius: 14px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,212,255,0.07),
+    0 20px 60px rgba(0,0,0,0.55);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 8px;
+}
+
+.side-panel-left  { left: 14px; }
+.side-panel-right { right: 14px; }
+
+/* Header del panel */
+.side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px 10px;
+  border-bottom: 1px solid rgba(0,212,255,0.1);
+  margin-bottom: 4px;
+}
+.side-panel-label {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  letter-spacing: .22em;
+  color: rgba(0,212,255,0.6);
+  text-transform: uppercase;
+}
+
+/* Dot de estado vivo */
+.side-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 7px #10b981;
+  animation: sideDotPulse 2s ease-in-out infinite;
+}
+@keyframes sideDotPulse {
+  0%,100% { box-shadow: 0 0 4px #10b981; }
+  50%      { box-shadow: 0 0 12px #10b981; }
+}
+
+/* ── Items del menú ── */
+.side-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: calc(100% - 16px);
+  margin: 2px 8px;
+  padding: 9px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all .18s ease;
+  text-align: left;
+}
+.side-menu-item:hover {
+  background: rgba(0,212,255,0.07);
+  border-color: rgba(0,212,255,0.14);
+}
+.side-menu-item.active {
+  background: rgba(0,212,255,0.1);
+  border-color: rgba(0,212,255,0.28);
+}
+.side-menu-item.active .smi-icon {
+  border-color: rgba(0,212,255,0.4);
+  background: rgba(0,212,255,0.12);
+}
+.side-menu-item.active .smi-icon svg {
+  stroke: rgba(0,212,255,1);
+}
+.side-menu-item.active .smi-label {
+  color: rgba(0,212,255,0.95);
+}
+
+/* Icono del item */
+.smi-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,212,255,0.16);
+  background: rgba(0,212,255,0.05);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .18s;
+}
+.smi-icon svg {
+  width: 13px; height: 13px;
+  stroke: rgba(0,212,255,0.55);
+  fill: none;
+  transition: stroke .18s;
+}
+
+/* Label del item */
+.smi-label {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .05em;
+  color: rgba(255,255,255,0.5);
+  transition: color .18s;
+}
+
+/* Separador */
+.smi-sep {
+  width: calc(100% - 28px);
+  margin: 6px 14px;
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+}
+
+/* SOS item */
+.smi-sos {
+  margin-top: auto;
+}
+.smi-sos .smi-icon {
+  border-color: rgba(239,68,68,0.25);
+  background: rgba(239,68,68,0.08);
+}
+.smi-sos .smi-icon svg { stroke: rgba(239,68,68,0.7); }
+.smi-sos .smi-label    { color: rgba(239,68,68,0.6); }
+.smi-sos:hover {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.25);
+}
+.smi-sos.sos-activo .smi-icon {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+.smi-sos.sos-activo .smi-icon svg { stroke: #fff; }
+
+/* ── Panel derecho: filas de status ── */
+.side-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 14px;
+}
+.side-stat-lbl {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .12em;
+  color: rgba(255,255,255,0.28);
+}
+.side-stat-val {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .04em;
+  color: rgba(0,212,255,0.75);
+}
+.side-stat-val.green { color: rgba(16,185,129,0.85); }
+
+/* Reloj lateral */
+.side-clock {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: rgba(0,212,255,0.7);
+  text-align: center;
+  padding: 8px 14px 2px;
+}
+.side-clock-date {
+  font-family: var(--font-mono);
+  font-size: .58rem;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,0.22);
+  text-align: center;
+  padding-bottom: 6px;
+}
+
+/* Botones de utilidad (tema, calendario, corpus) */
+.side-utils {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+}
+.side-util-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .18s;
+}
+.side-util-btn svg {
+  width: 13px; height: 13px;
+  stroke: rgba(255,255,255,0.4);
+  fill: none;
+}
+.side-util-btn:hover {
+  background: rgba(0,212,255,0.08);
+  border-color: rgba(0,212,255,0.2);
+}
+.side-util-btn:hover svg { stroke: rgba(0,212,255,0.8); }
+
+/* Badge IA — esquina inferior del panel status */
+.side-ai-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 10px 0;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.14);
+}
+.side-ai-badge .ai-status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+.side-ai-badge .ai-status-text {
+  font-family: var(--font-mono);
+  font-size: .6rem;
+  letter-spacing: .06em;
+  color: rgba(0,212,255,0.65);
+}
+
+/* Ajuste MQTT dot dentro del panel lateral */
+#mqttStatusLabel {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .04em;
+}
+
+/* Ocultar top-bar si quedó algún remanente */
+.top-bar { display: none !important; }
+
+/* ── Área central — dar espacio a los paneles laterales ── */
+.main-content {
+  margin-left: 200px;
+  margin-right: 200px;
+}
+
+/* Mobile: colapsar paneles a iconos solamente */
+@media (max-width: 600px) {
+  .side-panel { width: 52px; }
+  .smi-label, .side-stat-lbl, .side-stat-val,
+  .side-panel-label, .side-clock, .side-clock-date,
+  .side-utils, .side-ai-badge, .side-clock-date { display: none; }
+  .smi-icon { margin: 0 auto; }
+  .side-menu-item { justify-content: center; padding: 8px 4px; gap: 0; }
+  .side-panel-header { justify-content: center; }
+  .side-panel-left  { left: 6px; }
+  .side-panel-right { right: 6px; }
+  .main-content { margin-left: 64px; margin-right: 64px; }
+}
+

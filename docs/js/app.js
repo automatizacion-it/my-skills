@@ -668,6 +668,42 @@ function responderVoz(mensaje) {
 }
 
 /* ── Inicio ── */
+
+// ══════════════════════════════════════════════════════════════════════
+// PANELES LATERALES — lógica de menú y reloj
+// ══════════════════════════════════════════════════════════════════════
+function sideMenuActivar(el) {
+  document.querySelectorAll('.side-menu-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function abrirAsistente() {
+  ['alarmaPanel','noticiasPanel','climaPanel','tradPanel','corpusPanel'].forEach(id => {
+    const p = document.getElementById(id);
+    if (p) p.style.display = 'none';
+  });
+}
+
+function actualizarContadorAlarmas() {
+  const el = document.getElementById('sideAlarmCount');
+  if (!el || typeof getAlarmas !== 'function') return;
+  el.textContent = getAlarmas().filter(a => a.activa).length;
+}
+
+(function initSideClock() {
+  function tick() {
+    const n   = new Date();
+    const pad = v => String(v).padStart(2,'0');
+    const DIAS  = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
+    const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const clk = document.getElementById('sideClock');
+    const dt  = document.getElementById('sideDate');
+    if (clk) clk.textContent = pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+    if (dt)  dt.textContent  = DIAS[n.getDay()]+' '+n.getDate()+' '+MESES[n.getMonth()];
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
 window.onload = () => {
   const dropdown = document.getElementById('intentDropdown');
   if (dropdown && typeof intents !== 'undefined') {
@@ -723,6 +759,7 @@ window.onload = () => {
 
   updateAIStatusUI();
   hideCommandToggle();
+  actualizarContadorAlarmas();
   setTimeout(() => prepareToggleListener(), 100);
   setTimeout(() => conectarMQTT(), 500);
   setTimeout(() => showCommandToggle('Sistema listo'), 1500);
