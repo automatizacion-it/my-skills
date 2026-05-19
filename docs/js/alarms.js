@@ -1,14 +1,19 @@
+// Evitar doble declaración de const que rompe el browser
+// Si el repo viejo cargó primero con "const ALARMAS_KEY", este var no choca
+// porque está dentro de un IIFE con scope propio
+(function() {
 if (window._SCALL_ALARMS_LOADED) {
-  console.warn('[ALARMS] Módulo ya cargado — ignorando carga doble');
-} else {
+  console.warn('[ALARMS] Módulo ya cargado — ignorando');
+  return;
+}
 window._SCALL_ALARMS_LOADED = true;
 
 // =====================================================================
-// MÓDULO ALARMAS — SCALL
-// Alarmas con sonidos Web Audio API, sincronización UI, voz→panel
+// MÓDULO ALARMAS — SCALL v4 (con guard total)
 // =====================================================================
 
-// Guard definitivo — var no lanza error si se redeclara
+// Todas las variables del módulo quedan en scope del IIFE
+// No pueden chocar con versiones anteriores del archivo
 var ALARMAS_KEY     = 'scall_alarmas';
 var alarmasActivas  = alarmasActivas  || {};
 var timerInterval   = timerInterval   || null;
@@ -858,5 +863,36 @@ window.addEventListener('load', () => {
 function _alarLog(m) { typeof logMessage  === 'function' ? logMessage(m)  : console.log(m); }
 function _alarVoz(m) { typeof responderVoz === 'function' ? responderVoz(m) : console.warn('[VOZ]', m); }
 
+// ── Exponer funciones globalmente (llamadas desde HTML onclick) ──────
+window.seleccionarSonido      = seleccionarSonido;
+window.previsualizarSonido    = previsualizarSonido;
+window.actualizarSonidoPorTipo= actualizarSonidoPorTipo;
+window.guardarAlarmaUI        = guardarAlarmaUI;
+window.eliminarAlarma         = eliminarAlarma;
+window.toggleAlarma           = toggleAlarma;
+window.tocarSonido            = tocarSonido;
+window.cancelarTimer          = cancelarTimer;
+window.pausarCronometro       = pausarCronometro;
+window.reiniciarCronometro    = reiniciarCronometro;
+window.crearAlarma            = crearAlarma;
+window.parsearAlarmaVoz       = parsearAlarmaVoz;
+window.sincronizarUIDesdeVoz  = sincronizarUIDesdeVoz;
+window.listarAlarmasPorVoz    = listarAlarmasPorVoz;
+window.cancelarTodasAlarmas   = cancelarTodasAlarmas;
+window.iniciarTimer           = iniciarTimer;
+window.parsearTimer           = parsearTimer;
+window.iniciarCronometro      = iniciarCronometro;
+window.leerCronometro         = leerCronometro;
+window.getAlarmas             = getAlarmas;
+window.renderizarListaAlarmas = renderizarListaAlarmas;
+window.renderCalendario       = renderCalendario;
+window.actualizarContadorAlarmas = function() {
+  var el = document.getElementById('sideAlarmCount');
+  if (!el) return;
+  var activas = getAlarmas().filter(function(a) { return a.activa; }).length;
+  el.textContent = activas;
+};
 
-} // fin guard _SCALL_ALARMS_LOADED
+_alarLog('[ALARMS] ✅ Módulo cargado y funciones expuestas globalmente');
+
+})(); // fin IIFE alarms.js

@@ -1,258 +1,277 @@
 // ================================================================
-// intents_alarmas.js — Intents de alarmas, recordatorios,
-// medicamentos, temporizador, cronómetro y SOS para SCALL
-//
-// Carga ANTES de intents.js en index.html:
-//   <script src="js/intents_alarmas.js"></script>
-//   <script src="js/intents.js"></script>
+// intents_alarmas.js — Intents de alarmas para SCALL
+// Guard contra doble carga + sin const en scope global
 // ================================================================
 
-const intentsAlarmas = [
+if (window._SCALL_INTENTS_ALARMAS_LOADED) {
+  console.warn('[INTENTS_ALARMAS] Ya cargado');
+} else {
+window._SCALL_INTENTS_ALARMAS_LOADED = true;
 
-  // ══════════════════════════════════════════════════════════════
-  // ALARMAS
-  // ══════════════════════════════════════════════════════════════
+// Meses en español — función helper (no const global)
+function _tieneMesAlarma(frase) {
+  return ['enero','febrero','marzo','abril','mayo','junio',
+          'julio','agosto','septiembre','octubre','noviembre','diciembre']
+    .some(function(m) { return frase.includes(m); });
+}
+
+var intentsAlarmas = [
+
+  // ── Alarmas ────────────────────────────────────────────────────
   {
     name: 'alarma_crear',
-    description: 'Crear alarma (Ej: "Pon alarma a las 7", "Despiértame a las 6 de la mañana")',
-    match: (c) => {
-      const triggers = ['alarma','despiertame','despertarme','despierta','levantame','levantarme',
-                        'programa una alarma','pon alarma','ponme alarma','crea alarma'];
-      const tieneHora = /\d{1,2}/.test(c);
-      // Si menciona un mes específico → dejar que Claude extraiga fecha+hora correctamente
-      const meses = ['enero','febrero','marzo','abril','mayo','junio',
-                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      if (meses.some(m => c.includes(m))) return false;
-      const meses = ['enero','febrero','marzo','abril','mayo','junio',
-                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      if (meses.some(m => c.includes(m))) return false;
-      const meses = ['enero','febrero','marzo','abril','mayo','junio',
-                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      if (meses.some(m => c.includes(m))) return false;
-      const meses = ['enero','febrero','marzo','abril','mayo','junio',
-                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      if (meses.some(m => c.includes(m))) return false;
-      const meses = ['enero','febrero','marzo','abril','mayo','junio',
-                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      if (meses.some(m => c.includes(m))) return false;
-      return triggers.some(t => c.includes(t)) && tieneHora;
+    description: 'Crear alarma simple sin fecha específica',
+    match: function(c) {
+      // Si tiene mes → Claude lo maneja (extrae día+mes+hora correctamente)
+      if (_tieneMesAlarma(c)) return false;
+      var triggers = ['alarma','despiertame','despertarme','despierta',
+                      'levantame','levantarme','pon alarma','ponme alarma','crea alarma'];
+      return triggers.some(function(t) { return c.includes(t); }) && /\d{1,2}/.test(c);
     },
-    action: (c) => {
-      const datos = parsearAlarmaVoz(c);
+    action: function(c) {
+      var datos = typeof parsearAlarmaVoz === 'function' ? parsearAlarmaVoz(c) : null;
       if (datos) {
-        sincronizarUIDesdeVoz(datos);
-        setTimeout(() => crearAlarma(datos), 400);
-      } else { togglePanel('alarmaPanel'); _alarVoz('Abriendo alarmas. ¿A qué hora la pongo?'); }
+        if (typeof sincronizarUIDesdeVoz === 'function') sincronizarUIDesdeVoz(datos);
+        setTimeout(function() { if (typeof crearAlarma === 'function') crearAlarma(datos); }, 400);
+      } else {
+        if (typeof togglePanel === 'function') togglePanel('alarmaPanel');
+        if (typeof responderVoz === 'function') responderVoz('Abriendo alarmas. ¿A qué hora la pongo?');
+      }
     }
   },
+
   {
     name: 'alarma_listar',
-    description: 'Ver alarmas activas (Ej: "¿Qué alarmas tengo?", "Mis alarmas")',
-    match: (c) => (c.includes('alarma') || c.includes('alarmas')) &&
-                  (c.includes('que tengo') || c.includes('cuales') || c.includes('mis alarmas') ||
-                   c.includes('lista') || c.includes('ver') || c.includes('mostrar')),
-    action: () => listarAlarmasPorVoz()
+    description: 'Ver alarmas activas',
+    match: function(c) {
+      return (c.includes('alarma') || c.includes('alarmas')) &&
+             (c.includes('que tengo') || c.includes('cuales') || c.includes('mis alarmas') ||
+              c.includes('lista') || c.includes('ver') || c.includes('mostrar'));
+    },
+    action: function() {
+      if (typeof listarAlarmasPorVoz === 'function') listarAlarmasPorVoz();
+    }
   },
+
   {
     name: 'alarma_cancelar_todas',
     description: 'Cancelar todas las alarmas',
-    match: (c) => (c.includes('cancela') || c.includes('elimina') || c.includes('borra') || c.includes('quita')) &&
-                  c.includes('alarma') && (c.includes('todas') || c.includes('todo')),
-    action: () => cancelarTodasAlarmas()
+    match: function(c) {
+      return (c.includes('cancela') || c.includes('elimina') || c.includes('borra')) &&
+              c.includes('alarma') && (c.includes('todas') || c.includes('todo'));
+    },
+    action: function() {
+      if (typeof cancelarTodasAlarmas === 'function') cancelarTodasAlarmas();
+    }
   },
+
   {
     name: 'alarma_abrir_panel',
     description: 'Abrir panel de alarmas',
-    match: (c) => (c.includes('abrir alarma') || c.includes('abre alarma') ||
-                   c.includes('panel de alarma') || c.includes('gestionar alarma')) &&
-                  !(/\d{1,2}/.test(c)),
-    action: () => { togglePanel('alarmaPanel'); _alarVoz('Abriendo panel de alarmas.'); }
+    match: function(c) {
+      return (c.includes('abrir alarma') || c.includes('abre alarma') ||
+              c.includes('panel de alarma') || c.includes('gestionar alarma')) &&
+             !/\d{1,2}/.test(c);
+    },
+    action: function() {
+      if (typeof togglePanel === 'function') togglePanel('alarmaPanel');
+      if (typeof responderVoz === 'function') responderVoz('Abriendo panel de alarmas.');
+    }
   },
 
-  // ══════════════════════════════════════════════════════════════
-  // RECORDATORIOS
-  // ══════════════════════════════════════════════════════════════
+  // ── Recordatorios ──────────────────────────────────────────────
   {
     name: 'recordatorio_crear',
-    description: 'Crear recordatorio (Ej: "Recuérdame la reunión a las 3", "Avísame de la cita a las 10")',
-    match: (c) => {
-      const triggers = ['recuerdame','recordatorio','recuerda que','no olvides','avisame','notificame'];
-      const tieneHora = /\d{1,2}/.test(c);
-      return triggers.some(t => c.includes(t)) && tieneHora;
+    description: 'Crear recordatorio sin fecha específica',
+    match: function(c) {
+      if (_tieneMesAlarma(c)) return false;
+      var triggers = ['recuerdame','recordatorio','recuerda que','avisame','notificame'];
+      return triggers.some(function(t) { return c.includes(t); }) && /\d{1,2}/.test(c);
     },
-    action: (c) => {
-      const datos = parsearAlarmaVoz(c);
+    action: function(c) {
+      var datos = typeof parsearAlarmaVoz === 'function' ? parsearAlarmaVoz(c) : null;
       if (datos) {
-        const d = { ...datos, tipo: 'recordatorio' };
-        sincronizarUIDesdeVoz(d);
-        setTimeout(() => crearAlarma(d), 400);
-      } else _alarVoz('No entendí la hora. Di por ejemplo: recuérdame la reunión a las 3 de la tarde.');
+        var d = Object.assign({}, datos, { tipo: 'recordatorio' });
+        if (typeof sincronizarUIDesdeVoz === 'function') sincronizarUIDesdeVoz(d);
+        setTimeout(function() { if (typeof crearAlarma === 'function') crearAlarma(d); }, 400);
+      } else {
+        if (typeof responderVoz === 'function') responderVoz('No entendí la hora.');
+      }
     }
   },
+
   {
     name: 'recordatorio_diario',
-    description: 'Recordatorio diario (Ej: "Todos los días a las 7 recuérdame tomar agua")',
-    match: (c) => {
-      const tieneRepeticion = c.includes('todos los dias') || c.includes('cada dia') ||
-                              c.includes('diario') || c.includes('siempre a las') ||
-                              c.includes('cada manana') || c.includes('de lunes a viernes');
-      const tieneHora = /\d{1,2}/.test(c);
-      return tieneRepeticion && tieneHora;
+    description: 'Recordatorio que se repite cada día',
+    match: function(c) {
+      if (_tieneMesAlarma(c)) return false;
+      var esRepetitivo = c.includes('todos los dias') || c.includes('cada dia') ||
+                         c.includes('diario') || c.includes('siempre a las');
+      return esRepetitivo && /\d{1,2}/.test(c);
     },
-    action: (c) => {
-      const datos = parsearAlarmaVoz(c);
-      if (datos) crearAlarma({ ...datos, repetir: true });
-      else _alarVoz('No entendí la hora. Di por ejemplo: todos los días a las 8 recuérdame tomar el jarabe.');
+    action: function(c) {
+      var datos = typeof parsearAlarmaVoz === 'function' ? parsearAlarmaVoz(c) : null;
+      if (datos) {
+        var d = Object.assign({}, datos, { repetir: true });
+        if (typeof sincronizarUIDesdeVoz === 'function') sincronizarUIDesdeVoz(d);
+        setTimeout(function() { if (typeof crearAlarma === 'function') crearAlarma(d); }, 400);
+      }
     }
   },
 
-  // ══════════════════════════════════════════════════════════════
-  // MEDICAMENTOS
-  // ══════════════════════════════════════════════════════════════
+  // ── Medicamentos ───────────────────────────────────────────────
   {
     name: 'medicamento_crear',
-    description: 'Recordatorio de medicamento (Ej: "Recuérdame tomar la pastilla a las 8", "Medicina a las 10 de la noche")',
-    match: (c) => {
-      const esMed = c.includes('pastilla') || c.includes('medicamento') || c.includes('medicina') ||
-                    c.includes('jarabe') || c.includes('capsula') || c.includes('comprimido') ||
-                    c.includes('inyeccion') || c.includes('dosis') || c.includes('tomar') && c.includes('a las');
-      const tieneHora = /\d{1,2}/.test(c);
-      return esMed && tieneHora;
+    description: 'Recordatorio de medicamento sin fecha',
+    match: function(c) {
+      if (_tieneMesAlarma(c)) return false;
+      var esMed = c.includes('pastilla') || c.includes('medicamento') ||
+                  c.includes('medicina') || c.includes('jarabe') || c.includes('dosis');
+      return esMed && /\d{1,2}/.test(c);
     },
-    action: (c) => {
-      const datos = parsearAlarmaVoz(c);
+    action: function(c) {
+      var datos = typeof parsearAlarmaVoz === 'function' ? parsearAlarmaVoz(c) : null;
       if (datos) {
-        const d = { ...datos, tipo: 'medicamento' };
-        sincronizarUIDesdeVoz(d);
-        setTimeout(() => crearAlarma(d), 400);
-      } else _alarVoz('No entendí la hora. Di por ejemplo: recuérdame tomar la pastilla a las 8 de la mañana.');
-    }
-  },
-  {
-    name: 'medicamento_diario',
-    description: 'Medicamento diario (Ej: "Todos los días a las 7 tomar el jarabe")',
-    match: (c) => {
-      const esMed = c.includes('pastilla') || c.includes('medicamento') || c.includes('medicina') ||
-                    c.includes('jarabe') || c.includes('capsula') || c.includes('dosis');
-      const esRepetitivo = c.includes('todos los dias') || c.includes('cada dia') ||
-                           c.includes('diario') || c.includes('siempre');
-      return esMed && esRepetitivo && /\d{1,2}/.test(c);
-    },
-    action: (c) => {
-      const datos = parsearAlarmaVoz(c);
-      if (datos) {
-        const d = { ...datos, tipo: 'medicamento', repetir: true };
-        sincronizarUIDesdeVoz(d);
-        setTimeout(() => crearAlarma(d), 400);
-      } else _alarVoz('Di por ejemplo: todos los días a las 8 de la mañana tomar la medicina.');
+        var d = Object.assign({}, datos, { tipo: 'medicamento' });
+        if (typeof sincronizarUIDesdeVoz === 'function') sincronizarUIDesdeVoz(d);
+        setTimeout(function() { if (typeof crearAlarma === 'function') crearAlarma(d); }, 400);
+      }
     }
   },
 
-  // ══════════════════════════════════════════════════════════════
-  // TEMPORIZADOR
-  // ══════════════════════════════════════════════════════════════
   {
-    name: 'timer_iniciar',
-    description: 'Temporizador (Ej: "Timer de 5 minutos", "Cuenta regresiva 30 segundos")',
-    match: (c) => (c.includes('timer') || c.includes('temporizador') ||
-                   c.includes('cuenta regresiva') || c.includes('en cuanto') ||
-                   c.includes('dentro de') || c.includes('en cinco') || c.includes('en diez')) &&
-                  (c.includes('minuto') || c.includes('segundo') || c.includes('hora') || /\d/.test(c)),
-    action: (c) => {
-      const s = parsearTimer(c);
-      if (s > 0) iniciarTimer(s);
-      else _alarVoz('Di por ejemplo: timer de 5 minutos, o cuenta regresiva de 30 segundos.');
+    name: 'medicamento_diario',
+    description: 'Medicamento diario sin fecha específica',
+    match: function(c) {
+      if (_tieneMesAlarma(c)) return false;
+      var esMed = c.includes('pastilla') || c.includes('medicamento') ||
+                  c.includes('medicina') || c.includes('jarabe') || c.includes('dosis');
+      var esDiario = c.includes('todos los dias') || c.includes('cada dia') || c.includes('diario');
+      return esMed && esDiario && /\d{1,2}/.test(c);
+    },
+    action: function(c) {
+      var datos = typeof parsearAlarmaVoz === 'function' ? parsearAlarmaVoz(c) : null;
+      if (datos) {
+        var d = Object.assign({}, datos, { tipo: 'medicamento', repetir: true });
+        if (typeof sincronizarUIDesdeVoz === 'function') sincronizarUIDesdeVoz(d);
+        setTimeout(function() { if (typeof crearAlarma === 'function') crearAlarma(d); }, 400);
+      }
     }
   },
+
+  // ── Timer y cronómetro ─────────────────────────────────────────
+  {
+    name: 'timer_iniciar',
+    description: 'Iniciar temporizador',
+    match: function(c) {
+      return (c.includes('timer') || c.includes('temporizador') || c.includes('cuenta regresiva')) &&
+             (c.includes('minuto') || c.includes('segundo') || c.includes('hora'));
+    },
+    action: function(c) {
+      var s = typeof parsearTimer === 'function' ? parsearTimer(c) : 0;
+      if (s > 0) { if (typeof iniciarTimer === 'function') iniciarTimer(s); }
+      else { if (typeof responderVoz === 'function') responderVoz('Di: timer de 5 minutos.'); }
+    }
+  },
+
   {
     name: 'timer_cancelar',
     description: 'Cancelar temporizador',
-    match: (c) => (c.includes('cancela') || c.includes('para') || c.includes('detener')) &&
-                  (c.includes('timer') || c.includes('temporizador') || c.includes('cuenta regresiva')),
-    action: () => cancelarTimer()
+    match: function(c) {
+      return (c.includes('cancela') || c.includes('para') || c.includes('detener')) &&
+             (c.includes('timer') || c.includes('temporizador'));
+    },
+    action: function() { if (typeof cancelarTimer === 'function') cancelarTimer(); }
   },
 
-  // ══════════════════════════════════════════════════════════════
-  // CRONÓMETRO
-  // ══════════════════════════════════════════════════════════════
   {
     name: 'cronometro_iniciar',
-    description: 'Iniciar cronómetro (Ej: "Inicia cronómetro", "Arranca el cronómetro")',
-    match: (c) => (c.includes('cronometro') || c.includes('cronómetro')) &&
-                  !c.includes('para') && !c.includes('pausa') && !c.includes('cuanto') &&
-                  !c.includes('reinicia') && !c.includes('reset'),
-    action: () => iniciarCronometro()
+    description: 'Iniciar cronómetro',
+    match: function(c) {
+      return (c.includes('cronometro') || c.includes('cronómetro')) &&
+             !c.includes('para') && !c.includes('pausa') && !c.includes('cuanto') &&
+             !c.includes('reinicia') && !c.includes('reset');
+    },
+    action: function() { if (typeof iniciarCronometro === 'function') iniciarCronometro(); }
   },
+
   {
     name: 'cronometro_pausar',
     description: 'Pausar cronómetro',
-    match: (c) => (c.includes('cronometro') || c.includes('cronómetro')) &&
-                  (c.includes('pausa') || c.includes('para') || c.includes('detener')),
-    action: () => pausarCronometro()
+    match: function(c) {
+      return (c.includes('cronometro') || c.includes('cronómetro')) &&
+             (c.includes('pausa') || c.includes('para') || c.includes('detener'));
+    },
+    action: function() { if (typeof pausarCronometro === 'function') pausarCronometro(); }
   },
+
   {
     name: 'cronometro_reiniciar',
     description: 'Reiniciar cronómetro',
-    match: (c) => (c.includes('cronometro') || c.includes('cronómetro')) &&
-                  (c.includes('reinicia') || c.includes('reset') || c.includes('cero')),
-    action: () => reiniciarCronometro()
+    match: function(c) {
+      return (c.includes('cronometro') || c.includes('cronómetro')) &&
+             (c.includes('reinicia') || c.includes('reset') || c.includes('cero'));
+    },
+    action: function() { if (typeof reiniciarCronometro === 'function') reiniciarCronometro(); }
   },
+
   {
     name: 'cronometro_leer',
     description: 'Leer tiempo del cronómetro',
-    match: (c) => (c.includes('cronometro') || c.includes('cronómetro')) &&
-                  (c.includes('cuanto') || c.includes('tiempo lleva') || c.includes('cuantos')),
-    action: () => leerCronometro()
+    match: function(c) {
+      return (c.includes('cronometro') || c.includes('cronómetro')) &&
+             (c.includes('cuanto') || c.includes('tiempo lleva'));
+    },
+    action: function() { if (typeof leerCronometro === 'function') leerCronometro(); }
   },
 
-  // ══════════════════════════════════════════════════════════════
-  // SOS / EMERGENCIAS
-  // ══════════════════════════════════════════════════════════════
+  // ── SOS ────────────────────────────────────────────────────────
   {
     name: 'sos_activar',
-    description: 'Activar alerta de emergencia (Ej: "Auxilio", "Emergencia", "Llama a emergencias")',
-    match: (c) => c.includes('auxilio')    || c.includes('emergencia') ||
-                  c.includes('sos')        || c.includes('ayuda') ||
-                  c.includes('me cai')     || c.includes('me caí') ||
-                  c.includes('me siento mal') || c.includes('estoy mal') ||
-                  c.includes('llama a emergencias') || c.includes('llama al medico') ||
-                  c.includes('accidente')  || c.includes('me lastime') ||
-                  c.includes('no puedo respirar') || c.includes('dolor fuerte'),
-    action: () => {
+    description: 'Activar alerta SOS',
+    match: function(c) {
+      return c.includes('auxilio') || c.includes('emergencia') || c.includes('sos') ||
+             c.includes('me cai') || c.includes('me caí') || c.includes('me siento mal') ||
+             c.includes('estoy mal') || c.includes('accidente');
+    },
+    action: function() {
       if (typeof activarSOS === 'function') activarSOS();
       else if (typeof responderVoz === 'function') responderVoz('Módulo SOS no disponible.');
     }
   },
+
   {
     name: 'sos_cancelar',
-    description: 'Cancelar alerta SOS (Ej: "Cancela el SOS", "Estoy bien", "Falsa alarma")',
-    match: (c) => (c.includes('cancela') || c.includes('cancelar') ||
-                   c.includes('estoy bien') || c.includes('falsa alarma') ||
-                   c.includes('fue un error')) &&
-                  (c.includes('sos') || c.includes('alerta') || c.includes('emergencia') ||
-                   c === 'estoy bien' || c === 'cancela'),
-    action: () => { if (typeof cancelarSOS === 'function') cancelarSOS(); }
+    description: 'Cancelar alerta SOS',
+    match: function(c) {
+      return (c.includes('cancela') || c.includes('estoy bien') || c.includes('falsa alarma')) &&
+             (c.includes('sos') || c.includes('alerta') || c === 'estoy bien');
+    },
+    action: function() { if (typeof cancelarSOS === 'function') cancelarSOS(); }
   },
+
   {
     name: 'sos_contactos',
-    description: 'Gestionar contactos SOS (Ej: "Contactos de emergencia", "Agregar contacto SOS")',
-    match: (c) => (c.includes('contacto') || c.includes('agregar')) &&
-                  (c.includes('emergencia') || c.includes('sos') || c.includes('auxilio')),
-    action: () => { if (typeof abrirModalSOS === 'function') abrirModalSOS(); }
+    description: 'Gestionar contactos SOS',
+    match: function(c) {
+      return c.includes('contacto') && (c.includes('emergencia') || c.includes('sos'));
+    },
+    action: function() { if (typeof abrirModalSOS === 'function') abrirModalSOS(); }
   }
 
 ];
 
-// ── Integrar con el array global de intents ───────────────────────────
+// ── Integrar con array global ─────────────────────────────────────
 (function integrarIntentsAlarmas() {
-  const nombres = intentsAlarmas.map(i => i.name);
-
+  var nombres = intentsAlarmas.map(function(i) { return i.name; });
   if (typeof intents !== 'undefined') {
-    // Reemplazar intents de alarma/sos que ya existen en intents.js
-    const base = intents.filter(i => !nombres.includes(i.name));
-    intents.splice(0, intents.length, ...intentsAlarmas, ...base);
+    var base = intents.filter(function(i) { return !nombres.includes(i.name); });
+    intents.splice(0, intents.length);
+    for (var i = 0; i < intentsAlarmas.length; i++) intents.push(intentsAlarmas[i]);
+    for (var j = 0; j < base.length; j++) intents.push(base[j]);
   } else {
-    // Guardar para que intents.js los tome al cargar
     window._intentsAlarmasPreload = intentsAlarmas;
   }
 })();
+
+} // fin guard
