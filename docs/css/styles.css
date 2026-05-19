@@ -439,13 +439,74 @@ h1 {
 @keyframes slideUp { from{opacity:0;transform:translateX(-50%) translateY(12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
 /* Modal */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); display:none; justify-content:center; align-items:flex-start; z-index:200; overflow-y:auto; backdrop-filter:blur(8px); }
-.modal { background:var(--surface); width:100%; max-width:460px; min-height:100dvh; color:var(--text); display:flex; flex-direction:column; padding:0 0 40px; }
-@media(min-width:520px) { .modal-overlay{align-items:center;padding:32px 16px} .modal{min-height:auto;border-radius:18px;padding:0 0 24px;border:1px solid var(--border)} }
-.modal-header { display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:10; }
-.modal-header h3 { margin:0;color:var(--glow);font-size:.92rem;font-family:var(--font-display);letter-spacing:.06em; }
-.modal-close { background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:all .2s; }
-.modal-close:hover { background:var(--red);color:white;border-color:var(--red); }
+/* ── Modal de Configuración — compacto, centrado, scroll propio ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.82);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 500;
+  backdrop-filter: blur(10px);
+  padding: 16px;
+}
+.modal {
+  background: var(--surface);
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100dvh - 32px);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,.7);
+}
+/* Scroll solo en el body del modal, no en toda la ventana */
+.modal > *:not(.modal-header):not(.modal-footer) {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,212,255,.2) transparent;
+}
+/* Contenedor scrollable del formulario */
+.modal-body {
+  overflow-y: auto;
+  flex: 1;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,212,255,.2) transparent;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.modal-header h3 {
+  margin: 0;
+  color: var(--glow);
+  font-size: .85rem;
+  font-family: var(--font-display);
+  letter-spacing: .06em;
+}
+.modal-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: .82rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+.modal-close:hover { background: var(--red); color: white; border-color: var(--red); }
 .form-group { padding:0 22px;margin-top:18px;display:flex;flex-direction:column;gap:7px; }
 .form-group label { font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;font-family:var(--font-mono); }
 .label-accent-blue { color:#7dd3fc !important; } .label-accent-green { color:#34d399 !important; }
@@ -461,8 +522,8 @@ h1 {
 .btn-primary{background:var(--glow);color:#000} .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .btn-blue{background:var(--blue);color:#fff} .btn-blue:hover{filter:brightness(1.1)}
 .btn-green{background:var(--green);color:#fff} .btn-green:hover{background:#059669}
-.modal-divider{border:none;border-top:1px solid var(--border);margin:18px 22px 0}
-.modal-footer{padding:18px 22px 0}
+.modal-divider{border:none;border-top:1px solid var(--border);margin:12px 18px 0}
+.modal-footer{padding:12px 18px 0;flex-shrink:0;background:var(--surface);border-top:1px solid var(--border)}
 
 /* YouTube */
 #yt-player-container{position:fixed !important;bottom:0 !important;right:0 !important;top:auto !important;width:min(320px,100vw) !important;height:180px !important;border-radius:14px 0 0 0 !important;overflow:hidden;z-index:9999}
