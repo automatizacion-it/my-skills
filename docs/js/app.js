@@ -81,6 +81,8 @@ function clasificarIntencion(texto) {
     'enciende la luz','apaga la luz','enciende el televisor','apaga el televisor',
     'enciende las luces','apaga las luces','prende la luz',
     'abre la persiana','cierra la persiana','abre las cortinas',
+    // Rutas — narración completa
+    'navegacion','abrir navegacion','ver mapa','mapa',
     // Rutas
     'llevame a ','llevame al ','navega a ','navega al ',
     'ruta a ','ruta al ','ruta hasta ','dirigeme a ',
@@ -489,6 +491,7 @@ async function ejecutarHabilidad(texto) {
     // Bluetooth
     'bt_abrir', 'bt_escanear', 'bt_volumen_max', 'bt_volumen_normal',
     // Rutas
+    'ruta_narrar_completa', 'ruta_abrir_navegacion',
     'ruta_navegar', 'ruta_abrir_mapa', 'ruta_cerrar',
     'ruta_google_maps', 'ruta_mi_ubicacion', 'ruta_configurar_casa',
     'ruta_informar', 'ruta_destinos_frecuentes',
@@ -537,21 +540,30 @@ async function ejecutarHabilidad(texto) {
   const geminiKey  = apiKey;
   logMessage(`[ENRUTADOR] IA activa: ${iaActiva} | Claude key: ${claudeKey ? 'OK' : 'NO'} | Gemini key: ${geminiKey ? 'OK' : 'NO'}`);
 
-  // Prioridad 1: Claude si está seleccionado y tiene key
+  // Prioridad 1: Claude con Tool Use (acceso a todos los módulos)
   if (iaActiva === 'claude' && claudeKey) {
-    logMessage('[IA] → Claude (Anthropic)');
+    logMessage('[IA] → Claude con Tools (acceso completo a módulos SCALL)');
     transcriptText.innerText = 'Pensando...';
     if (window.scallOrb) window.scallOrb.setState('processing');
-    await llamarClaude(texto, name);
+    // Usar Tool Use si está disponible, sino fallback a llamarClaude simple
+    if (typeof llamarClaudeConTools === 'function') {
+      await llamarClaudeConTools(texto, name);
+    } else {
+      await llamarClaude(texto, name);
+    }
     return;
   }
 
-  // Prioridad 2: Claude tiene key aunque no esté seleccionado — advertir
+  // Prioridad 2: Respaldo — Claude sin tools si Gemini no tiene key
   if (iaActiva !== 'claude' && claudeKey && !geminiKey) {
-    logMessage('[IA] ⚠️ Gemini seleccionado pero sin key — usando Claude como respaldo');
+    logMessage('[IA] ⚠️ Usando Claude como respaldo (sin Gemini key)');
     transcriptText.innerText = 'Pensando...';
     if (window.scallOrb) window.scallOrb.setState('processing');
-    await llamarClaude(texto, name);
+    if (typeof llamarClaudeConTools === 'function') {
+      await llamarClaudeConTools(texto, name);
+    } else {
+      await llamarClaude(texto, name);
+    }
     return;
   }
 
