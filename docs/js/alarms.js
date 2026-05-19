@@ -3,27 +3,22 @@
 // Alarmas con sonidos Web Audio API, sincronización UI, voz→panel
 // =====================================================================
 
-// Guard contra carga doble del módulo
-if (typeof window._scallAlarmasLoaded !== 'undefined') {
-  console.warn('[ALARMS] Módulo ya cargado — saltando redeclaración');
-} else {
-  window._scallAlarmasLoaded = true;
+// Guard definitivo — var no lanza error si se redeclara
+var ALARMAS_KEY     = 'scall_alarmas';
+var alarmasActivas  = alarmasActivas  || {};
+var timerInterval   = timerInterval   || null;
+var timerSegundos   = timerSegundos   || 0;
+var cronometroInt   = cronometroInt   || null;
+var cronometroSeg   = cronometroSeg   || 0;
+var cronometroActivo = cronometroActivo || false;
+if (window._scallAlarmasLoaded) {
+  console.warn('[ALARMS] alarms.js cargado dos veces — verificar index.html');
 }
-
-const ALARMAS_KEY = window._ALARMAS_KEY_REG
-  ? window._ALARMAS_KEY_REG
-  : (window._ALARMAS_KEY_REG = 'scall_alarmas');
-
-if (typeof alarmasActivas   === 'undefined') var alarmasActivas   = {};
-if (typeof timerInterval    === 'undefined') var timerInterval    = null;
-if (typeof timerSegundos    === 'undefined') var timerSegundos    = 0;
-if (typeof cronometroInt    === 'undefined') var cronometroInt    = null;
-if (typeof cronometroSeg    === 'undefined') var cronometroSeg    = 0;
-if (typeof cronometroActivo === 'undefined') var cronometroActivo = false;
+window._scallAlarmasLoaded = true;
 
 // ── Sonido seleccionado actualmente en la UI ─────────────────────────
-if (typeof sonidoSeleccionado === 'undefined') var sonidoSeleccionado = 'beep';
-if (typeof sonidoActivado     === 'undefined') var sonidoActivado     = true;
+var sonidoSeleccionado = sonidoSeleccionado || 'beep';
+var sonidoActivado     = (typeof sonidoActivado !== 'undefined') ? sonidoActivado : true;
 
 // ══════════════════════════════════════════════════════════════════════
 // MOTOR DE SONIDO — Web Audio API (sin archivos externos)
@@ -37,7 +32,7 @@ function getAudioCtx() {
 }
 
 // Generadores de sonido por tipo
-const SONIDOS = {
+var SONIDOS = SONIDOS || {
 
   // ── Beep clásico de alarma ─────────────────────────────────────
   beep(ctx) {
@@ -168,7 +163,7 @@ const SONIDOS = {
 };
 
 // Sonido por defecto según tipo de alarma
-const SONIDO_POR_TIPO = {
+var SONIDO_POR_TIPO = SONIDO_POR_TIPO || {
   alarma:       'beep',
   recordatorio: 'suave',
   medicamento:  'medicina'

@@ -217,8 +217,8 @@ function renderDestinosRecurrentes() {
   }
   el.innerHTML = lista.slice(0, 5).map(function(d) {
     var nom = d.nombre.length > 22 ? d.nombre.slice(0,22)+'...' : d.nombre;
-    var safe = d.nombre.replace(/'/g, "\'");
-    return '<button onclick="navegarA('' + safe + '')" ' +
+    var safe = d.nombre.replace(/"/g, '&quot;');
+    return '<button onclick="navegarA(&quot;' + safe + '&quot;)" ' +
       'style="display:inline-flex;align-items:center;gap:5px;' +
       'background:rgba(0,212,255,0.06);' +
       'border:1px solid rgba(0,212,255,0.15);' +

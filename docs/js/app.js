@@ -782,10 +782,14 @@ window.onload = () => {
   setTimeout(() => conectarMQTT(), 500);
   setTimeout(() => showCommandToggle('Sistema listo'), 1500);
 
-  // Conectar funciones reales a los stubs del <head>
-  window._toggleTheme          = typeof toggleTheme          === 'function' ? toggleTheme          : null;
-  window._abrirModalCumpleanos = typeof abrirModalCumpleanos === 'function' ? abrirModalCumpleanos : null;
-  window._activarSOS           = typeof activarSOS           === 'function' ? activarSOS           : null;
-  window._mostrarPanelRutas    = typeof mostrarPanelRutas    === 'function' ? mostrarPanelRutas    : null;
-  window._abrirPanelBluetooth  = typeof abrirPanelBluetooth  === 'function' ? abrirPanelBluetooth  : null;
+  // Registrar funciones reales con nombres que usan los stubs del <head>
+  // IMPORTANTE: usar nombres distintos (_listo) para evitar recursión
+  window._themeListo      = typeof toggleTheme            === 'function' ? toggleTheme            : null;
+  window._cumpleanosListo = typeof abrirModalCumpleanosR  === 'function' ? abrirModalCumpleanosR  :
+                            typeof abrirModalCumpleanos   === 'function' ? abrirModalCumpleanos   : null;
+  window._sosListo        = typeof activarSOSReal         === 'function' ? activarSOSReal         :
+                            typeof activarSOS             === 'function' ? activarSOS             : null;
+  window._rutasPanelListo = typeof mostrarPanelRutasReal  === 'function' ? mostrarPanelRutasReal  :
+                            typeof mostrarPanelRutas      === 'function' ? mostrarPanelRutas      : null;
+  window._btPanelListo    = typeof abrirPanelBluetooth    === 'function' ? abrirPanelBluetooth    : null;
 };

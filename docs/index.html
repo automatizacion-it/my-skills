@@ -44,12 +44,28 @@
       });
       if (!visible) target.style.display = 'flex';
     }
-    // Stub para funciones que cargan después
-    function mostrarPanelRutas()    { if(window._mostrarPanelRutas)    window._mostrarPanelRutas();    }
-    function abrirPanelBluetooth()  { if(window._abrirPanelBluetooth)  window._abrirPanelBluetooth();  }
-    function abrirModalCumpleanos() { if(window._abrirModalCumpleanos) window._abrirModalCumpleanos(); }
-    function activarSOS()           { if(window._activarSOS)           window._activarSOS();           }
-    function toggleTheme()          { if(window._toggleTheme)          window._toggleTheme();          }
+    // Stubs seguros — delegan a la función real SOLO si ya cargó el módulo
+    // Nunca se llaman a sí mismos (evita recursión infinita)
+    function mostrarPanelRutas() {
+      if (typeof window._rutasPanelListo === 'function') window._rutasPanelListo();
+      else console.warn('[STUB] rutas.js aún no cargó');
+    }
+    function abrirPanelBluetooth() {
+      if (typeof window._btPanelListo === 'function') window._btPanelListo();
+      else console.warn('[STUB] bluetooth.js aún no cargó');
+    }
+    function abrirModalCumpleanos() {
+      if (typeof window._cumpleanosListo === 'function') window._cumpleanosListo();
+      else console.warn('[STUB] cumpleanos.js aún no cargó');
+    }
+    function activarSOS() {
+      if (typeof window._sosListo === 'function') window._sosListo();
+      else console.warn('[STUB] sos.js aún no cargó');
+    }
+    function toggleTheme() {
+      if (typeof window._themeListo === 'function') window._themeListo();
+      else document.body.classList.toggle('light');
+    }
   </script>
 </head>
 <body>
