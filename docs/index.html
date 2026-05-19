@@ -22,6 +22,9 @@
   <!-- ── Recinto 3D Three.js ── -->
   <canvas id="scall-recinto" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
 
+  <!-- ── Layout 3 columnas ── -->
+  <div class="app-layout">
+
   <!-- ── Top Bar ── -->
   <!-- ══════════════════════════════════════════
        PANEL MENÚ — Izquierda (cristal)
@@ -133,69 +136,9 @@
     </button>
   </nav>
 
-  <!-- ══════════════════════════════════════════
-       PANEL SISTEMA — Derecha (cristal)
-       ══════════════════════════════════════════ -->
-  <aside id="side-status" class="side-panel side-panel-right">
-    <div class="side-panel-header">
-      <span class="side-panel-label">SISTEMA</span>
-      <span class="side-status-dot" id="aiStatusDot"></span>
-    </div>
+    <!-- col 2: centro con paneles y main -->
+    <div class="app-center">
 
-    <div class="side-stat-row">
-      <span class="side-stat-lbl">IA</span>
-      <span class="side-stat-val" id="aiStatusText">Claude</span>
-    </div>
-    <div class="side-stat-row">
-      <span class="side-stat-lbl">MQTT</span>
-      <span class="side-stat-val green" id="mqttStatusLabel">OFFLINE</span>
-    </div>
-    <div class="side-stat-row">
-      <span class="side-stat-lbl">ALARMAS</span>
-      <span class="side-stat-val" id="sideAlarmCount">0</span>
-    </div>
-    <div class="side-stat-row">
-      <span class="side-stat-lbl">IoT</span>
-      <span class="side-stat-val" id="sideIotCount">0 devices</span>
-    </div>
-
-    <div class="smi-sep"></div>
-
-    <!-- Reloj -->
-    <div class="side-clock" id="sideClock">--:--:--</div>
-    <div class="side-clock-date" id="sideDate"></div>
-
-    <!-- Tema + utilidades -->
-    <div class="side-utils">
-      <button class="side-util-btn theme-btn" id="themeBtn"
-        onclick="toggleTheme()" title="Tema claro/oscuro">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"/>
-          <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
-          <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
-        </svg>
-      </button>
-      <button class="side-util-btn" onclick="abrirModalCumpleanos()" title="Eventos">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-      </button>
-      <button class="side-util-btn" onclick="togglePanel('corpusPanel')" title="Corpus">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="side-ai-badge" id="aiStatusBadge">
-      <span class="ai-status-dot"></span>
-      <span class="ai-status-text">Verificando...</span>
-    </div>
-  </aside>
-
-  <!-- ── Panels flotantes ── -->
 
   <div class="skill-panel" id="alarmaPanel" style="display:none;">
     <div class="skill-panel-header">
@@ -553,6 +496,8 @@
     </div>
   </div>
 
+
+
   <!-- ══════════════════════════════════════════════
        SCRIPTS — orden de carga obligatorio
        ══════════════════════════════════════════════ -->
@@ -890,6 +835,40 @@
     this.style.display = 'none'; this.size = 1;
   });
   </script>
+
+    </div><!-- /app-center -->
+
+  <!-- Panel Sistema: columna 3 del grid -->
+  <aside id="side-status" class="side-panel side-panel-right">
+    <div class="side-panel-header">
+      <span class="side-panel-label">SISTEMA</span>
+      <span class="side-status-dot" id="aiStatusDot"></span>
+    </div>
+    <div class="side-stat-row"><span class="side-stat-lbl">IA</span><span class="side-stat-val" id="aiStatusText">Claude</span></div>
+    <div class="side-stat-row"><span class="side-stat-lbl">MQTT</span><span class="side-stat-val green" id="mqttStatusLabel">OFFLINE</span></div>
+    <div class="side-stat-row"><span class="side-stat-lbl">ALARMAS</span><span class="side-stat-val" id="sideAlarmCount">0</span></div>
+    <div class="side-stat-row"><span class="side-stat-lbl">IoT</span><span class="side-stat-val" id="sideIotCount">0 devices</span></div>
+    <div class="smi-sep"></div>
+    <div class="side-clock" id="sideClock">--:--:--</div>
+    <div class="side-clock-date" id="sideDate"></div>
+    <div class="side-utils">
+      <button class="side-util-btn theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+      </button>
+      <button class="side-util-btn" onclick="abrirModalCumpleanos()" title="Eventos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </button>
+      <button class="side-util-btn" onclick="togglePanel('corpusPanel')" title="Corpus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      </button>
+    </div>
+    <div class="side-ai-badge" id="aiStatusBadge">
+      <span class="ai-status-dot"></span>
+      <span class="ai-status-text">Verificando...</span>
+    </div>
+  </aside>
+
+  </div><!-- /app-layout -->
 
 </body>
 </html>
