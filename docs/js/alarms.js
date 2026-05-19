@@ -418,33 +418,59 @@ function parsearAlarmaVoz(comando) {
     .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
     .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ü/g,'u').replace(/ñ/g,'n');
 
-  // ── 1. Extraer hora y minuto ──────────────────────────────────────
+  // ── 0. Extraer fecha PRIMERO y quitarla del string ───────────────
+  // Así el parser de hora no confunde el día (25) con la hora
+  const MESES_MAP = {
+    'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,
+    'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12,
+    'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,
+    'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12
+  };
+  let dia = null, mesNum = null, anioNum = null;
+  let cSinFecha = c; // versión sin la fecha para parsear la hora
+
+  // Patrón: "25 de mayo", "el 25 de mayo de 2026", "dia 25 de mayo"
+  const fechaM = c.match(/(?:dia\s+|el\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+(?:del?\s+)?(\d{4}))?/);
+  if (fechaM) {
+    const posibleDia = parseInt(fechaM[1]);
+    const posibleMes = MESES_MAP[fechaM[2]];
+    if (posibleDia >= 1 && posibleDia <= 31 && posibleMes) {
+      dia     = posibleDia;
+      mesNum  = posibleMes;
+      anioNum = fechaM[3] ? parseInt(fechaM[3]) : null;
+      // Quitar la fecha del string para no confundir el parser de hora
+      cSinFecha = c.replace(fechaM[0], ' ');
+    }
+  }
+
+  // ── 1. Extraer hora y minuto (sobre cSinFecha sin la fecha) ──────
   let hora = null, minuto = 0;
 
   // "7 y media" → 7:30
-  const mediaM = c.match(/(\d{1,2})\s*y\s*media/);
+  const mediaM = cSinFecha.match(/(\d{1,2})\s*y\s*media/);
   if (mediaM) { hora = parseInt(mediaM[1]); minuto = 30; }
 
   // "7 y cuarto" → 7:15
   if (hora === null) {
-    const cuartoM = c.match(/(\d{1,2})\s*y\s*cuarto/);
+    const cuartoM = cSinFecha.match(/(\d{1,2})\s*y\s*cuarto/);
     if (cuartoM) { hora = parseInt(cuartoM[1]); minuto = 15; }
   }
 
   // "7 y 45" | "7:45" | "7 con 45"
   if (hora === null) {
-    const fullM = c.match(/(\d{1,2})\s*(?:y|con|:|\.)\s*(\d{1,2})/);
+    const fullM = cSinFecha.match(/(\d{1,2})\s*(?:y|con|:|\.)\s*(\d{1,2})/);
     if (fullM) { hora = parseInt(fullM[1]); minuto = parseInt(fullM[2]); }
   }
 
-  // Solo hora "a las 7" | "las 7" | "7 en punto"
+  // "a las 7" | "las 7" | "7 en punto"
   if (hora === null) {
-    const soloM = c.match(/(?:a\s+las?|las?|para\s+las?)\s*(\d{1,2})\s*(?:en\s+punto)?/);
+    const soloM = cSinFecha.match(/(?:a\s+las?|las?|para\s+las?)\s*(\d{1,2})\s*(?:en\s+punto)?/);
     if (soloM) { hora = parseInt(soloM[1]); minuto = 0; }
   }
-  // Último recurso — cualquier número de 1-2 dígitos
+
+  // Último recurso — solo números válidos como hora (1-23), evita confundir días
   if (hora === null) {
-    const anyM = c.match(/\b(\d{1,2})\b/);
+    const anyM = cSinFecha.match(/\b([1-9]|1\d|2[0-3])\b/);
     if (anyM) { hora = parseInt(anyM[1]); minuto = 0; }
   }
 
@@ -511,26 +537,6 @@ function parsearAlarmaVoz(comando) {
 
   // ── 5. Sonido automático según tipo ──────────────────────────────
   const sonido = SONIDO_POR_TIPO[tipo] || 'beep';
-
-  // ── 5. Extraer fecha específica del comando ──────────────────────
-  var dia = null, mesNum = null, anioNum = null;
-  var MESES_MAP = {
-    'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,
-    'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12,
-    'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,
-    'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12
-  };
-  // "25 de mayo", "el 25 de mayo", "mayo 25"
-  var fechaMatch = c.match(/(?:el\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+(?:de\s+)?(\d{4}))?/);
-  if (!fechaMatch) fechaMatch = c.match(/([a-z]+)\s+(\d{1,2})(?:\s+(?:de\s+)?(\d{4}))?/);
-  if (fechaMatch) {
-    var posibleDia  = parseInt(fechaMatch[1]);
-    var posibleMes  = MESES_MAP[fechaMatch[2]] || null;
-    var posibleAnio = fechaMatch[3] ? parseInt(fechaMatch[3]) : null;
-    if (posibleDia >= 1 && posibleDia <= 31 && posibleMes) {
-      dia = posibleDia; mesNum = posibleMes; anioNum = posibleAnio;
-    }
-  }
 
   return { hora, minuto, tipo, mensaje: msg, repetir, sonido, dia, mes: mesNum, anio: anioNum };
 }

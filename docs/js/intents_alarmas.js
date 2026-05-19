@@ -19,6 +19,22 @@ const intentsAlarmas = [
       const triggers = ['alarma','despiertame','despertarme','despierta','levantame','levantarme',
                         'programa una alarma','pon alarma','ponme alarma','crea alarma'];
       const tieneHora = /\d{1,2}/.test(c);
+      // Si menciona un mes específico → dejar que Claude extraiga fecha+hora correctamente
+      const meses = ['enero','febrero','marzo','abril','mayo','junio',
+                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      if (meses.some(m => c.includes(m))) return false;
+      const meses = ['enero','febrero','marzo','abril','mayo','junio',
+                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      if (meses.some(m => c.includes(m))) return false;
+      const meses = ['enero','febrero','marzo','abril','mayo','junio',
+                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      if (meses.some(m => c.includes(m))) return false;
+      const meses = ['enero','febrero','marzo','abril','mayo','junio',
+                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      if (meses.some(m => c.includes(m))) return false;
+      const meses = ['enero','febrero','marzo','abril','mayo','junio',
+                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      if (meses.some(m => c.includes(m))) return false;
       return triggers.some(t => c.includes(t)) && tieneHora;
     },
     action: (c) => {
