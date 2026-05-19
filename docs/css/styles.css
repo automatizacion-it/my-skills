@@ -454,35 +454,32 @@ h1 {
 .modal {
   background: var(--surface);
   width: 100%;
-  max-width: 400px;
-  max-height: calc(100dvh - 32px);
+  max-width: 380px;
+  max-height: min(580px, calc(100dvh - 24px));
   color: var(--text);
   display: flex;
   flex-direction: column;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid var(--border);
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0,0,0,.7);
-}
-/* Scroll solo en el body del modal, no en toda la ventana */
-.modal > *:not(.modal-header):not(.modal-footer) {
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,212,255,.2) transparent;
+  box-shadow: 0 20px 60px rgba(0,0,0,.75);
 }
 /* Contenedor scrollable del formulario */
 .modal-body {
   overflow-y: auto;
   flex: 1;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   scrollbar-width: thin;
   scrollbar-color: rgba(0,212,255,.2) transparent;
 }
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: rgba(0,212,255,.2); border-radius: 2px; }
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px 12px;
+  padding: 11px 16px 10px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--surface);
@@ -507,23 +504,23 @@ h1 {
   flex-shrink: 0;
 }
 .modal-close:hover { background: var(--red); color: white; border-color: var(--red); }
-.form-group { padding:0 22px;margin-top:18px;display:flex;flex-direction:column;gap:7px; }
-.form-group label { font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;font-family:var(--font-mono); }
+.form-group { padding:0 16px;margin-top:10px;display:flex;flex-direction:column;gap:5px; }
+.form-group label { font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;font-family:var(--font-mono); }
 .label-accent-blue { color:#7dd3fc !important; } .label-accent-green { color:#34d399 !important; }
-.form-group input { width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text);font-family:var(--font-body);font-size:.86rem;transition:all .2s; }
+.form-group input { width:100%;padding:7px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--font-body);font-size:.82rem;transition:all .2s; }
 .form-group input:focus { outline:none;border-color:var(--glow);box-shadow:0 0 0 3px var(--glow-dim); }
 .form-group input::placeholder { color:#475569; }
 .input-row { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
-.form-hint { font-size:.68rem;color:var(--text-muted);margin:2px 0 0;line-height:1.5; }
-.ai-status-card { display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:border-color .3s; }
+.form-hint { font-size:.62rem;color:var(--text-muted);margin:1px 0 0;line-height:1.4; }
+.ai-status-card { display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 12px;transition:border-color .3s; }
 .ai-status-card.ready{border-color:var(--green)} .ai-status-card.error{border-color:var(--red)} .ai-status-card.warn{border-color:#f59e0b}
 .ai-status-icon{font-size:1.3rem;flex-shrink:0} .ai-status-info{display:flex;flex-direction:column;gap:2px} .ai-status-info strong{font-size:.85rem} .ai-status-info small{font-size:.68rem;color:var(--text-muted)}
 .btn{width:100%;padding:10px 14px;border:none;border-radius:9px;cursor:pointer;font-family:var(--font-body);font-weight:600;font-size:.85rem;transition:all .2s;touch-action:manipulation}
 .btn-primary{background:var(--glow);color:#000} .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .btn-blue{background:var(--blue);color:#fff} .btn-blue:hover{filter:brightness(1.1)}
 .btn-green{background:var(--green);color:#fff} .btn-green:hover{background:#059669}
-.modal-divider{border:none;border-top:1px solid var(--border);margin:12px 18px 0}
-.modal-footer{padding:12px 18px 0;flex-shrink:0;background:var(--surface);border-top:1px solid var(--border)}
+.modal-divider{border:none;border-top:1px solid var(--border);margin:8px 16px 0}
+.modal-footer{padding:10px 16px;flex-shrink:0;background:var(--surface);border-top:1px solid var(--border)}
 
 /* YouTube */
 #yt-player-container{position:fixed !important;bottom:0 !important;right:0 !important;top:auto !important;width:min(320px,100vw) !important;height:180px !important;border-radius:14px 0 0 0 !important;overflow:hidden;z-index:9999}
@@ -629,16 +626,16 @@ h1 {
 
 /* ── Selector de IA (Gemini / Claude) ── */
 .ai-selector {
-  display: flex; gap: 8px; margin-bottom: 12px;
+  display: flex; gap: 6px; margin-bottom: 8px;
 }
 .ai-selector-btn {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 9px 12px; border-radius: 9px;
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 7px 10px; border-radius: 8px;
   border: 1px solid var(--border);
   background: rgba(0,212,255,0.03);
   color: var(--text-muted);
-  font-family: var(--font-mono); font-size: .75rem;
-  font-weight: 600; letter-spacing: .06em;
+  font-family: var(--font-mono); font-size: .72rem;
+  font-weight: 600; letter-spacing: .05em;
   cursor: pointer; transition: all .2s;
 }
 .ai-selector-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; flex-shrink:0; }
@@ -666,7 +663,7 @@ h1 {
 
 /* Fila de modelo Claude */
 .ai-model-row {
-  display: flex; flex-direction: column; gap: 5px; margin-top: 8px;
+  display: flex; flex-direction: column; gap: 3px; margin-top: 5px;
 }
 
 /* Badge IA activa en el top bar */
