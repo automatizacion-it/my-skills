@@ -645,6 +645,96 @@ async function ejecutarHabilidad(texto) {
   ];
 
   // Intents de Bluetooth inline (no requieren archivo separado)
+  // ── Intents de identidad/presentación de SCALL ──────────────────────
+  const SCALL_IDENTITY_INTENTS = [
+    {
+      name: 'scall_quien_eres',
+      match: function(c) {
+        return c.includes('quien eres') || c.includes('quién eres') ||
+               c.includes('que eres') || c.includes('qué eres') ||
+               c.includes('presentate') || c.includes('preséntate') ||
+               c.includes('como te llamas') || c.includes('cómo te llamas') ||
+               c === 'scall' || c.includes('dime quien') || c.includes('nombre');
+      },
+      action: function() {
+        var nombre = localStorage.getItem('assistantName') || 'SCALL';
+        var msg = 'Soy ' + nombre + ', el Sistema de Control Autónomo de Lenguaje y Lógica, ' +
+          'desarrollado por IIT en Colombia. ' +
+          'Tengo cerebro de inteligencia artificial de última generación. ' +
+          'Controlo tu navegación, tus alarmas, tu música, tu hogar inteligente y más. ' +
+          'A diferencia de Alexa o Google Home, entiendo lenguaje natural completo, ' +
+          'aprendo tus rutas y me adapto a ti. Evoluciono contigo cada día.';
+        if (typeof responderVoz === 'function') responderVoz(msg);
+        if (typeof logMessage   === 'function') logMessage('[SCALL] Identidad presentada');
+      }
+    },
+    {
+      name: 'scall_capacidades',
+      match: function(c) {
+        return c.includes('que puedes hacer') || c.includes('qué puedes hacer') ||
+               c.includes('que sabes hacer') || c.includes('cuales son tus') ||
+               c.includes('tus habilidades') || c.includes('tus funciones') ||
+               c.includes('que tienes') || c.includes('tus capacidades') ||
+               c.includes('en que me ayudas') || c.includes('ayudame con');
+      },
+      action: function() {
+        var nombre = localStorage.getItem('assistantName') || 'SCALL';
+        var msg = 'Puedo hacer muchas cosas, parcero. ' +
+          'Trazo rutas y narro el camino desde tu casa hasta cualquier destino. ' +
+          'Programo alarmas y recordatorios con fecha exacta. ' +
+          'Controlo luces, TV y dispositivos de tu hogar. ' +
+          'Pongo música o radio colombiana con tu voz. ' +
+          'Conecto con audífonos Bluetooth y amplifico el volumen hasta tres veces. ' +
+          'Consulto el clima y las noticias en tiempo real. ' +
+          'Y lo más importante: aprendo. Cada vez que me usas soy mejor.';
+        if (typeof responderVoz === 'function') responderVoz(msg);
+      }
+    },
+    {
+      name: 'scall_vs_alexa',
+      match: function(c) {
+        return (c.includes('mejor que') || c.includes('diferencia') || c.includes('versus') || c.includes('vs')) &&
+               (c.includes('alexa') || c.includes('google') || c.includes('siri') || c.includes('cortana'));
+      },
+      action: function() {
+        var nombre = localStorage.getItem('assistantName') || 'SCALL';
+        var msg = 'Buena pregunta. Alexa y Google entienden palabras clave — yo entiendo lo que realmente quieres decir. ' +
+          'Ellos necesitan nube siempre — yo funciono local cuando no hay internet. ' +
+          'Ellos son genéricos — yo aprendo tus rutas, tus destinos frecuentes, tus horarios. ' +
+          'Ellos hablan inglés primero — yo nací hablando colombiano. ' +
+          'Y la diferencia más grande: ellos no evolucionan contigo. Yo sí.';
+        if (typeof responderVoz === 'function') responderVoz(msg);
+      }
+    },
+    {
+      name: 'scall_version',
+      match: function(c) {
+        return c.includes('version') || c.includes('versión') ||
+               c.includes('actualizacion') || c.includes('actualización') ||
+               c.includes('cuanto llevas') || c.includes('cuánto llevas') ||
+               c.includes('desde cuando') || c.includes('cuando naciste');
+      },
+      action: function() {
+        var nombre = localStorage.getItem('assistantName') || 'SCALL';
+        var ia = typeof getActiveIA === 'function' ? getActiveIA() : 'claude';
+        var iaLabel = ia === 'claude' ? 'Claude Sonnet (Anthropic)' : 'Gemini (Google)';
+        var msg = 'Soy ' + nombre + ', corriendo con ' + iaLabel + ' como motor de inteligencia. ' +
+          'Fui creado por IIT, InfraestructuraIT, en Colombia. ' +
+          'Cada día aprendo algo nuevo de ti. Soy un sistema vivo que evoluciona.';
+        if (typeof responderVoz === 'function') responderVoz(msg);
+      }
+    }
+  ];
+
+  for (var si = 0; si < SCALL_IDENTITY_INTENTS.length; si++) {
+    if (SCALL_IDENTITY_INTENTS[si].match(comandoLower)) {
+      logMessage('[Intent SCALL] → [' + SCALL_IDENTITY_INTENTS[si].name + ']');
+      SCALL_IDENTITY_INTENTS[si].action(comandoLower);
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      return;
+    }
+  }
+
   const BT_INTENTS = [
     { name:'bt_abrir',       match: c => c.includes('bluetooth') || c.includes('audifono') || c.includes('auricular') || c.includes('parlante') || c.includes('bocina'),
       action: () => { if(typeof sideMenuActivar==='function') sideMenuActivar(document.getElementById('smBluetooth')); if(typeof abrirPanelBluetooth==='function') abrirPanelBluetooth(); } },
