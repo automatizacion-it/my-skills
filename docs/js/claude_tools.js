@@ -191,6 +191,25 @@ var SCALL_TOOLS = [
       },
       required: ['nombre','dia','mes']
     }
+  },
+  {
+    name: 'alarma_sismica',
+    description: 'Controla el monitoreo sismico de SCALL. Activa o desactiva el monitoreo en tiempo real, simula un sismo para prueba, o abre el panel de sismos.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        accion: {
+          type: 'string',
+          enum: ['activar','desactivar','simular','abrir_panel','ajustar_magnitud'],
+          description: 'Accion a ejecutar'
+        },
+        magnitud: {
+          type: 'number',
+          description: 'Magnitud para simular (2.5-8.0) o magnitud minima para alertas'
+        }
+      },
+      required: ['accion']
+    }
   }
 ];
 
@@ -426,6 +445,16 @@ function ejecutarHerramienta(nombre, input) {
       }, 600);
       var fechaCumple = eventoData.dia + ' de ' + (MESES_C[eventoData.mes] || eventoData.mes);
       return { ok: true, guardado: eventoData.nombre + ' — ' + fechaCumple };
+    }
+
+    case 'alarma_sismica': {
+      var sa = input.accion;
+      if (sa === 'activar'        && typeof activarMonitoreoSismico    === 'function') activarMonitoreoSismico();
+      if (sa === 'desactivar'     && typeof desactivarMonitoreoSismico === 'function') desactivarMonitoreoSismico();
+      if (sa === 'abrir_panel'    && typeof abrirPanelSismos           === 'function') abrirPanelSismos();
+      if (sa === 'simular'        && typeof simularSismo               === 'function') simularSismo(input.magnitud || 5.5);
+      if (sa === 'ajustar_magnitud' && input.magnitud && typeof ajustarMagnitudMinima === 'function') ajustarMagnitudMinima(input.magnitud);
+      return { ok: true, accion: sa };
     }
 
     default:

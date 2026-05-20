@@ -726,6 +726,63 @@ async function ejecutarHabilidad(texto) {
     }
   ];
 
+  // ── Intents sísmicos ─────────────────────────────────────────────
+  const SISMO_INTENTS = [
+    {
+      name: 'sismo_activar',
+      match: function(c) {
+        return (c.includes('sismo') || c.includes('sismica') || c.includes('terremoto') ||
+                c.includes('temblor') || c.includes('seismic')) &&
+               (c.includes('activa') || c.includes('monitorea') || c.includes('vigilar') ||
+                c.includes('alerta') || c.includes('detectar') || c.includes('iniciar'));
+      },
+      action: function() {
+        if (typeof activarMonitoreoSismico === 'function') activarMonitoreoSismico();
+        if (typeof abrirPanelSismos        === 'function') abrirPanelSismos();
+      }
+    },
+    {
+      name: 'sismo_desactivar',
+      match: function(c) {
+        return (c.includes('sismo') || c.includes('sismica') || c.includes('terremoto')) &&
+               (c.includes('desactiva') || c.includes('apaga') || c.includes('detener') || c.includes('para'));
+      },
+      action: function() {
+        if (typeof desactivarMonitoreoSismico === 'function') desactivarMonitoreoSismico();
+      }
+    },
+    {
+      name: 'sismo_panel',
+      match: function(c) {
+        return c.includes('sismo') || c.includes('terremoto') || c.includes('temblor') ||
+               c.includes('sismica') || c.includes('seismico');
+      },
+      action: function() {
+        if (typeof abrirPanelSismos === 'function') abrirPanelSismos();
+        else if (typeof responderVoz === 'function') responderVoz('Módulo sísmico no cargado.');
+      }
+    },
+    {
+      name: 'sismo_test',
+      match: function(c) {
+        return (c.includes('simula') || c.includes('prueba') || c.includes('test')) &&
+               (c.includes('sismo') || c.includes('terremoto') || c.includes('sismica'));
+      },
+      action: function() {
+        if (typeof simularSismo === 'function') simularSismo(5.8);
+      }
+    }
+  ];
+
+  for (var sm = 0; sm < SISMO_INTENTS.length; sm++) {
+    if (SISMO_INTENTS[sm].match(comandoLower)) {
+      logMessage('[Intent SISMO] → [' + SISMO_INTENTS[sm].name + ']');
+      SISMO_INTENTS[sm].action(comandoLower);
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      return;
+    }
+  }
+
   for (var si = 0; si < SCALL_IDENTITY_INTENTS.length; si++) {
     if (SCALL_IDENTITY_INTENTS[si].match(comandoLower)) {
       logMessage('[Intent SCALL] → [' + SCALL_IDENTITY_INTENTS[si].name + ']');
