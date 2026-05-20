@@ -210,6 +210,21 @@ var SCALL_TOOLS = [
       },
       required: ['accion']
     }
+  },
+  {
+    name: 'colombia_mis10',
+    description: 'Abre el módulo de las 10 mejores cosas de Colombia del usuario. Úsalo cuando el usuario mencione Colombia, sus cosas favoritas del país, o quiera hacer una presentación de Colombia.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        accion: {
+          type: 'string',
+          enum: ['abrir_formulario','generar_presentacion'],
+          description: 'abrir_formulario para que el usuario llene los campos, generar_presentacion para crear la presentación IA'
+        }
+      },
+      required: ['accion']
+    }
   }
 ];
 
@@ -453,6 +468,22 @@ function ejecutarHerramienta(nombre, input) {
       if (sa === 'desactivar'     && typeof desactivarMonitoreoSismico === 'function') desactivarMonitoreoSismico();
       if (sa === 'abrir_panel'    && typeof abrirPanelSismos           === 'function') abrirPanelSismos();
       if (sa === 'simular'        && typeof simularSismo               === 'function') simularSismo(input.magnitud || 5.5);
+      if (sa === 'ajustar_magnitud' && input.magnitud && typeof ajustarMagnitudMinima === 'function') ajustarMagnitudMinima(input.magnitud);
+      return { ok: true, accion: sa };
+    }
+
+    case 'colombia_mis10': {
+      if (input.accion === 'abrir_formulario' && typeof abrirPanelColombia === 'function') abrirPanelColombia();
+      if (input.accion === 'generar_presentacion' && typeof generarPresentacionColombia === 'function') generarPresentacionColombia();
+      return { ok: true, accion: input.accion };
+    }
+
+    case 'alarma_sismica': {
+      var sa = input.accion;
+      if (sa === 'activar'          && typeof activarMonitoreoSismico    === 'function') activarMonitoreoSismico();
+      if (sa === 'desactivar'       && typeof desactivarMonitoreoSismico === 'function') desactivarMonitoreoSismico();
+      if (sa === 'abrir_panel'      && typeof abrirPanelSismos           === 'function') abrirPanelSismos();
+      if (sa === 'simular'          && typeof simularSismo               === 'function') simularSismo(input.magnitud || 5.5);
       if (sa === 'ajustar_magnitud' && input.magnitud && typeof ajustarMagnitudMinima === 'function') ajustarMagnitudMinima(input.magnitud);
       return { ok: true, accion: sa };
     }
