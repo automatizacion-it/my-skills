@@ -174,7 +174,19 @@
       <span class="smi-label">Config</span>
     </button>
 
+    <button class="side-menu-item" id="smColombia"
+      onclick="sideMenuActivar(this); abrirPanelColombia()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+          <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </span>
+      <span class="smi-label">Colombia</span>
+    </button>
+
     <button class="side-menu-item" id="smSismos"
+
       onclick="sideMenuActivar(this); abrirPanelSismos()">
       <span class="smi-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -652,6 +664,7 @@
   <script src="js/intents.js"></script>          <!-- resto de intents -->
 
   <script src="js/bluetooth.js"></script>    <!-- Bluetooth + amplificador -->
+  <script src="js/colombia.js"></script>       <!-- Módulo Colombia mis 10 cosas -->
   <script src="js/sismos.js"></script>        <!-- Monitoreo sísmico en tiempo real -->
   <script src="js/claude_tools.js"></script>  <!-- Claude Tool Use — acceso a módulos -->
   <!-- 7. Motor principal -->

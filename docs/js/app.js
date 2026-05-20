@@ -774,6 +774,43 @@ async function ejecutarHabilidad(texto) {
     }
   ];
 
+  // ── Intents Colombia ─────────────────────────────────────────────
+  const COLOMBIA_INTENTS = [
+    {
+      name: 'colombia_abrir',
+      match: function(c) {
+        return (c.includes('colombia') || c.includes('colombi')) &&
+               (c.includes('mis 10') || c.includes('diez') || c.includes('10 cosa') ||
+                c.includes('favorita') || c.includes('lo mejor') || c.includes('presentacion') ||
+                c.includes('mi tierra') || c.includes('mi pais'));
+      },
+      action: function() {
+        if (typeof abrirPanelColombia === 'function') abrirPanelColombia();
+        else if (typeof responderVoz === 'function') responderVoz('Módulo Colombia no cargado.');
+      }
+    },
+    {
+      name: 'colombia_generar',
+      match: function(c) {
+        return c.includes('colombia') &&
+               (c.includes('genera') || c.includes('presenta') || c.includes('crea') || c.includes('muestra'));
+      },
+      action: function() {
+        if (typeof generarPresentacionColombia === 'function') generarPresentacionColombia();
+        else if (typeof abrirPanelColombia === 'function') abrirPanelColombia();
+      }
+    }
+  ];
+
+  for (var co = 0; co < COLOMBIA_INTENTS.length; co++) {
+    if (COLOMBIA_INTENTS[co].match(comandoLower)) {
+      logMessage('[Intent COLOMBIA] → [' + COLOMBIA_INTENTS[co].name + ']');
+      COLOMBIA_INTENTS[co].action(comandoLower);
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      return;
+    }
+  }
+
   for (var sm = 0; sm < SISMO_INTENTS.length; sm++) {
     if (SISMO_INTENTS[sm].match(comandoLower)) {
       logMessage('[Intent SISMO] → [' + SISMO_INTENTS[sm].name + ']');
