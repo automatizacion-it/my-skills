@@ -318,52 +318,80 @@ function ejecutarHerramienta(nombre, input) {
 
     // ── Alarmas ─────────────────────────────────────────────────────
     case 'crear_alarma': {
+      var alarmaOk = false;
+
       if (typeof crearAlarma === 'function') {
         var alarmaData = {
-          hora:    input.hora,
-          minuto:  input.minuto,
+          hora:    parseInt(input.hora),
+          minuto:  parseInt(input.minuto || 0),
           tipo:    input.tipo    || 'alarma',
           mensaje: input.mensaje || '',
           repetir: input.repetir || false,
           sonido:  input.sonido  || (input.tipo === 'medicamento' ? 'medicina' : 'beep'),
-          dia:     input.dia     || null,
-          mes:     input.mes     || null,
-          anio:    input.anio    || null
+          dia:     input.dia  ? parseInt(input.dia)  : null,
+          mes:     input.mes  ? parseInt(input.mes)  : null,
+          anio:    input.anio ? parseInt(input.anio) : null
         };
 
-        // 1. Crear la alarma
-        crearAlarma(alarmaData);
+        // PASO 1: Guardar en localStorage PRIMERO
+        var id = crearAlarma(alarmaData);
+        alarmaOk = true;
+        _toolLog('[TOOL] Alarma creada id=' + id + ' hora=' + alarmaData.hora + ':' + alarmaData.minuto);
 
-        // 2. Abrir el panel de alarmas para que el usuario vea
-        if (typeof togglePanel === 'function') togglePanel('alarmaPanel');
+        // PASO 2: Activar menú lateral Alarmas
+        var smBtn = document.getElementById('smAlarmas');
+        if (smBtn && typeof sideMenuActivar === 'function') sideMenuActivar(smBtn);
 
-        // 3. Activar ítem del menú lateral
-        var btnAlarma = document.getElementById('smAlarmas');
-        if (btnAlarma && typeof sideMenuActivar === 'function') sideMenuActivar(btnAlarma);
-
-        // 4. Sincronizar campos del formulario con los valores de la alarma
-        if (typeof sincronizarUIDesdeVoz === 'function') {
-          setTimeout(function() {
-            sincronizarUIDesdeVoz(alarmaData);
-          }, 300);
+        // PASO 3: Abrir panel (después de guardar)
+        var panelEl = document.getElementById('alarmaPanel');
+        if (panelEl) {
+          // Cerrar otros paneles manualmente sin tocar alarmaPanel
+          ['noticiasPanel','climaPanel','tradPanel','corpusPanel'].forEach(function(pid) {
+            var pe = document.getElementById(pid);
+            if (pe) pe.style.display = 'none';
+          });
+          panelEl.style.display = 'flex';
         }
 
-        // 5. Renderizar lista de alarmas
+        // PASO 4: Rellenar campos del formulario
+        var elHora  = document.getElementById('alarmHora');
+        var elMin   = document.getElementById('alarmMin');
+        var elTipo  = document.getElementById('alarmTipo');
+        var elMsg   = document.getElementById('alarmMsg');
+        var elDia   = document.getElementById('alarmDia');
+        var elMes   = document.getElementById('alarmMes');
+        var elAnio  = document.getElementById('alarmAnio');
+        if (elHora)  elHora.value  = alarmaData.hora;
+        if (elMin)   elMin.value   = alarmaData.minuto;
+        if (elTipo)  elTipo.value  = alarmaData.tipo;
+        if (elMsg)   elMsg.value   = alarmaData.mensaje || '';
+        if (elDia  && alarmaData.dia)  elDia.value  = alarmaData.dia;
+        if (elMes  && alarmaData.mes)  elMes.value  = alarmaData.mes;
+        if (elAnio && alarmaData.anio) elAnio.value = alarmaData.anio;
+
+        // PASO 5: Renderizar lista y calendario (después de que el panel esté visible)
         setTimeout(function() {
-          if (typeof renderizarListaAlarmas === 'function') renderizarListaAlarmas();
-          if (typeof renderCalendario        === 'function') renderCalendario();
-          // 6. Actualizar contador en panel SISTEMA
-          if (typeof actualizarContadorAlarmas === 'function') actualizarContadorAlarmas();
-        }, 400);
+          if (typeof renderizarListaAlarmas === 'function') {
+            renderizarListaAlarmas();
+            _toolLog('[TOOL] Lista renderizada. Total alarmas: ' +
+              (typeof getAlarmas === 'function' ? getAlarmas().length : '?'));
+          }
+          if (typeof renderCalendario === 'function') renderCalendario();
+          // PASO 6: Actualizar contador SISTEMA
+          var contEl = document.getElementById('sideAlarmCount');
+          if (contEl && typeof getAlarmas === 'function') {
+            contEl.textContent = getAlarmas().filter(function(a){return a.activa;}).length;
+          }
+        }, 200);
       }
 
-      var MESES_NOMBRE = ['','enero','febrero','marzo','abril','mayo','junio',
-                          'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      var fechaStr = (input.dia && input.mes)
-        ? ' el ' + input.dia + ' de ' + (MESES_NOMBRE[input.mes] || input.mes)
+      var MN = ['','enero','febrero','marzo','abril','mayo','junio',
+                 'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      var fd = (input.dia && input.mes)
+        ? ' el ' + input.dia + ' de ' + (MN[parseInt(input.mes)] || input.mes)
         : '';
-      var horaStr  = String(input.hora).padStart(2,'0') + ':' + String(input.minuto).padStart(2,'0');
-      return { ok: true, programado: horaStr + fechaStr };
+      var hs = String(input.hora).padStart(2,'0') + ':' + String(input.minuto||0).padStart(2,'0');
+      return { ok: alarmaOk, programado: hs + fd };
     }
 
     case 'listar_alarmas': {
