@@ -254,6 +254,24 @@ const SCALL_TOOLS = [
       type: 'object',
       properties: {}
     }
+,
+
+  // ── CUMPLEAÑOS / EVENTOS ─────────────────────────────────────────────
+  {
+    name: 'programar_cumpleanos',
+    description: 'Registra el cumpleaños o evento especial de una persona. Úsalo cuando el usuario mencione fechas de cumpleaños, aniversarios o eventos de personas.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        nombre: { type: 'string', description: 'Nombre completo de la persona' },
+        dia:    { type: 'integer', description: 'Día del mes (1-31)' },
+        mes:    { type: 'integer', description: 'Mes (1=enero, 12=diciembre)' },
+        anio:   { type: 'integer', description: 'Año de nacimiento (opcional)' },
+        tipo:   { type: 'string', enum: ['cumpleanos','aniversario','evento'], description: 'Tipo de evento' },
+        nota:   { type: 'string', description: 'Nota adicional (opcional)' }
+      },
+      required: ['nombre','dia','mes']
+    }
   }
 ];
 
@@ -488,6 +506,119 @@ function ejecutarHerramienta(nombre, input) {
     }
 
     // ── Info sistema ─────────────────────────────────────────────────
+    case 'programar_cumpleanos': {
+      var MESES_C = ['','enero','febrero','marzo','abril','mayo','junio',
+                     'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      var eventoData = {
+        nombre: input.nombre,
+        dia:    parseInt(input.dia),
+        mes:    parseInt(input.mes),
+        anio:   input.anio ? parseInt(input.anio) : null,
+        tipo:   input.tipo || 'cumpleanos',
+        nota:   input.nota || ''
+      };
+
+      // Guardar en localStorage
+      var CUMPLE_KEY = 'scall_cumpleanos';
+      var lista = [];
+      try { lista = JSON.parse(localStorage.getItem(CUMPLE_KEY)) || []; } catch(e) {}
+      // Evitar duplicados por nombre
+      lista = lista.filter(function(e) {
+        return e.nombre.toLowerCase() !== eventoData.nombre.toLowerCase();
+      });
+      lista.push(eventoData);
+      lista.sort(function(a,b) { return a.mes - b.mes || a.dia - b.dia; });
+      localStorage.setItem(CUMPLE_KEY, JSON.stringify(lista));
+      _toolLog('[TOOL] Cumpleaños guardado: ' + eventoData.nombre +
+               ' el ' + eventoData.dia + ' de ' + (MESES_C[eventoData.mes] || eventoData.mes));
+
+      // Usar la función de integración que busca campos dinámicamente
+      if (typeof window._scallProgramarCumpleanos === 'function') {
+        window._scallProgramarCumpleanos(eventoData);
+      } else if (typeof abrirModalCumpleanos === 'function') { abrirModalCumpleanos(); }
+
+      // LEGACY: búsqueda directa (backup)
+      if (false) { // desactivado — usar _scallProgramarCumpleanos
+      setTimeout(function() {
+        // Log de todos los inputs del modal para diagnóstico
+        var modalCumple = document.getElementById('cumpleanosModal') ||
+                          document.querySelector('[id*="cumple"][id*="modal"]') ||
+                          document.querySelector('.modal-overlay[id*="cumple"]');
+
+        if (modalCumple) {
+          var inputs = modalCumple.querySelectorAll('input, select, textarea');
+          _toolLog('[TOOL] Modal cumpleaños — inputs encontrados: ' + inputs.length);
+          inputs.forEach(function(inp) {
+            _toolLog('[TOOL]   input id=' + inp.id + ' placeholder=' + inp.placeholder + ' type=' + inp.type);
+          });
+        }
+
+        // Estrategia 1: IDs directos más comunes
+        var intentos = [
+          ['cumpleNombre','cumpleDia','cumpleMes','cumpleAnio','cumpleNota'],
+          ['nombreCumple','diaCumple','mesCumple','anioCumple','notaCumple'],
+          ['birthdayName','birthdayDay','birthdayMonth','birthdayYear','birthdayNote'],
+          ['cumple-nombre','cumple-dia','cumple-mes','cumple-anio','cumple-nota']
+        ];
+
+        var elNombre, elDia, elMes, elAnio, elNota;
+        for (var t = 0; t < intentos.length; t++) {
+          elNombre = document.getElementById(intentos[t][0]);
+          if (elNombre) {
+            elDia  = document.getElementById(intentos[t][1]);
+            elMes  = document.getElementById(intentos[t][2]);
+            elAnio = document.getElementById(intentos[t][3]);
+            elNota = document.getElementById(intentos[t][4]);
+            _toolLog('[TOOL] IDs encontrados con esquema: ' + intentos[t][0]);
+            break;
+          }
+        }
+
+        // Estrategia 2: buscar por placeholder o atributo name
+        if (!elNombre) {
+          elNombre = document.querySelector('input[placeholder*="ombre"]') ||
+                     document.querySelector('input[name*="nombre"]') ||
+                     document.querySelector('input[name*="name"]');
+          elDia    = document.querySelector('input[placeholder*="ía"]') ||
+                     document.querySelector('input[name*="dia"]') ||
+                     document.querySelector('input[type="number"][min="1"][max="31"]');
+          elMes    = document.querySelector('select[name*="mes"]') ||
+                     document.querySelector('select[name*="month"]') ||
+                     document.querySelector('select[id*="mes"]');
+          if (elNombre) _toolLog('[TOOL] IDs encontrados por placeholder/name');
+        }
+
+        // Llenar campos
+        if (elNombre) { elNombre.value = eventoData.nombre; elNombre.dispatchEvent(new Event('input')); }
+        if (elDia)    { elDia.value    = eventoData.dia;    elDia.dispatchEvent(new Event('input')); }
+        if (elMes)    { elMes.value    = eventoData.mes;    elMes.dispatchEvent(new Event('change')); }
+        if (elAnio && eventoData.anio) { elAnio.value = eventoData.anio; }
+        if (elNota && eventoData.nota) { elNota.value = eventoData.nota; }
+
+        if (elNombre) {
+          _toolLog('[TOOL] Campos llenados: ' + eventoData.nombre + ' ' + eventoData.dia + '/' + eventoData.mes);
+        } else {
+          _toolLog('[TOOL] ⚠️ No se encontraron campos — revisar IDs del modal cumpleaños');
+        }
+
+        // Llamar función de guardado del módulo si existe
+        if (typeof agregarCumpleanos    === 'function') agregarCumpleanos(eventoData);
+        else if (typeof guardarCumpleanos === 'function') guardarCumpleanos(eventoData);
+        else if (typeof addBirthday      === 'function') addBirthday(eventoData);
+
+        // Refrescar lista
+        if (typeof renderizarCumpleanos === 'function') renderizarCumpleanos();
+        else if (typeof renderCumpleanos === 'function') renderCumpleanos();
+        else if (typeof listarCumpleanos === 'function') listarCumpleanos();
+        else if (typeof cargarCumpleanos === 'function') cargarCumpleanos();
+
+      }, 600);
+
+      var fechaStr = eventoData.dia + ' de ' + (MESES_C[eventoData.mes] || eventoData.mes) +
+                    (eventoData.anio ? ' de ' + eventoData.anio : '');
+      return { ok: true, guardado: eventoData.nombre + ' — ' + fechaStr };
+    }
+
     case 'info_sistema': {
       var ia      = typeof getActiveIA  === 'function' ? getActiveIA()  : 'desconocida';
       var alarmas = typeof getAlarmas   === 'function' ? getAlarmas().filter(function(a){return a.activa;}).length : 0;
@@ -724,6 +855,75 @@ function limpiarHistorialClaude() {
 
 // Exponer globalmente
 window.llamarClaudeConTools  = llamarClaudeConTools;
+
+// ── Integración con cumpleanos.js ────────────────────────────────────
+// Exponer función para que claude_tools pueda llenar el formulario
+window._scallProgramarCumpleanos = function(data) {
+  var CUMPLE_KEY = 'scall_cumpleanos';
+  var lista = [];
+  try { lista = JSON.parse(localStorage.getItem(CUMPLE_KEY)) || []; } catch(e) {}
+  lista = lista.filter(function(e) {
+    return e.nombre.toLowerCase() !== data.nombre.toLowerCase();
+  });
+  lista.push(data);
+  lista.sort(function(a,b) { return a.mes - b.mes || a.dia - b.dia; });
+  localStorage.setItem(CUMPLE_KEY, JSON.stringify(lista));
+
+  // Abrir modal
+  if (typeof abrirModalCumpleanos === 'function') abrirModalCumpleanos();
+
+  // Llenar formulario después de que abra (600ms)
+  setTimeout(function() {
+    // Buscar TODOS los inputs del documento que sean del modal
+    var allInputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], select');
+    var found = {};
+
+    allInputs.forEach(function(el) {
+      var id = (el.id || '').toLowerCase();
+      var ph = (el.placeholder || '').toLowerCase();
+      var nm = (el.name || '').toLowerCase();
+
+      // Detectar campo de nombre
+      if (!found.nombre && (id.includes('nombre') || id.includes('name') || ph.includes('nombre') || ph.includes('name'))) {
+        found.nombre = el;
+      }
+      // Detectar campo de día
+      if (!found.dia && (id.includes('dia') || id.includes('day') || (el.type === 'number' && el.min == 1 && el.max == 31))) {
+        found.dia = el;
+      }
+      // Detectar campo de mes
+      if (!found.mes && (id.includes('mes') || id.includes('month') || el.tagName === 'SELECT')) {
+        found.mes = el;
+      }
+      // Detectar campo de año
+      if (!found.anio && (id.includes('anio') || id.includes('ano') || id.includes('year') || (el.type === 'number' && el.min >= 1900))) {
+        found.anio = el;
+      }
+    });
+
+    _toolLog('[CUMPLE] Campos encontrados: ' + Object.keys(found).join(', '));
+
+    if (found.nombre) { found.nombre.value = data.nombre; found.nombre.dispatchEvent(new Event('input')); }
+    if (found.dia)    { found.dia.value    = data.dia;    found.dia.dispatchEvent(new Event('input')); }
+    if (found.mes)    { found.mes.value    = data.mes;    found.mes.dispatchEvent(new Event('change')); }
+    if (found.anio && data.anio) { found.anio.value = data.anio; }
+
+    // Llamar función nativa del módulo si existe
+    if (typeof window.agregarCumpleanos === 'function') {
+      window.agregarCumpleanos(data);
+      _toolLog('[CUMPLE] agregarCumpleanos() llamado');
+    } else if (typeof window.guardarCumpleanos === 'function') {
+      window.guardarCumpleanos(data);
+    }
+
+    // Refrescar lista
+    ['renderizarCumpleanos','renderCumpleanos','listarCumpleanos','cargarCumpleanos',
+     'actualizarCumpleanos','refreshCumpleanos'].forEach(function(fn) {
+      if (typeof window[fn] === 'function') { window[fn](); _toolLog('[CUMPLE] ' + fn + '() llamado'); }
+    });
+
+  }, 600);
+};
 window.limpiarHistorialClaude = limpiarHistorialClaude;
 window.SCALL_TOOLS            = SCALL_TOOLS;
 
