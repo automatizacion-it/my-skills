@@ -1,7 +1,7 @@
 // =====================================================================
-// CLAUDE TOOLS — SCALL
-// Tool Use / Function Calling para Claude API
-// Claude decide qué hacer, JavaScript lo ejecuta
+// CLAUDE TOOLS — SCALL v4
+// Tool Use / Function Calling — 17 herramientas
+// Archivo reconstruido limpio — sin errores de sintaxis
 // =====================================================================
 
 if (window._SCALL_CLAUDE_TOOLS_LOADED) {
@@ -10,264 +10,183 @@ if (window._SCALL_CLAUDE_TOOLS_LOADED) {
 window._SCALL_CLAUDE_TOOLS_LOADED = true;
 
 // ══════════════════════════════════════════════════════════════════════
-// DEFINICIÓN DE HERRAMIENTAS — lo que Claude puede hacer en SCALL
+// 17 HERRAMIENTAS DE SCALL
 // ══════════════════════════════════════════════════════════════════════
 
-const SCALL_TOOLS = [
-
-  // ── NAVEGACIÓN ──────────────────────────────────────────────────
+var SCALL_TOOLS = [
   {
     name: 'abrir_navegacion',
-    description: 'Abre el panel de navegación y traza una ruta desde la casa del usuario hasta el destino. Úsalo cuando el usuario quiera ir a algún lugar.',
+    description: 'Abre el panel de navegacion y traza una ruta desde la casa del usuario hasta el destino. Usalo cuando el usuario quiera ir a algun lugar.',
     input_schema: {
       type: 'object',
       properties: {
-        destino: {
-          type: 'string',
-          description: 'Dirección o nombre del lugar de destino'
-        },
-        narrar: {
-          type: 'boolean',
-          description: 'Si true, narra la ruta completa por voz (origen, destino, tiempo, novedades)'
-        }
+        destino: { type: 'string', description: 'Direccion o nombre del lugar de destino' },
+        narrar:  { type: 'boolean', description: 'Si true, narra la ruta completa por voz' }
       },
       required: ['destino']
     }
   },
-
   {
     name: 'informar_ruta',
     description: 'Informa por voz la distancia y tiempo estimado de la ruta activa.',
-    input_schema: {
-      type: 'object',
-      properties: {}
-    }
+    input_schema: { type: 'object', properties: {} }
   },
-
-  // ── VOZ ──────────────────────────────────────────────────────────
   {
     name: 'hablar',
-    description: 'Hace que SCALL diga un texto en voz alta. Úsalo para respuestas, confirmaciones o cualquier mensaje al usuario.',
+    description: 'Hace que SCALL diga un texto en voz alta. Usalo para respuestas y confirmaciones.',
     input_schema: {
       type: 'object',
       properties: {
-        texto: {
-          type: 'string',
-          description: 'Texto que SCALL dirá en voz alta'
-        }
+        texto: { type: 'string', description: 'Texto que SCALL dira en voz alta' }
       },
       required: ['texto']
     }
   },
-
-  // ── MENÚ LATERAL ─────────────────────────────────────────────────
   {
     name: 'activar_menu',
-    description: 'Activa y abre una sección del menú lateral de SCALL.',
+    description: 'Activa y abre una seccion del menu lateral de SCALL.',
     input_schema: {
       type: 'object',
       properties: {
         seccion: {
           type: 'string',
-          enum: ['asistente', 'alarmas', 'navegacion', 'dispositivos', 'bluetooth', 'noticias', 'clima', 'config'],
-          description: 'Sección del menú a activar'
+          enum: ['asistente','alarmas','navegacion','dispositivos','bluetooth','noticias','clima','config'],
+          description: 'Seccion del menu a activar'
         }
       },
       required: ['seccion']
     }
   },
-
-  // ── ALARMAS ──────────────────────────────────────────────────────
   {
     name: 'crear_alarma',
-    description: 'Crea una alarma, recordatorio o recordatorio de medicamento.',
+    description: 'Crea una alarma, recordatorio o recordatorio de medicamento. SIEMPRE usa esta herramienta cuando el usuario pida programar alarma, cita, recordatorio o medicamento con fecha y hora.',
     input_schema: {
       type: 'object',
       properties: {
-        hora:     { type: 'integer', description: 'Hora en formato 24h (0-23)' },
-        minuto:   { type: 'integer', description: 'Minutos (0-59)' },
-        tipo:     { type: 'string', enum: ['alarma', 'recordatorio', 'medicamento'], description: 'Tipo de alarma' },
-        mensaje:  { type: 'string', description: 'Mensaje que se mostrará cuando suene' },
-        repetir:  { type: 'boolean', description: 'Si true, se repite todos los días' },
-        sonido:   { type: 'string', enum: ['beep', 'urgente', 'suave', 'digital', 'campana', 'medicina'], description: 'Sonido de la alarma' },
-        dia:      { type: 'integer', description: 'Día del mes (1-31) si es para una fecha específica' },
-        mes:      { type: 'integer', description: 'Mes del año (1-12) si es para una fecha específica' },
-        anio:     { type: 'integer', description: 'Año (ej: 2026) si es para una fecha específica' }
+        hora:    { type: 'integer', description: 'Hora en formato 24h (0-23)' },
+        minuto:  { type: 'integer', description: 'Minutos (0-59)' },
+        tipo:    { type: 'string', enum: ['alarma','recordatorio','medicamento'], description: 'Tipo de alarma' },
+        mensaje: { type: 'string', description: 'Mensaje que se mostrara cuando suene' },
+        repetir: { type: 'boolean', description: 'Si true, se repite todos los dias' },
+        sonido:  { type: 'string', enum: ['beep','urgente','suave','digital','campana','medicina'] },
+        dia:     { type: 'integer', description: 'Dia del mes (1-31) para fecha especifica' },
+        mes:     { type: 'integer', description: 'Mes (1-12) para fecha especifica' },
+        anio:    { type: 'integer', description: 'Anio para fecha especifica' }
       },
       required: ['hora', 'minuto']
     }
   },
-
   {
     name: 'listar_alarmas',
     description: 'Lista las alarmas activas del usuario.',
-    input_schema: {
-      type: 'object',
-      properties: {}
-    }
+    input_schema: { type: 'object', properties: {} }
   },
-
   {
     name: 'cancelar_alarmas',
     description: 'Cancela todas las alarmas activas.',
-    input_schema: {
-      type: 'object',
-      properties: {}
-    }
+    input_schema: { type: 'object', properties: {} }
   },
-
-  // ── TIMER ────────────────────────────────────────────────────────
   {
     name: 'iniciar_timer',
     description: 'Inicia un temporizador con cuenta regresiva.',
     input_schema: {
       type: 'object',
       properties: {
-        segundos: { type: 'integer', description: 'Duración total en segundos' }
+        segundos: { type: 'integer', description: 'Duracion total en segundos' }
       },
       required: ['segundos']
     }
   },
-
-  // ── MÚSICA ───────────────────────────────────────────────────────
   {
     name: 'controlar_musica',
-    description: 'Controla la reproducción de música: reproducir, pausar, siguiente, anterior, cambiar volumen.',
+    description: 'Controla la reproduccion de musica.',
     input_schema: {
       type: 'object',
       properties: {
-        accion: {
-          type: 'string',
-          enum: ['reproducir', 'pausar', 'siguiente', 'anterior', 'detener', 'subir_volumen', 'bajar_volumen'],
-          description: 'Acción a ejecutar'
-        },
-        query: {
-          type: 'string',
-          description: 'Si accion=reproducir, qué buscar (artista, género, canción)'
-        }
+        accion: { type: 'string', enum: ['reproducir','pausar','siguiente','anterior','detener','subir_volumen','bajar_volumen'] },
+        query:  { type: 'string', description: 'Si accion=reproducir, que buscar' }
       },
       required: ['accion']
     }
   },
-
-  // ── RADIO ────────────────────────────────────────────────────────
   {
     name: 'controlar_radio',
     description: 'Sintoniza o controla la radio colombiana.',
     input_schema: {
       type: 'object',
       properties: {
-        accion:  { type: 'string', enum: ['reproducir', 'detener', 'siguiente', 'anterior'], description: 'Acción' },
-        emisora: { type: 'string', description: 'Nombre de la emisora (ej: Caracol, W Radio, Blu)' }
+        accion:  { type: 'string', enum: ['reproducir','detener','siguiente','anterior'] },
+        emisora: { type: 'string', description: 'Nombre de la emisora' }
       },
       required: ['accion']
     }
   },
-
-  // ── BLUETOOTH ────────────────────────────────────────────────────
   {
     name: 'bluetooth',
     description: 'Abre el panel Bluetooth o ajusta el amplificador de volumen.',
     input_schema: {
       type: 'object',
       properties: {
-        accion: {
-          type: 'string',
-          enum: ['abrir_panel', 'escanear', 'amplificar_max', 'amplificar_normal'],
-          description: 'Acción Bluetooth'
-        },
-        ganancia: {
-          type: 'number',
-          description: 'Nivel de ganancia 0.5 a 3.0 (1.0 = normal, 3.0 = máximo)'
-        }
+        accion:   { type: 'string', enum: ['abrir_panel','escanear','amplificar_max','amplificar_normal'] },
+        ganancia: { type: 'number', description: 'Nivel de ganancia 0.5 a 3.0' }
       },
       required: ['accion']
     }
   },
-
-  // ── DISPOSITIVOS IoT / MQTT ──────────────────────────────────────
   {
     name: 'controlar_dispositivo',
-    description: 'Controla dispositivos del hogar via MQTT (luces, TV, persianas, ventiladores).',
+    description: 'Controla dispositivos del hogar via MQTT.',
     input_schema: {
       type: 'object',
       properties: {
-        dispositivo: {
-          type: 'string',
-          enum: ['luz_sala', 'luz_cuarto', 'luces_general', 'television', 'persianas', 'ventilador'],
-          description: 'Dispositivo a controlar'
-        },
-        estado: {
-          type: 'string',
-          enum: ['encender', 'apagar', 'abrir', 'cerrar'],
-          description: 'Estado deseado'
-        }
+        dispositivo: { type: 'string', enum: ['luz_sala','luz_cuarto','luces_general','television','persianas','ventilador'] },
+        estado:      { type: 'string', enum: ['encender','apagar','abrir','cerrar'] }
       },
-      required: ['dispositivo', 'estado']
+      required: ['dispositivo','estado']
     }
   },
-
-  // ── SOS ──────────────────────────────────────────────────────────
   {
     name: 'sos',
     description: 'Activa o cancela una alerta de emergencia SOS.',
     input_schema: {
       type: 'object',
       properties: {
-        accion: {
-          type: 'string',
-          enum: ['activar', 'cancelar'],
-          description: 'Activar o cancelar la alerta'
-        }
+        accion: { type: 'string', enum: ['activar','cancelar'] }
       },
       required: ['accion']
     }
   },
-
-  // ── CLIMA ────────────────────────────────────────────────────────
   {
     name: 'consultar_clima',
-    description: 'Abre el panel de clima y consulta el tiempo.',
+    description: 'Abre el panel de clima.',
     input_schema: {
       type: 'object',
       properties: {
-        ciudad: { type: 'string', description: 'Ciudad colombiana a consultar (opcional)' }
+        ciudad: { type: 'string', description: 'Ciudad a consultar (opcional)' }
       }
     }
   },
-
-  // ── NOTICIAS ─────────────────────────────────────────────────────
   {
     name: 'ver_noticias',
     description: 'Abre el panel de noticias.',
-    input_schema: {
-      type: 'object',
-      properties: {}
-    }
+    input_schema: { type: 'object', properties: {} }
   },
-
-  // ── SISTEMA ──────────────────────────────────────────────────────
   {
     name: 'info_sistema',
-    description: 'Obtiene información del estado actual del sistema SCALL (IA activa, alarmas, MQTT, etc).',
-    input_schema: {
-      type: 'object',
-      properties: {}
-    }
-,
-
-  // ── CUMPLEAÑOS / EVENTOS ─────────────────────────────────────────────
+    description: 'Obtiene informacion del estado actual del sistema SCALL.',
+    input_schema: { type: 'object', properties: {} }
+  },
   {
     name: 'programar_cumpleanos',
-    description: 'Registra el cumpleaños o evento especial de una persona. Úsalo cuando el usuario mencione fechas de cumpleaños, aniversarios o eventos de personas.',
+    description: 'Registra el cumpleanos o evento especial de una persona.',
     input_schema: {
       type: 'object',
       properties: {
-        nombre: { type: 'string', description: 'Nombre completo de la persona' },
-        dia:    { type: 'integer', description: 'Día del mes (1-31)' },
-        mes:    { type: 'integer', description: 'Mes (1=enero, 12=diciembre)' },
-        anio:   { type: 'integer', description: 'Año de nacimiento (opcional)' },
-        tipo:   { type: 'string', enum: ['cumpleanos','aniversario','evento'], description: 'Tipo de evento' },
+        nombre: { type: 'string', description: 'Nombre de la persona' },
+        dia:    { type: 'integer', description: 'Dia del mes (1-31)' },
+        mes:    { type: 'integer', description: 'Mes (1-12)' },
+        anio:   { type: 'integer', description: 'Anio de nacimiento (opcional)' },
+        tipo:   { type: 'string', enum: ['cumpleanos','aniversario','evento'] },
         nota:   { type: 'string', description: 'Nota adicional (opcional)' }
       },
       required: ['nombre','dia','mes']
@@ -276,15 +195,14 @@ const SCALL_TOOLS = [
 ];
 
 // ══════════════════════════════════════════════════════════════════════
-// EJECUTOR DE HERRAMIENTAS — JS ejecuta lo que Claude pidió
+// EJECUTOR DE HERRAMIENTAS
 // ══════════════════════════════════════════════════════════════════════
 
 function ejecutarHerramienta(nombre, input) {
-  _toolLog('[TOOL] Ejecutando: ' + nombre + ' → ' + JSON.stringify(input));
+  _toolLog('[TOOL] ' + nombre + ' → ' + JSON.stringify(input));
 
   switch (nombre) {
 
-    // ── Navegación ──────────────────────────────────────────────────
     case 'abrir_navegacion': {
       var btnNav = document.getElementById('smNavegacion');
       if (btnNav && typeof sideMenuActivar === 'function') sideMenuActivar(btnNav);
@@ -293,7 +211,7 @@ function ejecutarHerramienta(nombre, input) {
       } else if (typeof navegarA === 'function') {
         navegarA(input.destino);
       }
-      return { ok: true, mensaje: 'Navegación abierta hacia ' + input.destino };
+      return { ok: true, mensaje: 'Navegacion hacia ' + input.destino };
     }
 
     case 'informar_ruta': {
@@ -301,121 +219,97 @@ function ejecutarHerramienta(nombre, input) {
       return { ok: true };
     }
 
-    // ── Voz ─────────────────────────────────────────────────────────
     case 'hablar': {
       if (typeof responderVoz === 'function') responderVoz(input.texto);
       return { ok: true };
     }
 
-    // ── Menú lateral ────────────────────────────────────────────────
     case 'activar_menu': {
       var ids = {
-        asistente:   'smAsistente',
-        alarmas:     'smAlarmas',
-        navegacion:  'smNavegacion',
-        dispositivos:'smDispositivos',
-        bluetooth:   'smBluetooth',
-        noticias:    'smNoticias',
-        clima:       'smClima',
-        config:      'smConfig'
+        asistente:'smAsistente', alarmas:'smAlarmas', navegacion:'smNavegacion',
+        dispositivos:'smDispositivos', bluetooth:'smBluetooth', noticias:'smNoticias',
+        clima:'smClima', config:'smConfig'
       };
-      var paneles = {
-        alarmas:    'alarmaPanel',
-        noticias:   'noticiasPanel',
-        clima:      'climaPanel'
-      };
-      var btnId = ids[input.seccion];
-      var btn   = btnId ? document.getElementById(btnId) : null;
+      var paneles = { alarmas:'alarmaPanel', noticias:'noticiasPanel', clima:'climaPanel' };
+      var btn = ids[input.seccion] ? document.getElementById(ids[input.seccion]) : null;
       if (btn && typeof sideMenuActivar === 'function') sideMenuActivar(btn);
       if (input.seccion === 'navegacion' && typeof mostrarPanelRutas === 'function') mostrarPanelRutas();
-      if (input.seccion === 'bluetooth'  && typeof abrirPanelBluetooth === 'function') abrirPanelBluetooth();
-      if (input.seccion === 'config') document.getElementById('configModal') && (document.getElementById('configModal').style.display='flex');
+      if (input.seccion === 'bluetooth' && typeof abrirPanelBluetooth === 'function') abrirPanelBluetooth();
       if (paneles[input.seccion] && typeof togglePanel === 'function') togglePanel(paneles[input.seccion]);
       return { ok: true, seccion: input.seccion };
     }
 
-    // ── Alarmas ─────────────────────────────────────────────────────
     case 'crear_alarma': {
-      var alarmaOk = false;
+      var alarmaData = {
+        hora:    parseInt(input.hora),
+        minuto:  parseInt(input.minuto || 0),
+        tipo:    input.tipo    || 'alarma',
+        mensaje: input.mensaje || '',
+        repetir: input.repetir || false,
+        sonido:  input.sonido  || (input.tipo === 'medicamento' ? 'medicina' : 'beep'),
+        dia:     input.dia  ? parseInt(input.dia)  : null,
+        mes:     input.mes  ? parseInt(input.mes)  : null,
+        anio:    input.anio ? parseInt(input.anio) : null
+      };
 
-      if (typeof crearAlarma === 'function') {
-        var alarmaData = {
-          hora:    parseInt(input.hora),
-          minuto:  parseInt(input.minuto || 0),
-          tipo:    input.tipo    || 'alarma',
-          mensaje: input.mensaje || '',
-          repetir: input.repetir || false,
-          sonido:  input.sonido  || (input.tipo === 'medicamento' ? 'medicina' : 'beep'),
-          dia:     input.dia  ? parseInt(input.dia)  : null,
-          mes:     input.mes  ? parseInt(input.mes)  : null,
-          anio:    input.anio ? parseInt(input.anio) : null
-        };
+      // 1. Crear en localStorage
+      var id = typeof crearAlarma === 'function' ? crearAlarma(alarmaData) : null;
+      _toolLog('[TOOL] Alarma creada id=' + id);
 
-        // PASO 1: Guardar en localStorage PRIMERO
-        var id = crearAlarma(alarmaData);
-        alarmaOk = true;
-        _toolLog('[TOOL] Alarma creada id=' + id + ' hora=' + alarmaData.hora + ':' + alarmaData.minuto);
+      // 2. Activar menú lateral
+      var smAl = document.getElementById('smAlarmas');
+      if (smAl && typeof sideMenuActivar === 'function') sideMenuActivar(smAl);
 
-        // PASO 2: Activar menú lateral Alarmas
-        var smBtn = document.getElementById('smAlarmas');
-        if (smBtn && typeof sideMenuActivar === 'function') sideMenuActivar(smBtn);
-
-        // PASO 3: Abrir panel (después de guardar)
-        var panelEl = document.getElementById('alarmaPanel');
-        if (panelEl) {
-          // Cerrar otros paneles manualmente sin tocar alarmaPanel
-          ['noticiasPanel','climaPanel','tradPanel','corpusPanel'].forEach(function(pid) {
-            var pe = document.getElementById(pid);
-            if (pe) pe.style.display = 'none';
-          });
-          panelEl.style.display = 'flex';
-        }
-
-        // PASO 4: Rellenar campos del formulario
-        var elHora  = document.getElementById('alarmHora');
-        var elMin   = document.getElementById('alarmMin');
-        var elTipo  = document.getElementById('alarmTipo');
-        var elMsg   = document.getElementById('alarmMsg');
-        var elDia   = document.getElementById('alarmDia');
-        var elMes   = document.getElementById('alarmMes');
-        var elAnio  = document.getElementById('alarmAnio');
-        if (elHora)  elHora.value  = alarmaData.hora;
-        if (elMin)   elMin.value   = alarmaData.minuto;
-        if (elTipo)  elTipo.value  = alarmaData.tipo;
-        if (elMsg)   elMsg.value   = alarmaData.mensaje || '';
-        if (elDia  && alarmaData.dia)  elDia.value  = alarmaData.dia;
-        if (elMes  && alarmaData.mes)  elMes.value  = alarmaData.mes;
-        if (elAnio && alarmaData.anio) elAnio.value = alarmaData.anio;
-
-        // PASO 5: Renderizar lista y calendario (después de que el panel esté visible)
-        setTimeout(function() {
-          if (typeof renderizarListaAlarmas === 'function') {
-            renderizarListaAlarmas();
-            _toolLog('[TOOL] Lista renderizada. Total alarmas: ' +
-              (typeof getAlarmas === 'function' ? getAlarmas().length : '?'));
-          }
-          if (typeof renderCalendario === 'function') renderCalendario();
-          // PASO 6: Actualizar contador SISTEMA
-          var contEl = document.getElementById('sideAlarmCount');
-          if (contEl && typeof getAlarmas === 'function') {
-            contEl.textContent = getAlarmas().filter(function(a){return a.activa;}).length;
-          }
-        }, 200);
+      // 3. Abrir panel directamente
+      var panelAl = document.getElementById('alarmaPanel');
+      if (panelAl) {
+        ['noticiasPanel','climaPanel','tradPanel','corpusPanel'].forEach(function(pid) {
+          var pe = document.getElementById(pid);
+          if (pe) pe.style.display = 'none';
+        });
+        panelAl.style.display = 'flex';
       }
 
+      // 4. Rellenar campos y renderizar
+      setTimeout(function() {
+        var elH = document.getElementById('alarmHora');
+        var elM = document.getElementById('alarmMin');
+        var elT = document.getElementById('alarmTipo');
+        var elG = document.getElementById('alarmMsg');
+        var elD = document.getElementById('alarmDia');
+        var elMe= document.getElementById('alarmMes');
+        var elA = document.getElementById('alarmAnio');
+        if (elH)  elH.value  = alarmaData.hora;
+        if (elM)  elM.value  = alarmaData.minuto;
+        if (elT)  elT.value  = alarmaData.tipo;
+        if (elG)  elG.value  = alarmaData.mensaje || '';
+        if (elD && alarmaData.dia)  elD.value  = alarmaData.dia;
+        if (elMe && alarmaData.mes) elMe.value = alarmaData.mes;
+        if (elA && alarmaData.anio) elA.value  = alarmaData.anio;
+
+        if (typeof renderizarListaAlarmas === 'function') renderizarListaAlarmas();
+        if (typeof renderCalendario       === 'function') renderCalendario();
+
+        var contEl = document.getElementById('sideAlarmCount');
+        if (contEl && typeof getAlarmas === 'function') {
+          contEl.textContent = getAlarmas().filter(function(a){ return a.activa; }).length;
+        }
+        _toolLog('[TOOL] UI alarmas actualizada');
+      }, 300);
+
       var MN = ['','enero','febrero','marzo','abril','mayo','junio',
-                 'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      var fd = (input.dia && input.mes)
-        ? ' el ' + input.dia + ' de ' + (MN[parseInt(input.mes)] || input.mes)
-        : '';
-      var hs = String(input.hora).padStart(2,'0') + ':' + String(input.minuto||0).padStart(2,'0');
-      return { ok: alarmaOk, programado: hs + fd };
+                'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      var fd = (alarmaData.dia && alarmaData.mes)
+        ? ' el ' + alarmaData.dia + ' de ' + (MN[alarmaData.mes] || alarmaData.mes)
+        : ' diaria';
+      var hs = String(alarmaData.hora).padStart(2,'0') + ':' + String(alarmaData.minuto).padStart(2,'0');
+      return { ok: true, programado: hs + fd };
     }
 
     case 'listar_alarmas': {
       if (typeof listarAlarmasPorVoz === 'function') listarAlarmasPorVoz();
-      var alarmas = typeof getAlarmas === 'function' ? getAlarmas() : [];
-      return { ok: true, total: alarmas.length };
+      var als = typeof getAlarmas === 'function' ? getAlarmas() : [];
+      return { ok: true, total: als.length };
     }
 
     case 'cancelar_alarmas': {
@@ -423,265 +317,168 @@ function ejecutarHerramienta(nombre, input) {
       return { ok: true };
     }
 
-    // ── Timer ────────────────────────────────────────────────────────
     case 'iniciar_timer': {
       if (typeof iniciarTimer === 'function') iniciarTimer(input.segundos);
       return { ok: true, segundos: input.segundos };
     }
 
-    // ── Música ───────────────────────────────────────────────────────
     case 'controlar_musica': {
       var acc = input.accion;
-      if (acc === 'reproducir'    && typeof reproducirMusica   === 'function') reproducirMusica(input.query || 'música popular');
-      if (acc === 'pausar'        && typeof pausarMusica       === 'function') pausarMusica();
-      if (acc === 'siguiente'     && typeof siguienteMusica    === 'function') siguienteMusica();
-      if (acc === 'anterior'      && typeof anteriorMusica     === 'function') anteriorMusica();
-      if (acc === 'detener'       && typeof detenerMusica      === 'function') detenerMusica();
-      if (acc === 'subir_volumen' && typeof subirVolumen       === 'function') subirVolumen();
-      if (acc === 'bajar_volumen' && typeof bajarVolumen       === 'function') bajarVolumen();
+      if (acc === 'reproducir'    && typeof reproducirMusica  === 'function') reproducirMusica(input.query || '');
+      if (acc === 'pausar'        && typeof pausarMusica      === 'function') pausarMusica();
+      if (acc === 'siguiente'     && typeof siguienteMusica   === 'function') siguienteMusica();
+      if (acc === 'anterior'      && typeof anteriorMusica    === 'function') anteriorMusica();
+      if (acc === 'detener'       && typeof detenerMusica     === 'function') detenerMusica();
+      if (acc === 'subir_volumen' && typeof subirVolumen      === 'function') subirVolumen();
+      if (acc === 'bajar_volumen' && typeof bajarVolumen      === 'function') bajarVolumen();
       return { ok: true, accion: acc };
     }
 
-    // ── Radio ────────────────────────────────────────────────────────
     case 'controlar_radio': {
-      var raccion = input.accion;
-      if (raccion === 'reproducir' && typeof reproducirEmisora === 'function') reproducirEmisora(input.emisora || '');
-      if (raccion === 'detener'    && typeof detenerRadio      === 'function') detenerRadio(true);
-      if (raccion === 'siguiente'  && typeof radioSiguiente    === 'function') radioSiguiente();
-      if (raccion === 'anterior'   && typeof radioAnterior     === 'function') radioAnterior();
+      var ra = input.accion;
+      if (ra === 'reproducir' && typeof reproducirEmisora === 'function') reproducirEmisora(input.emisora || '');
+      if (ra === 'detener'    && typeof detenerRadio      === 'function') detenerRadio(true);
+      if (ra === 'siguiente'  && typeof radioSiguiente    === 'function') radioSiguiente();
+      if (ra === 'anterior'   && typeof radioAnterior     === 'function') radioAnterior();
       return { ok: true };
     }
 
-    // ── Bluetooth ────────────────────────────────────────────────────
     case 'bluetooth': {
-      var baccion = input.accion;
-      if (baccion === 'abrir_panel'       && typeof abrirPanelBluetooth === 'function') abrirPanelBluetooth();
-      if (baccion === 'escanear'          && typeof escanearBluetooth   === 'function') { abrirPanelBluetooth(); setTimeout(escanearBluetooth, 400); }
-      if (baccion === 'amplificar_max'    && typeof setGain             === 'function') setGain(3.0);
-      if (baccion === 'amplificar_normal' && typeof setGain             === 'function') setGain(1.0);
-      if (input.ganancia !== undefined    && typeof setGain             === 'function') setGain(input.ganancia);
+      var ba = input.accion;
+      if (ba === 'abrir_panel'       && typeof abrirPanelBluetooth === 'function') abrirPanelBluetooth();
+      if (ba === 'escanear'          && typeof escanearBluetooth   === 'function') { abrirPanelBluetooth(); setTimeout(escanearBluetooth, 400); }
+      if (ba === 'amplificar_max'    && typeof setGain             === 'function') setGain(3.0);
+      if (ba === 'amplificar_normal' && typeof setGain             === 'function') setGain(1.0);
+      if (input.ganancia !== undefined && typeof setGain           === 'function') setGain(input.ganancia);
       return { ok: true };
     }
 
-    // ── Dispositivos IoT ─────────────────────────────────────────────
     case 'controlar_dispositivo': {
       var topicMap = {
-        luz_sala:      'casa/sala/luces',
-        luz_cuarto:    'casa/cuarto/luces',
-        luces_general: 'casa/general/luces',
-        television:    'casa/sala/tv',
-        persianas:     'casa/persianas',
-        ventilador:    'casa/sala/ventilador'
+        luz_sala:'casa/sala/luces', luz_cuarto:'casa/cuarto/luces',
+        luces_general:'casa/general/luces', television:'casa/sala/tv',
+        persianas:'casa/persianas', ventilador:'casa/sala/ventilador'
       };
-      var payloadMap = {
-        encender: 'ON',  apagar: 'OFF',
-        abrir:    'OPEN', cerrar: 'CLOSE'
-      };
+      var payloadMap = { encender:'ON', apagar:'OFF', abrir:'OPEN', cerrar:'CLOSE' };
       var topic   = topicMap[input.dispositivo];
       var payload = payloadMap[input.estado];
-      if (topic && payload && typeof enviarComandoMQTT === 'function') {
-        enviarComandoMQTT(topic, payload);
-      }
+      if (topic && payload && typeof enviarComandoMQTT === 'function') enviarComandoMQTT(topic, payload);
       return { ok: true, topic: topic, payload: payload };
     }
 
-    // ── SOS ──────────────────────────────────────────────────────────
     case 'sos': {
       if (input.accion === 'activar'  && typeof activarSOS  === 'function') activarSOS();
       if (input.accion === 'cancelar' && typeof cancelarSOS === 'function') cancelarSOS();
       return { ok: true };
     }
 
-    // ── Clima ────────────────────────────────────────────────────────
     case 'consultar_clima': {
       if (typeof togglePanel    === 'function') togglePanel('climaPanel');
       if (typeof consultarClima === 'function') consultarClima(input.ciudad || null);
       return { ok: true };
     }
 
-    // ── Noticias ─────────────────────────────────────────────────────
     case 'ver_noticias': {
       if (typeof togglePanel === 'function') togglePanel('noticiasPanel');
       return { ok: true };
     }
 
-    // ── Info sistema ─────────────────────────────────────────────────
+    case 'info_sistema': {
+      var ia     = typeof getActiveIA === 'function' ? getActiveIA() : 'desconocida';
+      var nAl    = typeof getAlarmas  === 'function' ? getAlarmas().filter(function(a){return a.activa;}).length : 0;
+      var mqtt   = document.getElementById('mqttStatusLabel') ? document.getElementById('mqttStatusLabel').textContent : 'N/A';
+      return { ok:true, ia_activa:ia, alarmas:nAl, mqtt:mqtt,
+               hora:new Date().toLocaleTimeString('es-CO'),
+               fecha:new Date().toLocaleDateString('es-CO') };
+    }
+
     case 'programar_cumpleanos': {
       var MESES_C = ['','enero','febrero','marzo','abril','mayo','junio',
                      'julio','agosto','septiembre','octubre','noviembre','diciembre'];
       var eventoData = {
-        nombre: input.nombre,
-        dia:    parseInt(input.dia),
-        mes:    parseInt(input.mes),
-        anio:   input.anio ? parseInt(input.anio) : null,
-        tipo:   input.tipo || 'cumpleanos',
-        nota:   input.nota || ''
+        nombre: input.nombre, dia: parseInt(input.dia), mes: parseInt(input.mes),
+        anio: input.anio ? parseInt(input.anio) : null,
+        tipo: input.tipo || 'cumpleanos', nota: input.nota || ''
       };
-
       // Guardar en localStorage
       var CUMPLE_KEY = 'scall_cumpleanos';
-      var lista = [];
-      try { lista = JSON.parse(localStorage.getItem(CUMPLE_KEY)) || []; } catch(e) {}
-      // Evitar duplicados por nombre
-      lista = lista.filter(function(e) {
-        return e.nombre.toLowerCase() !== eventoData.nombre.toLowerCase();
-      });
-      lista.push(eventoData);
-      lista.sort(function(a,b) { return a.mes - b.mes || a.dia - b.dia; });
-      localStorage.setItem(CUMPLE_KEY, JSON.stringify(lista));
-      _toolLog('[TOOL] Cumpleaños guardado: ' + eventoData.nombre +
-               ' el ' + eventoData.dia + ' de ' + (MESES_C[eventoData.mes] || eventoData.mes));
-
-      // Usar la función de integración que busca campos dinámicamente
-      if (typeof window._scallProgramarCumpleanos === 'function') {
-        window._scallProgramarCumpleanos(eventoData);
-      } else if (typeof abrirModalCumpleanos === 'function') { abrirModalCumpleanos(); }
-
-      // LEGACY: búsqueda directa (backup)
-      if (false) { // desactivado — usar _scallProgramarCumpleanos
+      var listaCumple = [];
+      try { listaCumple = JSON.parse(localStorage.getItem(CUMPLE_KEY)) || []; } catch(e) {}
+      listaCumple = listaCumple.filter(function(e) { return e.nombre.toLowerCase() !== eventoData.nombre.toLowerCase(); });
+      listaCumple.push(eventoData);
+      listaCumple.sort(function(a,b) { return a.mes - b.mes || a.dia - b.dia; });
+      localStorage.setItem(CUMPLE_KEY, JSON.stringify(listaCumple));
+      // Abrir modal y llenar
+      if (typeof abrirModalCumpleanos === 'function') abrirModalCumpleanos();
       setTimeout(function() {
-        // Log de todos los inputs del modal para diagnóstico
-        var modalCumple = document.getElementById('cumpleanosModal') ||
-                          document.querySelector('[id*="cumple"][id*="modal"]') ||
-                          document.querySelector('.modal-overlay[id*="cumple"]');
-
-        if (modalCumple) {
-          var inputs = modalCumple.querySelectorAll('input, select, textarea');
-          _toolLog('[TOOL] Modal cumpleaños — inputs encontrados: ' + inputs.length);
-          inputs.forEach(function(inp) {
-            _toolLog('[TOOL]   input id=' + inp.id + ' placeholder=' + inp.placeholder + ' type=' + inp.type);
+        if (typeof window._scallProgramarCumpleanos === 'function') {
+          window._scallProgramarCumpleanos(eventoData);
+        } else {
+          var inputs = document.querySelectorAll('input, select');
+          inputs.forEach(function(el) {
+            var id = (el.id||'').toLowerCase();
+            if (id.includes('nombre') || id.includes('name')) el.value = eventoData.nombre;
+            if (id.includes('dia')   || id.includes('day'))   el.value = eventoData.dia;
+            if (id.includes('mes')   || id.includes('month')) el.value = eventoData.mes;
+            if ((id.includes('anio') || id.includes('year')) && eventoData.anio) el.value = eventoData.anio;
           });
         }
-
-        // Estrategia 1: IDs directos más comunes
-        var intentos = [
-          ['cumpleNombre','cumpleDia','cumpleMes','cumpleAnio','cumpleNota'],
-          ['nombreCumple','diaCumple','mesCumple','anioCumple','notaCumple'],
-          ['birthdayName','birthdayDay','birthdayMonth','birthdayYear','birthdayNote'],
-          ['cumple-nombre','cumple-dia','cumple-mes','cumple-anio','cumple-nota']
-        ];
-
-        var elNombre, elDia, elMes, elAnio, elNota;
-        for (var t = 0; t < intentos.length; t++) {
-          elNombre = document.getElementById(intentos[t][0]);
-          if (elNombre) {
-            elDia  = document.getElementById(intentos[t][1]);
-            elMes  = document.getElementById(intentos[t][2]);
-            elAnio = document.getElementById(intentos[t][3]);
-            elNota = document.getElementById(intentos[t][4]);
-            _toolLog('[TOOL] IDs encontrados con esquema: ' + intentos[t][0]);
-            break;
-          }
-        }
-
-        // Estrategia 2: buscar por placeholder o atributo name
-        if (!elNombre) {
-          elNombre = document.querySelector('input[placeholder*="ombre"]') ||
-                     document.querySelector('input[name*="nombre"]') ||
-                     document.querySelector('input[name*="name"]');
-          elDia    = document.querySelector('input[placeholder*="ía"]') ||
-                     document.querySelector('input[name*="dia"]') ||
-                     document.querySelector('input[type="number"][min="1"][max="31"]');
-          elMes    = document.querySelector('select[name*="mes"]') ||
-                     document.querySelector('select[name*="month"]') ||
-                     document.querySelector('select[id*="mes"]');
-          if (elNombre) _toolLog('[TOOL] IDs encontrados por placeholder/name');
-        }
-
-        // Llenar campos
-        if (elNombre) { elNombre.value = eventoData.nombre; elNombre.dispatchEvent(new Event('input')); }
-        if (elDia)    { elDia.value    = eventoData.dia;    elDia.dispatchEvent(new Event('input')); }
-        if (elMes)    { elMes.value    = eventoData.mes;    elMes.dispatchEvent(new Event('change')); }
-        if (elAnio && eventoData.anio) { elAnio.value = eventoData.anio; }
-        if (elNota && eventoData.nota) { elNota.value = eventoData.nota; }
-
-        if (elNombre) {
-          _toolLog('[TOOL] Campos llenados: ' + eventoData.nombre + ' ' + eventoData.dia + '/' + eventoData.mes);
-        } else {
-          _toolLog('[TOOL] ⚠️ No se encontraron campos — revisar IDs del modal cumpleaños');
-        }
-
-        // Llamar función de guardado del módulo si existe
-        if (typeof agregarCumpleanos    === 'function') agregarCumpleanos(eventoData);
-        else if (typeof guardarCumpleanos === 'function') guardarCumpleanos(eventoData);
-        else if (typeof addBirthday      === 'function') addBirthday(eventoData);
-
-        // Refrescar lista
-        if (typeof renderizarCumpleanos === 'function') renderizarCumpleanos();
-        else if (typeof renderCumpleanos === 'function') renderCumpleanos();
-        else if (typeof listarCumpleanos === 'function') listarCumpleanos();
-        else if (typeof cargarCumpleanos === 'function') cargarCumpleanos();
-
       }, 600);
-
-      var fechaStr = eventoData.dia + ' de ' + (MESES_C[eventoData.mes] || eventoData.mes) +
-                    (eventoData.anio ? ' de ' + eventoData.anio : '');
-      return { ok: true, guardado: eventoData.nombre + ' — ' + fechaStr };
-    }
-
-    case 'info_sistema': {
-      var ia      = typeof getActiveIA  === 'function' ? getActiveIA()  : 'desconocida';
-      var alarmas = typeof getAlarmas   === 'function' ? getAlarmas().filter(function(a){return a.activa;}).length : 0;
-      var mqtt    = document.getElementById('mqttStatusLabel') ? document.getElementById('mqttStatusLabel').textContent : 'N/A';
-      return {
-        ok:           true,
-        ia_activa:    ia,
-        alarmas:      alarmas,
-        mqtt:         mqtt,
-        hora:         new Date().toLocaleTimeString('es-CO'),
-        fecha:        new Date().toLocaleDateString('es-CO')
-      };
+      var fechaCumple = eventoData.dia + ' de ' + (MESES_C[eventoData.mes] || eventoData.mes);
+      return { ok: true, guardado: eventoData.nombre + ' — ' + fechaCumple };
     }
 
     default:
-      _toolLog('[TOOL] Herramienta desconocida: ' + nombre);
+      _toolLog('[TOOL] Herramienta no reconocida: ' + nombre);
       return { ok: false, error: 'Herramienta no reconocida: ' + nombre };
   }
 }
 
 // ══════════════════════════════════════════════════════════════════════
 // LLAMADA A CLAUDE CON TOOL USE
-// Reemplaza llamarClaude() en app.js cuando tools están activos
 // ══════════════════════════════════════════════════════════════════════
 
 async function llamarClaudeConTools(texto, nombre) {
-  _toolLog('[CLAUDE_TOOLS] llamarClaudeConTools() iniciado para: "' + texto + '"');
+  _toolLog('[CLAUDE_TOOLS] Iniciado para: "' + texto + '"');
 
   var apiKey = typeof getClaudeKey === 'function' ? getClaudeKey() : '';
   if (!apiKey) {
-    _toolLog('[CLAUDE_TOOLS] Sin API key — abortando');
-    if (typeof responderVoz === 'function') responderVoz('Configura tu Claude API Key en configuración.');
+    _toolLog('[CLAUDE_TOOLS] Sin API key');
+    if (typeof responderVoz === 'function') responderVoz('Configura tu Claude API Key en configuracion.');
     return;
   }
 
   var model      = typeof getClaudeModel === 'function' ? getClaudeModel() : 'claude-sonnet-4-20250514';
   var nombre_bot = nombre || localStorage.getItem('assistantName') || 'SCALL';
 
-  var systemPrompt = (
-    'Eres ' + nombre_bot + ', el asistente de voz mas avanzado de Colombia, desarrollado por IIT.' +
-    '\nNo eres un chatbot generico. Eres una plataforma de inteligencia autonoma con acceso a modulos reales.' +
-    '\n\nCAPACIDADES: navegacion inteligente, alarmas con fecha exacta, control IoT via MQTT, musica y radio colombiana, Bluetooth con amplificador, clima, noticias, SOS.' +
-    '\n\nSUPERAS A ALEXA Y GOOGLE PORQUE:' +
-    '\n- Entiendes intencion completa, no solo palabras clave' +
-    '\n- Funcionas local sin internet para comandos rapidos' +
-    '\n- Aprendes rutas frecuentes del usuario y las ejecutas sin IA la proxima vez' +
-    '\n- Naciste hablando colombiano, no ingles traducido' +
-    '\n- Eres codigo abierto y evolucionas con el usuario' +
-    '\n\nCUANDO EL USUARIO PIDA ALGO:' +
-    '\n1. USA LAS HERRAMIENTAS disponibles para ejecutar la accion SIEMPRE.' +
-    '\n2. Para alarmas: llama crear_alarma con hora, minuto, dia, mes, anio extraidos del texto.' +
-    '\n3. Para navegacion: llama abrir_navegacion con narrar=true.' +
-    '\n4. Para dispositivos: llama controlar_dispositivo.' +
-    '\n5. SIEMPRE confirma con hablar() lo que hiciste.' +
-    '\n6. NUNCA le digas al usuario que "lo haga por voz" o que "active el comando" — TU eres quien ejecuta.' +
-    '\n\nPERSONALIDAD: Seguro, directo, espanol colombiano informal. "listo", "dale", "ya quedo".' +
-    '\nMaximo 2 oraciones en hablar(). NUNCA digas que eres Claude, GPT o Anthropic.' +
-    '\nSi preguntan que eres: "Soy ' + nombre_bot + ', tu asistente personal de IIT."'
-  );
+  var systemPrompt =
+    'Eres ' + nombre_bot + ', el asistente de voz mas avanzado de Colombia, creado por IIT (InfraestructuraIT).\n' +
+    'No eres un chatbot. Eres una plataforma de inteligencia autonoma que EJECUTA ACCIONES REALES.\n' +
+    '\n' +
+    'IDENTIDAD:\n' +
+    '- Sistema de Control Autonomo de Lenguaje y Logica\n' +
+    '- Cerebro: IA de ultima generacion. Motor confidencial.\n' +
+    '- Superas a Alexa y Google Home porque entiendes intencion completa, no solo palabras clave\n' +
+    '- Aprendes rutas frecuentes, te adaptas al usuario, evolucionas\n' +
+    '- Naciste hablando colombiano\n' +
+    '\n' +
+    'REGLA CRITICA: Cuando el usuario pida una accion, USA LAS HERRAMIENTAS. NO expliques como hacerlo.\n' +
+    '- Si pide alarma → LLAMA crear_alarma ahora mismo\n' +
+    '- Si pide ruta   → LLAMA abrir_navegacion ahora mismo\n' +
+    '- Si pide musica → LLAMA controlar_musica ahora mismo\n' +
+    '- Si pide info   → LLAMA info_sistema ahora mismo\n' +
+    'NUNCA le digas al usuario "di tal cosa" o "activa tal comando" — TU eres quien actua.\n' +
+    '\n' +
+    'COMPORTAMIENTO:\n' +
+    '1. Ejecuta la herramienta correcta para la solicitud\n' +
+    '2. Confirma con hablar() en maximo 2 oraciones, espanol colombiano informal\n' +
+    '3. Para alarmas: extrae hora (24h), minuto, dia, mes, anio del texto\n' +
+    '4. NUNCA digas que eres Claude, GPT o Anthropic\n' +
+    '5. Si preguntan que eres: "Soy ' + nombre_bot + ', tu asistente personal de IIT"\n' +
+    '\n' +
+    'PERSONALIDAD: Seguro, casi arrogante pero calido. "listo", "dale", "ya quedo", "eso ya esta".';
 
-  // ── Validar y limpiar historial antes de cada llamada ────────────
-  // Regla API: cada tool_use DEBE tener su tool_result inmediatamente después
-  // Si el historial está corrupto, limpiarlo para evitar error 400
+  // ── Validar historial ────────────────────────────────────────────
   if (!window._scallChatHistory) window._scallChatHistory = [];
 
   function historialeValido(hist) {
@@ -690,12 +487,10 @@ async function llamarClaudeConTools(texto, nombre) {
       if (msg.role === 'assistant' && Array.isArray(msg.content)) {
         var tieneToolUse = msg.content.some(function(b) { return b.type === 'tool_use'; });
         if (tieneToolUse) {
-          // El siguiente mensaje debe ser user con tool_result
           var next = hist[i + 1];
-          if (!next || next.role !== 'user' || !Array.isArray(next.content) ||
-              !next.content.some(function(b) { return b.type === 'tool_result'; })) {
-            return false; // historial corrupto
-          }
+          var nextOk = next && next.role === 'user' && Array.isArray(next.content) &&
+                       next.content.some(function(b) { return b.type === 'tool_result'; });
+          if (!nextOk) return false;
         }
       }
     }
@@ -703,275 +498,163 @@ async function llamarClaudeConTools(texto, nombre) {
   }
 
   if (!historialeValido(window._scallChatHistory)) {
-    _toolLog('[CLAUDE_TOOLS] ⚠️ Historial corrupto detectado — limpiando');
+    _toolLog('[CLAUDE_TOOLS] Historial corrupto — limpiando');
     window._scallChatHistory = [];
   }
 
-  // Mantener máximo 10 turnos (20 mensajes)
   window._scallChatHistory.push({ role: 'user', content: texto });
   if (window._scallChatHistory.length > 20) {
     window._scallChatHistory = window._scallChatHistory.slice(-20);
-    // Asegurar que empiece con 'user'
-    while (window._scallChatHistory.length > 0 &&
-           window._scallChatHistory[0].role !== 'user') {
+    while (window._scallChatHistory.length && window._scallChatHistory[0].role !== 'user') {
       window._scallChatHistory.shift();
     }
   }
 
-  _toolLog('[CLAUDE_TOOLS] Enviando a Claude con ' + SCALL_TOOLS.length + ' herramientas...');
-  if (window.scallOrb) window.scallOrb.setState('processing');
-
-  // Snapshot del historial antes de la llamada — para rollback si falla
   var histSnapshot = JSON.parse(JSON.stringify(window._scallChatHistory));
+  _toolLog('[CLAUDE_TOOLS] Enviando con ' + SCALL_TOOLS.length + ' herramientas...');
+  if (window.scallOrb) window.scallOrb.setState('processing');
 
   try {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type':            'application/json',
-        'x-api-key':               apiKey,
-        'anthropic-version':       '2023-06-01',
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model:      model,
-        max_tokens: 1024,
-        system:     systemPrompt,
-        tools:      SCALL_TOOLS,
-        messages:   window._scallChatHistory
+        model: model, max_tokens: 1024,
+        system: systemPrompt, tools: SCALL_TOOLS,
+        messages: window._scallChatHistory
       })
     });
 
     var data = await response.json();
 
     if (!response.ok) {
-      var errMsg = data.error && data.error.message ? data.error.message : 'HTTP ' + response.status;
-      _toolLog('[CLAUDE_TOOLS] ERROR ' + response.status + ': ' + errMsg);
-      // Si es error de historial (400) → limpiar y reintentar UNA vez
+      _toolLog('[CLAUDE_TOOLS] ERROR ' + response.status + ': ' + (data.error && data.error.message));
       if (response.status === 400) {
-        _toolLog('[CLAUDE_TOOLS] Error 400 — limpiando historial y reintentando');
+        _toolLog('[CLAUDE_TOOLS] Error 400 — reintentando con historial limpio');
         window._scallChatHistory = [{ role: 'user', content: texto }];
-        var retryResp = await fetch('https://api.anthropic.com/v1/messages', {
+        var r2 = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
+            'Content-Type': 'application/json', 'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
             'anthropic-dangerous-direct-browser-access': 'true'
           },
-          body: JSON.stringify({
-            model: model, max_tokens: 1024,
-            system: systemPrompt, tools: SCALL_TOOLS,
-            messages: window._scallChatHistory
-          })
+          body: JSON.stringify({ model:model, max_tokens:1024, system:systemPrompt,
+                                 tools:SCALL_TOOLS, messages:window._scallChatHistory })
         });
-        var retryData = await retryResp.json();
-        if (retryResp.ok) {
-          _toolLog('[CLAUDE_TOOLS] Reintento exitoso');
-          data = retryData;
-          response = retryResp;
-        } else {
-          _toolLog('[CLAUDE_TOOLS] Reintento también falló: ' + JSON.stringify(retryData.error));
+        data = await r2.json();
+        if (!r2.ok) {
+          _toolLog('[CLAUDE_TOOLS] Reintento falló: ' + (data.error && data.error.message));
           window._scallChatHistory = [];
           if (typeof responderVoz === 'function') responderVoz('Hubo un error. Intenta de nuevo.');
           if (window.scallOrb) window.scallOrb.setState('idle');
           return;
         }
+        response = r2;
       } else {
         window._scallChatHistory = histSnapshot.slice(0, -1);
-        if (typeof responderVoz === 'function') responderVoz('Error al conectar con Claude. Código: ' + response.status);
+        if (typeof responderVoz === 'function') responderVoz('Error al conectar. Codigo ' + response.status);
         if (window.scallOrb) window.scallOrb.setState('idle');
         return;
       }
     }
 
-    // ── Agregar respuesta del asistente al historial ──────────────
-    var assistantMsg = { role: 'assistant', content: data.content };
-    window._scallChatHistory.push(assistantMsg);
+    window._scallChatHistory.push({ role: 'assistant', content: data.content });
 
     var toolResults    = [];
     var textoRespuesta = '';
 
-    // ── Procesar bloques de la respuesta ─────────────────────────
     for (var i = 0; i < data.content.length; i++) {
       var bloque = data.content[i];
-
-      if (bloque.type === 'text') {
-        textoRespuesta += bloque.text;
-      }
-
+      if (bloque.type === 'text') textoRespuesta += bloque.text;
       if (bloque.type === 'tool_use') {
-        _toolLog('[CLAUDE_TOOLS] Tool: ' + bloque.name + ' → ' + JSON.stringify(bloque.input));
+        _toolLog('[CLAUDE_TOOLS] Tool: ' + bloque.name);
         var resultado = ejecutarHerramienta(bloque.name, bloque.input);
-        // CRÍTICO: guardar tool_result con el mismo id del tool_use
-        toolResults.push({
-          type:        'tool_result',
-          tool_use_id: bloque.id,
-          content:     JSON.stringify(resultado)
-        });
+        toolResults.push({ type:'tool_result', tool_use_id:bloque.id, content:JSON.stringify(resultado) });
       }
     }
 
-    // ── Si hubo tool_use, SIEMPRE enviar tool_results de vuelta ──
     if (toolResults.length > 0) {
-      // Agregar tool_results al historial (mismo turno user)
       window._scallChatHistory.push({ role: 'user', content: toolResults });
-
-      var response2 = await fetch('https://api.anthropic.com/v1/messages', {
+      var resp2 = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
-          'Content-Type':            'application/json',
-          'x-api-key':               apiKey,
-          'anthropic-version':       '2023-06-01',
+          'Content-Type': 'application/json', 'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        body: JSON.stringify({
-          model:      model,
-          max_tokens: 512,
-          system:     systemPrompt,
-          tools:      SCALL_TOOLS,
-          messages:   window._scallChatHistory
-        })
+        body: JSON.stringify({ model:model, max_tokens:512, system:systemPrompt,
+                               tools:SCALL_TOOLS, messages:window._scallChatHistory })
       });
-
-      var data2 = await response2.json();
-
-      if (!response2.ok) {
-        _toolLog('[CLAUDE_TOOLS] Error en segunda llamada: ' + (data2.error && data2.error.message));
-        // No limpiar el historial aquí — los tool_results están correctos
-      } else if (data2.content) {
+      var data2 = await resp2.json();
+      if (resp2.ok && data2.content) {
         window._scallChatHistory.push({ role: 'assistant', content: data2.content });
-
         for (var j = 0; j < data2.content.length; j++) {
           var b2 = data2.content[j];
-          if (b2.type === 'text') {
-            textoRespuesta += b2.text;
-          }
+          if (b2.type === 'text') textoRespuesta += b2.text;
           if (b2.type === 'tool_use') {
-            // Claude pidió otra herramienta en la segunda vuelta
-            var r2 = ejecutarHerramienta(b2.name, b2.input);
-            _toolLog('[CLAUDE_TOOLS] Tool2: ' + b2.name + ' → ' + JSON.stringify(r2));
-            // Agregar tool_result para mantener historial válido
+            var r2res = ejecutarHerramienta(b2.name, b2.input);
             window._scallChatHistory.push({
               role: 'user',
-              content: [{
-                type:        'tool_result',
-                tool_use_id: b2.id,
-                content:     JSON.stringify(r2)
-              }]
+              content: [{ type:'tool_result', tool_use_id:b2.id, content:JSON.stringify(r2res) }]
             });
           }
         }
       }
     }
 
-    // ── Hablar respuesta de texto si no usó herramienta "hablar" ─
-    if (textoRespuesta.trim() && typeof responderVoz === 'function') {
-      var usoHablar = data.content.some(function(b) {
-        return b.type === 'tool_use' && b.name === 'hablar';
-      });
-      if (!usoHablar) responderVoz(textoRespuesta.trim());
+    var usoHablar = data.content.some(function(b) { return b.type === 'tool_use' && b.name === 'hablar'; });
+    if (textoRespuesta.trim() && !usoHablar && typeof responderVoz === 'function') {
+      responderVoz(textoRespuesta.trim());
     }
 
-    _toolLog('[CLAUDE_TOOLS] Completado. Stop: ' + data.stop_reason +
-             ' | Historial: ' + window._scallChatHistory.length + ' mensajes');
+    _toolLog('[CLAUDE_TOOLS] OK — stop:' + data.stop_reason + ' historial:' + window._scallChatHistory.length);
     if (window.scallOrb) window.scallOrb.setState('idle');
 
   } catch (err) {
-    _toolLog('[CLAUDE_TOOLS] Excepción: ' + err.message);
-    // Rollback al snapshot — deshacer cambios al historial
+    _toolLog('[CLAUDE_TOOLS] Excepcion: ' + err.message);
     window._scallChatHistory = histSnapshot.slice(0, -1);
-    if (typeof responderVoz === 'function') responderVoz('No pude conectar con Claude. Revisa tu conexión.');
+    if (typeof responderVoz === 'function') responderVoz('No pude conectar con el servidor.');
     if (window.scallOrb) window.scallOrb.setState('idle');
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// LIMPIAR HISTORIAL DE CONVERSACIÓN
-// ══════════════════════════════════════════════════════════════════════
-
 function limpiarHistorialClaude() {
   window._scallChatHistory = [];
   _toolLog('[CLAUDE_TOOLS] Historial limpiado');
-  if (typeof responderVoz === 'function') responderVoz('Conversación reiniciada.');
+  if (typeof responderVoz === 'function') responderVoz('Conversacion reiniciada.');
 }
 
-// Exponer globalmente
-window.llamarClaudeConTools  = llamarClaudeConTools;
-
-// ── Integración con cumpleanos.js ────────────────────────────────────
-// Exponer función para que claude_tools pueda llenar el formulario
+// Integración cumpleanos.js
 window._scallProgramarCumpleanos = function(data) {
-  var CUMPLE_KEY = 'scall_cumpleanos';
-  var lista = [];
-  try { lista = JSON.parse(localStorage.getItem(CUMPLE_KEY)) || []; } catch(e) {}
-  lista = lista.filter(function(e) {
-    return e.nombre.toLowerCase() !== data.nombre.toLowerCase();
-  });
-  lista.push(data);
-  lista.sort(function(a,b) { return a.mes - b.mes || a.dia - b.dia; });
-  localStorage.setItem(CUMPLE_KEY, JSON.stringify(lista));
-
-  // Abrir modal
   if (typeof abrirModalCumpleanos === 'function') abrirModalCumpleanos();
-
-  // Llenar formulario después de que abra (600ms)
   setTimeout(function() {
-    // Buscar TODOS los inputs del documento que sean del modal
-    var allInputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], select');
-    var found = {};
-
-    allInputs.forEach(function(el) {
-      var id = (el.id || '').toLowerCase();
-      var ph = (el.placeholder || '').toLowerCase();
-      var nm = (el.name || '').toLowerCase();
-
-      // Detectar campo de nombre
-      if (!found.nombre && (id.includes('nombre') || id.includes('name') || ph.includes('nombre') || ph.includes('name'))) {
-        found.nombre = el;
-      }
-      // Detectar campo de día
-      if (!found.dia && (id.includes('dia') || id.includes('day') || (el.type === 'number' && el.min == 1 && el.max == 31))) {
-        found.dia = el;
-      }
-      // Detectar campo de mes
-      if (!found.mes && (id.includes('mes') || id.includes('month') || el.tagName === 'SELECT')) {
-        found.mes = el;
-      }
-      // Detectar campo de año
-      if (!found.anio && (id.includes('anio') || id.includes('ano') || id.includes('year') || (el.type === 'number' && el.min >= 1900))) {
-        found.anio = el;
-      }
+    var inputs = document.querySelectorAll('input, select');
+    inputs.forEach(function(el) {
+      var id = (el.id||'').toLowerCase();
+      var ph = (el.placeholder||'').toLowerCase();
+      if (id.includes('nombre')||ph.includes('nombre')||id.includes('name')||ph.includes('name')) el.value = data.nombre;
+      if (id.includes('dia')||id.includes('day')||(el.type==='number'&&el.min==1&&el.max==31)) el.value = data.dia;
+      if ((id.includes('mes')||id.includes('month'))&&el.tagName==='SELECT') { el.value = data.mes; el.dispatchEvent(new Event('change')); }
+      if ((id.includes('anio')||id.includes('year'))&&data.anio) el.value = data.anio;
     });
-
-    _toolLog('[CUMPLE] Campos encontrados: ' + Object.keys(found).join(', '));
-
-    if (found.nombre) { found.nombre.value = data.nombre; found.nombre.dispatchEvent(new Event('input')); }
-    if (found.dia)    { found.dia.value    = data.dia;    found.dia.dispatchEvent(new Event('input')); }
-    if (found.mes)    { found.mes.value    = data.mes;    found.mes.dispatchEvent(new Event('change')); }
-    if (found.anio && data.anio) { found.anio.value = data.anio; }
-
-    // Llamar función nativa del módulo si existe
-    if (typeof window.agregarCumpleanos === 'function') {
-      window.agregarCumpleanos(data);
-      _toolLog('[CUMPLE] agregarCumpleanos() llamado');
-    } else if (typeof window.guardarCumpleanos === 'function') {
-      window.guardarCumpleanos(data);
-    }
-
-    // Refrescar lista
-    ['renderizarCumpleanos','renderCumpleanos','listarCumpleanos','cargarCumpleanos',
-     'actualizarCumpleanos','refreshCumpleanos'].forEach(function(fn) {
-      if (typeof window[fn] === 'function') { window[fn](); _toolLog('[CUMPLE] ' + fn + '() llamado'); }
+    ['renderizarCumpleanos','renderCumpleanos','cargarCumpleanos'].forEach(function(fn) {
+      if (typeof window[fn] === 'function') window[fn]();
     });
-
   }, 600);
 };
+
+window.llamarClaudeConTools   = llamarClaudeConTools;
 window.limpiarHistorialClaude = limpiarHistorialClaude;
 window.SCALL_TOOLS            = SCALL_TOOLS;
 
 function _toolLog(m) { if (typeof logMessage === 'function') logMessage(m); else console.log(m); }
 
-_toolLog('[CLAUDE_TOOLS] Módulo listo — ' + SCALL_TOOLS.length + ' herramientas registradas');
+_toolLog('[CLAUDE_TOOLS] Modulo listo — ' + SCALL_TOOLS.length + ' herramientas');
 
-} // fin guard _SCALL_CLAUDE_TOOLS_LOADED
+} // fin guard
