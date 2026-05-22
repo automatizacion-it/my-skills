@@ -164,7 +164,30 @@
     <div class="smi-sep"></div>
 
     <button class="side-menu-item" id="smConfig"
-      onclick="sideMenuActivar(this); document.getElementById('configModal').style.display='flex'">
+      onclick="sideMenuActivar(this); document.getElementById('configModal').style.display='flex';
+  // Cargar voz guardada en el select al abrir Config
+  setTimeout(function(){
+    var sel = document.getElementById('elVoiceSelect');
+    var key = document.getElementById('elevenLabsKeyInput');
+    var st  = document.getElementById('elStatus');
+    var vozId = localStorage.getItem('scall_el_voice') || 'VmejBeYhbrcTPwDniox7';
+    var elKey = localStorage.getItem('scall_elevenlabs_key') || '';
+    if (sel) {
+      sel.value = vozId;
+      // Si no existe la opción, forzar selección
+      if (sel.value !== vozId) {
+        var opt = document.createElement('option');
+        opt.value = vozId; opt.text = '🎙 ' + vozId.substring(0,8) + '...';
+        sel.insertBefore(opt, sel.firstChild);
+        sel.value = vozId;
+      }
+    }
+    if (key && elKey) key.value = '';
+    if (st) {
+      var nombre = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : vozId;
+      st.textContent = elKey ? ('✅ Activo — ' + nombre) : '⚠️ Sin API Key';
+    }
+  }, 50);">
       <span class="smi-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="2"/>
@@ -630,7 +653,15 @@
 
           <!-- Selector de voz -->
           <label style="font-size:.6rem;color:var(--text-muted);margin-top:6px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;">Voz</label>
-          <select id="elVoiceSelect" class="alarm-input" onchange="setVozActual(this.value)" style="font-size:.78rem;">
+          <select id="elVoiceSelect" class="alarm-input" style="font-size:.78rem;"
+            onchange="
+              var id = this.value;
+              localStorage.setItem('scall_el_voice', id);
+              if(typeof setVozActual==='function') setVozActual(id);
+              var st=document.getElementById('elStatus');
+              if(st) st.textContent='🎙 Voz ID: '+id.substring(0,12)+'...';
+              console.log('[TTS] Voz seleccionada:', id);
+            ">
             <option value="VmejBeYhbrcTPwDniox7">⭐ SCALL Voice (principal)</option>
             <option value="sM4f2a6lmttmqTug8V7W">👩 Voz Femenina SCALL</option>
             <option value="pqHfZKP75CvOlQylNhV4">🇨🇴 Alejandro — Colombiano</option>
@@ -639,10 +670,18 @@
           </select>
 
           <div style="display:flex;gap:6px;margin-top:4px;">
-            <button class="btn btn-primary" onclick="guardarElevenLabsKey()" style="flex:1;padding:8px;">
+            <button class="btn btn-primary" onclick="
+              var sel=document.getElementById('elVoiceSelect');
+              if(sel && sel.value){ localStorage.setItem('scall_el_voice',sel.value); if(typeof setVozActual==='function') setVozActual(sel.value); }
+              guardarElevenLabsKey();
+            " style="flex:1;padding:8px;">
               Activar voz
             </button>
-            <button onclick="probarVozElevenLabs()" style="flex:1;padding:8px;border-radius:9px;cursor:pointer;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:#a78bfa;font-size:.78rem;">
+            <button onclick="
+              var sel=document.getElementById('elVoiceSelect');
+              if(sel && sel.value){ localStorage.setItem('scall_el_voice',sel.value); if(typeof setVozActual==='function') setVozActual(sel.value); }
+              if(typeof probarVozElevenLabs==='function') probarVozElevenLabs();
+            " style="flex:1;padding:8px;border-radius:9px;cursor:pointer;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:#a78bfa;font-size:.78rem;">
               ▶ Probar
             </button>
           </div>
