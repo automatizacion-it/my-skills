@@ -997,3 +997,102 @@ h1 {
 }
 
 
+
+
+/* ══════════════════════════════════════════════════════════════════
+   MODO ORBE — Solo el orbe, sin paneles laterales
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Transición suave para todo */
+#side-menu,
+#side-status,
+.app-layout {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Modo orbe activado — esconde columnas laterales */
+body.modo-orbe .app-layout {
+  grid-template-columns: 0px 1fr 0px;
+}
+body.modo-orbe #side-menu {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+body.modo-orbe #side-status {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+/* Botón toggle modo orbe — flota sobre el orbe */
+#btn-modo-orbe {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 900;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+#btn-modo-orbe:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.3);
+  color: rgba(0, 212, 255, 0.8);
+  transform: scale(1.1);
+}
+body.modo-orbe #btn-modo-orbe {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.25);
+  color: rgba(0, 212, 255, 0.6);
+}
+
+/* En modo orbe, centrar el orbe perfectamente */
+body.modo-orbe .app-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.modo-orbe .main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+/* Tooltip del botón */
+#btn-modo-orbe::before {
+  content: attr(data-tip);
+  position: absolute;
+  right: 48px;
+  background: rgba(0,0,0,0.8);
+  color: rgba(255,255,255,0.7);
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+#btn-modo-orbe:hover::before {
+  opacity: 1;
+}

@@ -46,6 +46,27 @@
     }
     // Stubs seguros — delegan a la función real SOLO si ya cargó el módulo
     // Nunca se llaman a sí mismos (evita recursión infinita)
+    // ── Modo Orbe — esconder/mostrar paneles laterales ──────────────
+    function toggleModoOrbe() {
+      var activo = document.body.classList.toggle('modo-orbe');
+      localStorage.setItem('scall_modo_orbe', activo ? '1' : '0');
+      var btn = document.getElementById('btn-modo-orbe');
+      if (btn) {
+        btn.textContent  = activo ? '⊟' : '⊞';
+        btn.dataset.tip  = activo ? 'Mostrar paneles' : 'Modo orbe';
+      }
+    }
+    // Restaurar modo al cargar
+    (function() {
+      if (localStorage.getItem('scall_modo_orbe') === '1') {
+        document.body.classList.add('modo-orbe');
+        window.addEventListener('DOMContentLoaded', function() {
+          var btn = document.getElementById('btn-modo-orbe');
+          if (btn) { btn.textContent = '⊟'; btn.dataset.tip = 'Mostrar paneles'; }
+        });
+      }
+    })();
+
     function mostrarPanelRutas() {
       if (typeof window._rutasPanelListo === 'function') window._rutasPanelListo();
       else console.warn('[STUB] rutas.js aún no cargó');
@@ -1080,6 +1101,14 @@
   </aside>
 
   </div><!-- /app-layout -->
+
+  <!-- Toggle modo orbe -->
+  <button id="btn-modo-orbe"
+    data-tip="Mostrar paneles"
+    onclick="toggleModoOrbe()"
+    title="Modo orbe / Mostrar menús">
+    ⊞
+  </button>
 
 </body>
 </html>
