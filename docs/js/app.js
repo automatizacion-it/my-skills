@@ -547,16 +547,33 @@ function logMessage(msg) {
 
 /* ── Guardar config ── */
 function guardarElevenLabsKey() {
-  var key = document.getElementById('elevenLabsKeyInput')?.value?.trim();
+  var key = (document.getElementById('elevenLabsKeyInput')?.value || '').trim();
   var st  = document.getElementById('elStatus');
   if (!key) { if (st) st.textContent = '⚠️ Ingresa tu API Key'; return; }
 
   if (typeof setElevenLabsKey === 'function') {
     setElevenLabsKey(key);
-    // Activar ElevenLabs como voz principal
-    window.responderVoz = window.responderVozEL || window.responderVoz;
-    if (st) st.textContent = '✅ ElevenLabs activo — voz ' + (typeof getVozActual === 'function' ? getVozActual().substring(0,8) : '') + '...';
-    logMessage('[TTS] ✅ ElevenLabs configurado');
+
+    // Sincronizar la voz seleccionada en el select
+    var sel = document.getElementById('elVoiceSelect');
+    if (sel && sel.value && typeof setVozActual === 'function') {
+      setVozActual(sel.value);
+    }
+
+    // Activar ElevenLabs como voz principal de SCALL
+    if (typeof responderVozEL === 'function') {
+      window.responderVoz = responderVozEL;
+    }
+
+    var vozId = typeof getVozActual === 'function' ? getVozActual() : '?';
+    var nombreVoz = vozId;
+    if (typeof ELEVENLABS_VOICES !== 'undefined') {
+      Object.keys(ELEVENLABS_VOICES).forEach(function(k) {
+        if (ELEVENLABS_VOICES[k].id === vozId) nombreVoz = ELEVENLABS_VOICES[k].name;
+      });
+    }
+    if (st) st.textContent = '✅ Activo — voz: ' + nombreVoz;
+    logMessage('[TTS] ✅ ElevenLabs activado — voz: ' + nombreVoz + ' | ' + vozId);
   }
 }
 

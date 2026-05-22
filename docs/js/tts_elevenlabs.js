@@ -108,9 +108,24 @@ function getVozActual() {
 }
 
 function setVozActual(voiceId) {
+  if (!voiceId || voiceId.length < 10) {
+    _ttsLog('[TTS] ⚠️ Voice ID inválido: ' + voiceId);
+    return;
+  }
   localStorage.setItem('scall_el_voice', voiceId);
   EL_VOICE_ID = voiceId;
-  _ttsLog('[TTS] Voz cambiada: ' + voiceId);
+  // Actualizar también el select si está visible
+  var sel = document.getElementById('elVoiceSelect');
+  if (sel) sel.value = voiceId;
+  // Buscar nombre de la voz
+  var nombreVoz = 'Desconocida';
+  Object.keys(ELEVENLABS_VOICES).forEach(function(k) {
+    if (ELEVENLABS_VOICES[k].id === voiceId) nombreVoz = ELEVENLABS_VOICES[k].name;
+  });
+  _ttsLog('[TTS] ✅ Voz seleccionada: ' + nombreVoz + ' | ID: ' + voiceId);
+  // Actualizar status en UI
+  var st = document.getElementById('elStatus');
+  if (st) st.textContent = '🎙 Voz: ' + nombreVoz;
 }
 
 // ── Función principal — reemplaza responderVoz ────────────────────────
@@ -146,7 +161,7 @@ async function hablarConElevenLabs(texto, apiKey) {
   var voiceId = getVozActual();
   var url     = EL_BASE_URL + voiceId + '/stream';
 
-  _ttsLog('[TTS] ElevenLabs → ' + voiceId.substring(0, 8) + '... (' + texto.length + ' chars)');
+  _ttsLog('[TTS] ElevenLabs → voiceId: ' + voiceId + ' (' + texto.length + ' chars)');
 
   var response = await fetch(url, {
     method: 'POST',
@@ -256,11 +271,23 @@ function probarVozElevenLabs(texto) {
   texto = texto || '¡Hola! Soy SCALL, tu asistente personal de IIT. ¿En qué te puedo ayudar, parcero?';
   var key = getElevenLabsKey();
   if (!key) {
-    if (typeof responderVoz === 'function') responderVoz('Configura tu ElevenLabs API Key primero.');
+    alert('Primero activa tu ElevenLabs API Key.');
     return;
   }
-  hablarConElevenLabs(texto, key).catch(function(err) {
+  // Forzar sincronización del select con el ID actual
+  var sel = document.getElementById('elVoiceSelect');
+  if (sel && sel.value) {
+    setVozActual(sel.value);
+  }
+  var vozId  = getVozActual();
+  var st     = document.getElementById('elStatus');
+  if (st) st.textContent = '⏳ Generando audio con voz ' + vozId.substring(0,8) + '...';
+  _ttsLog('[TTS] Probando voz ID: ' + vozId);
+  hablarConElevenLabs(texto, key).then(function() {
+    if (st) st.textContent = '✅ Voz funcionando — ID: ' + vozId;
+  }).catch(function(err) {
     _ttsLog('[TTS] Error prueba: ' + err.message);
+    if (st) st.textContent = '❌ Error: ' + err.message;
     hablarConWebSpeech(texto);
   });
 }
