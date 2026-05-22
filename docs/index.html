@@ -47,25 +47,32 @@
     // Stubs seguros — delegan a la función real SOLO si ya cargó el módulo
     // Nunca se llaman a sí mismos (evita recursión infinita)
     // ── Modo Orbe — esconder/mostrar paneles laterales ──────────────
-    function toggleModoOrbe() {
-      var activo = document.body.classList.toggle('modo-orbe');
-      localStorage.setItem('scall_modo_orbe', activo ? '1' : '0');
-      var btn = document.getElementById('btn-modo-orbe');
-      if (btn) {
-        btn.textContent  = activo ? '⊟' : '⊞';
-        btn.dataset.tip  = activo ? 'Mostrar paneles' : 'Modo orbe';
+    function _aplicarModoOrbe(activo) {
+      var menu   = document.getElementById('side-menu');
+      var status = document.getElementById('side-status');
+      var btn    = document.getElementById('btn-modo-orbe');
+      if (activo) {
+        document.body.classList.add('modo-orbe');
+        if (menu)   { menu.style.display   = 'none'; }
+        if (status) { status.style.display = 'none'; }
+        if (btn)    { btn.textContent = '☰'; btn.title = 'Mostrar menús'; }
+      } else {
+        document.body.classList.remove('modo-orbe');
+        if (menu)   { menu.style.display   = ''; }
+        if (status) { status.style.display = ''; }
+        if (btn)    { btn.textContent = '⊡'; btn.title = 'Solo orbe'; }
       }
     }
-    // Restaurar modo al cargar
-    (function() {
-      if (localStorage.getItem('scall_modo_orbe') === '1') {
-        document.body.classList.add('modo-orbe');
-        window.addEventListener('DOMContentLoaded', function() {
-          var btn = document.getElementById('btn-modo-orbe');
-          if (btn) { btn.textContent = '⊟'; btn.dataset.tip = 'Mostrar paneles'; }
-        });
-      }
-    })();
+    function toggleModoOrbe() {
+      var activo = !document.body.classList.contains('modo-orbe');
+      localStorage.setItem('scall_modo_orbe', activo ? '1' : '0');
+      _aplicarModoOrbe(activo);
+    }
+    // Restaurar modo al cargar página
+    window.addEventListener('DOMContentLoaded', function() {
+      var guardado = localStorage.getItem('scall_modo_orbe');
+      _aplicarModoOrbe(guardado === '1');
+    });
 
     function mostrarPanelRutas() {
       if (typeof window._rutasPanelListo === 'function') window._rutasPanelListo();
