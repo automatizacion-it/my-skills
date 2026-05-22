@@ -546,6 +546,20 @@ function logMessage(msg) {
 }
 
 /* ── Guardar config ── */
+function guardarElevenLabsKey() {
+  var key = document.getElementById('elevenLabsKeyInput')?.value?.trim();
+  var st  = document.getElementById('elStatus');
+  if (!key) { if (st) st.textContent = '⚠️ Ingresa tu API Key'; return; }
+
+  if (typeof setElevenLabsKey === 'function') {
+    setElevenLabsKey(key);
+    // Activar ElevenLabs como voz principal
+    window.responderVoz = window.responderVozEL || window.responderVoz;
+    if (st) st.textContent = '✅ ElevenLabs activo — voz ' + (typeof getVozActual === 'function' ? getVozActual().substring(0,8) : '') + '...';
+    logMessage('[TTS] ✅ ElevenLabs configurado');
+  }
+}
+
 function saveAssistantConfig() {
   const name = document.getElementById('assistantName').value.trim() || 'SCALL';
   localStorage.setItem('assistantName', name);
