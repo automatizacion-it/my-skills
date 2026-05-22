@@ -241,11 +241,14 @@ function ejecutarHerramienta(nombre, input) {
       var btnNav = document.getElementById('smNavegacion');
       if (btnNav && typeof sideMenuActivar === 'function') sideMenuActivar(btnNav);
       if (input.narrar && typeof narrarRutaCompleta === 'function') {
+        // Bloquear voz de Claude — la ruta narara sola, secuencialmente
+        if (typeof bloquearVoz === 'function') bloquearVoz();
         narrarRutaCompleta(input.destino, input.destino);
       } else if (typeof navegarA === 'function') {
         navegarA(input.destino);
       }
-      return { ok: true, mensaje: 'Navegacion hacia ' + input.destino };
+      // Indicar que la narración de ruta maneja la voz
+      return { ok: true, mensaje: 'Navegacion hacia ' + input.destino, voz_manejada: true };
     }
 
     case 'informar_ruta': {
@@ -669,7 +672,13 @@ async function llamarClaudeConTools(texto, nombre) {
     }
 
     var usoHablar = data.content.some(function(b) { return b.type === 'tool_use' && b.name === 'hablar'; });
-    if (textoRespuesta.trim() && !usoHablar && typeof responderVoz === 'function') {
+
+    // Verificar si alguna herramienta ya maneja la voz (ej: navegacion con narrar=true)
+    var vozManejada = toolResults.some(function(tr) {
+      try { return JSON.parse(tr.content).voz_manejada === true; } catch(e) { return false; }
+    });
+
+    if (textoRespuesta.trim() && !usoHablar && !vozManejada && typeof responderVoz === 'function') {
       responderVoz(textoRespuesta.trim());
     }
 

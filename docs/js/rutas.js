@@ -169,7 +169,7 @@ function narrarRutaCompleta(destino, fraseOriginal) {
   var oLat    = getCasaLat();
   var oLng    = getCasaLng();
 
-  // 1. Activar ítem de menú lateral
+  // 1. Activar menú lateral
   if (typeof sideMenuActivar === 'function') {
     var btnNav = document.getElementById('smNavegacion');
     if (btnNav) sideMenuActivar(btnNav);
@@ -183,10 +183,78 @@ function narrarRutaCompleta(destino, fraseOriginal) {
   cargarMapa();
   guardarDestinoRecurrente(destino, oNombre);
 
-  // 3. Anunciar inmediatamente origen y destino
-  _rutaVoz('Iniciando navegación. Origen: ' + oNombre + '. Destino: ' + destino + '.');
+  // 3. Bloquear voz de Claude mientras narramos la ruta
+  // Así Claude no habla encima de la narración
+  if (typeof bloquearVoz === 'function') bloquearVoz();
 
-  // 4. Geocodificar para calcular distancia real
+  // Función interna de voz secuencial — espera a que cada mensaje termine
+  function vozRuta(msg, delayMs) {
+    return new Promise(function(resolve) {
+      setTimeout(function() {
+        // Usar la cola si está disponible, sino directo
+        if (typeof encolarVoz === 'function') {
+          // Insertar al frente de la cola para priorizar la ruta
+          window._colaVozRuta = window._colaVozRuta || [];
+          window._colaVozRuta.push({ msg: msg, resolve: resolve });
+          procesarColaRuta();
+        } else {
+          // Fallback directo
+          if (typeof responderVoz === 'function') responderVoz(msg);
+          setTimeout(resolve, msg.length * 60 + 500);
+        }
+      }, delayMs || 0);
+    });
+  }
+
+  // Procesador secuencial de la cola de ruta
+  function procesarColaRuta() {
+    if (window._rutaNarrando || !window._colaVozRuta || window._colaVozRuta.length === 0) return;
+    window._rutaNarrando = true;
+    var item = window._colaVozRuta.shift();
+    // Mostrar en transcript
+    var transcriptEl = document.getElementById('transcriptText');
+    if (transcriptEl) transcriptEl.innerText = item.msg;
+    if (typeof logMessage === 'function') logMessage('[VOZ-RUTA] "' + item.msg + '"');
+    if (window.scallOrb) window.scallOrb.setState('speaking');
+
+    var key = typeof getElevenLabsKey === 'function' ? getElevenLabsKey() : '';
+    var promesa;
+    if (key && key.length > 10 && typeof hablarConElevenLabs === 'function') {
+      promesa = hablarConElevenLabs(item.msg, key);
+    } else if (typeof hablarConWebSpeechPromise === 'function') {
+      promesa = hablarConWebSpeechPromise(item.msg);
+    } else {
+      // Último fallback
+      if (typeof responderVoz === 'function') responderVoz(item.msg);
+      promesa = new Promise(function(r) { setTimeout(r, item.msg.length * 60 + 500); });
+    }
+
+    promesa.then(function() {
+      item.resolve();
+      window._rutaNarrando = false;
+      if (window._colaVozRuta && window._colaVozRuta.length > 0) {
+        procesarColaRuta();
+      } else {
+        // Narración terminada — desbloquear voz de Claude
+        if (window.scallOrb) window.scallOrb.setState('idle');
+        if (typeof desbloquearVoz === 'function') desbloquearVoz();
+        _rutaLog('[RUTAS] Narración completa terminada');
+      }
+    }).catch(function() {
+      item.resolve();
+      window._rutaNarrando = false;
+      if (typeof desbloquearVoz === 'function') desbloquearVoz();
+    });
+  }
+
+  // Inicializar cola de ruta
+  window._colaVozRuta = [];
+  window._rutaNarrando = false;
+
+  // 4. Mensaje 1: origen y destino (inmediato)
+  vozRuta('Iniciando navegación. Saliendo desde ' + oNombre + ' hacia ' + destino + '.');
+
+  // 5. Geocodificar y encolar mensajes 2 y 3
   geocodificar(destino).then(function(coords) {
     var distKm  = null;
     var minutos = null;
@@ -197,45 +265,32 @@ function narrarRutaCompleta(destino, fraseOriginal) {
       distKm  = calcularDistanciaKm(oLat, oLng, coords.lat, coords.lng);
       minutos = estimarTiempoMin(distKm);
       setEstado('📏 ' + formatearDistancia(distKm) + ' · ⏱ ~' + formatearTiempo(minutos));
-
-      // Guardar intent para uso futuro sin IA
       if (fraseOriginal) guardarIntentRuta(fraseOriginal, destino, distKm, minutos);
       guardarIntentRuta(destino, destino, distKm, minutos);
     }
 
-    // 5. Decir distancia y tiempo (después de 3.5s)
-    setTimeout(function() {
-      if (distKm !== null) {
-        _rutaVoz('Distancia aproximada: ' + formatearDistancia(distKm) +
-                 '. Tiempo estimado en carro: ' + formatearTiempo(minutos) + '.');
-      } else {
-        _rutaVoz('Destino cargado en el mapa. Revisa la ruta en pantalla.');
-      }
-    }, 3500);
+    // Mensaje 2: distancia y tiempo
+    var msg2 = distKm !== null
+      ? 'Distancia aproximada ' + formatearDistancia(distKm) + '. Tiempo estimado en carro ' + formatearTiempo(minutos) + '.'
+      : 'Destino cargado en el mapa. Revisa la ruta en pantalla.';
+    vozRuta(msg2, 400);
 
-    // 6. Novedades del recorrido (después de 7.5s)
-    setTimeout(function() {
-      var novedad = '';
-      if (distKm !== null) {
-        if (distKm < 1.5) {
-          novedad = 'El destino está muy cerca. Puedes llegar caminando en unos ' +
-                    Math.ceil(distKm / 0.083) + ' minutos.';
-        } else if (distKm < 5) {
-          novedad = 'Ruta corta dentro de la ciudad. Tráfico moderado esperado. ' +
-                    'Considera salir con 5 minutos adicionales.';
-        } else if (distKm < 20) {
-          novedad = 'Ruta intermedia en ciudad. En hora pico puede tardar el doble. ' +
-                    'Presiona Abrir Maps para ver el tráfico en tiempo real.';
-        } else if (distKm < 60) {
-          novedad = 'Ruta larga. Verifica el estado de las vías antes de salir. ' +
-                    'Se recomienda tanque lleno y salir fuera de hora pico.';
-        } else {
-          novedad = 'Ruta de largo recorrido. Planifica paradas cada 2 horas. ' +
-                    'Consulta el estado de carreteras antes de salir.';
-        }
+    // Mensaje 3: novedades del recorrido
+    var novedad = '';
+    if (distKm !== null) {
+      if (distKm < 1.5) {
+        novedad = 'El destino está muy cerca, puedes ir caminando en unos ' + Math.ceil(distKm / 0.083) + ' minutos.';
+      } else if (distKm < 5) {
+        novedad = 'Ruta corta en ciudad. Considera salir con 5 minutos adicionales en hora pico.';
+      } else if (distKm < 20) {
+        novedad = 'Ruta intermedia. En hora pico puede tardar el doble. Pulsa Abrir Maps para ver tráfico en tiempo real.';
+      } else if (distKm < 60) {
+        novedad = 'Ruta larga. Verifica el estado de las vías y sal con tanque lleno.';
+      } else {
+        novedad = 'Recorrido largo. Planifica paradas cada dos horas y consulta el estado de carreteras.';
       }
-      if (novedad) _rutaVoz(novedad);
-    }, 7500);
+    }
+    if (novedad) vozRuta(novedad, 400);
   });
 }
 

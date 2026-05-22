@@ -53,10 +53,38 @@ var EL_SETTINGS = {
 };
 
 // ── Estado ────────────────────────────────────────────────────────────
-var audioActual   = null;  // Audio element en reproducción
-var colaVoz       = [];    // Cola de mensajes pendientes
-var reproduciendo = false;
-var usarElevenLabs = false; // se activa si hay key configurada
+var audioActual    = null;   // Audio element en reproducción
+var colaVoz        = [];     // Cola de mensajes pendientes
+var reproduciendo  = false;
+var usarElevenLabs = false;  // se activa si hay key configurada
+var _vocBloqueada  = false;  // bloquea voz mientras ruta narra
+
+// ── Control de cola ───────────────────────────────────────────────────
+function bloquearVoz()    { _vocBloqueada = true;  _ttsLog('[TTS] Voz bloqueada — narración activa'); }
+function desbloquearVoz() { _vocBloqueada = false; _ttsLog('[TTS] Voz desbloqueada'); }
+
+function encolarVoz(mensaje) {
+  colaVoz.push(mensaje);
+  if (!reproduciendo) procesarCola();
+}
+
+async function procesarCola() {
+  if (reproduciendo || colaVoz.length === 0) return;
+  reproduciendo = true;
+  var msg = colaVoz.shift();
+  try {
+    var key = getElevenLabsKey();
+    if (key && key.length > 10) {
+      await hablarConElevenLabs(msg, key);
+    } else {
+      await hablarConWebSpeechPromise(msg);
+    }
+  } catch(e) {
+    await hablarConWebSpeechPromise(msg);
+  }
+  reproduciendo = false;
+  if (colaVoz.length > 0) procesarCola();
+}
 
 // ── Obtener API Key ───────────────────────────────────────────────────
 function getElevenLabsKey() {
@@ -83,28 +111,21 @@ function setVozActual(voiceId) {
 async function responderVozEL(mensaje) {
   if (!mensaje || mensaje.trim().length === 0) return;
 
+  // Si voz bloqueada por narración de ruta — ignorar duplicados de Claude
+  if (_vocBloqueada) {
+    _ttsLog('[TTS] Voz bloqueada — ignorando: "' + mensaje.substring(0,40) + '..."');
+    return;
+  }
+
   // Mostrar en pantalla
   var transcriptEl = document.getElementById('transcriptText');
   if (transcriptEl) transcriptEl.innerText = mensaje;
 
   if (typeof logMessage === 'function') logMessage('[VOZ] "' + mensaje + '"');
-
-  // Orbe modo speaking
   if (window.scallOrb) window.scallOrb.setState('speaking');
 
-  var key = getElevenLabsKey();
-  if (key && key.length > 10) {
-    // ── Usar ElevenLabs ──────────────────────────────────────────────
-    try {
-      await hablarConElevenLabs(mensaje, key);
-      return;
-    } catch (err) {
-      _ttsLog('[TTS] ElevenLabs falló: ' + err.message + ' → fallback Web Speech');
-    }
-  }
-
-  // ── Fallback: Web Speech API ──────────────────────────────────────
-  hablarConWebSpeech(mensaje);
+  // Encolar en lugar de disparar directo
+  encolarVoz(mensaje);
 }
 
 // ── ElevenLabs TTS ────────────────────────────────────────────────────
@@ -178,31 +199,39 @@ async function hablarConElevenLabs(texto, apiKey) {
 var VOCES_ES = ['Microsoft Pablo','Microsoft Jorge','Google español','Diego','Carlos','Jorge'];
 
 function hablarConWebSpeech(mensaje) {
-  window.speechSynthesis.cancel();
-  var speech  = new SpeechSynthesisUtterance(mensaje);
-  speech.lang  = 'es-ES';
-  speech.rate  = 1.0;
-  speech.pitch = 0.85;
+  hablarConWebSpeechPromise(mensaje);
+}
 
-  speech.onend = function() {
-    if (window.scallOrb) window.scallOrb.setState('idle');
-    _ttsLog('[ORBE] 🟢 Voz Web terminada → idle');
-  };
+function hablarConWebSpeechPromise(mensaje) {
+  return new Promise(function(resolve) {
+    window.speechSynthesis.cancel();
+    var speech   = new SpeechSynthesisUtterance(mensaje);
+    speech.lang  = 'es-ES';
+    speech.rate  = 1.0;
+    speech.pitch = 0.85;
 
-  var voces    = window.speechSynthesis.getVoices();
-  var asignar  = function() {
-    var voz = null;
-    for (var n of VOCES_ES) {
-      voz = voces.find(function(v) { return v.name.toLowerCase().includes(n.toLowerCase()); });
-      if (voz) break;
-    }
-    if (!voz) voz = voces.find(function(v) { return v.lang.startsWith('es'); }) || voces[0];
-    if (voz) { speech.voice = voz; _ttsLog('[VOZ] Usando: ' + voz.name); }
-    window.speechSynthesis.speak(speech);
-  };
+    speech.onend = function() {
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      _ttsLog('[ORBE] Voz Web terminada → idle');
+      resolve();
+    };
+    speech.onerror = function() { resolve(); };
 
-  if (voces.length > 0) asignar();
-  else window.speechSynthesis.onvoiceschanged = asignar;
+    var voces   = window.speechSynthesis.getVoices();
+    var asignar = function() {
+      var voz = null;
+      for (var n of VOCES_ES) {
+        voz = voces.find(function(v) { return v.name.toLowerCase().includes(n.toLowerCase()); });
+        if (voz) break;
+      }
+      if (!voz) voz = voces.find(function(v) { return v.lang.startsWith('es'); }) || voces[0];
+      if (voz) { speech.voice = voz; _ttsLog('[VOZ] Usando: ' + voz.name); }
+      window.speechSynthesis.speak(speech);
+    };
+
+    if (voces.length > 0) asignar();
+    else window.speechSynthesis.onvoiceschanged = asignar;
+  });
 }
 
 // ── Detener voz actual ────────────────────────────────────────────────
