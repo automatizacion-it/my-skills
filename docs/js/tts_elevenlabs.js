@@ -19,6 +19,12 @@ var ELEVENLABS_VOICES = {
     name:        'SCALL Voice',
     description: 'Voz principal configurada para SCALL'
   },
+  // Voz femenina SCALL
+  'femenina': {
+    id:          'sM4f2a6lmttmqTug8V7W',
+    name:        'Voz Femenina SCALL',
+    description: 'Voz femenina personalizada para SCALL'
+  },
   // Alejandro colombiano como segunda opción
   'alejandro_co': {
     id:          'pqHfZKP75CvOlQylNhV4', // Alejandro - Colombian-Latino male
