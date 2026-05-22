@@ -920,7 +920,7 @@
       idle:       {color:0x00d4ff,dimColor:0x052030,accentColor:0x00f0ff,rotSpeed:0.0025,pulseAmp:0.0, coreColor:0x001a2e},
       listening:  {color:0x4499ff,dimColor:0x0a1a40,accentColor:0x88ccff,rotSpeed:0.006, pulseAmp:0.06,coreColor:0x001430},
       speaking:   {color:0x9988ff,dimColor:0x1a0a40,accentColor:0xccbbff,rotSpeed:0.012, pulseAmp:0.14,coreColor:0x0d0830},
-      processing: {color:0xffaa44,dimColor:0x2a1400,accentColor:0xffcc88,rotSpeed:0.009, pulseAmp:0.09,coreColor:0x1a0a00},
+      processing: {color:0xffffff,dimColor:0x4a3a00,accentColor:0xffee44,rotSpeed:0.032, pulseAmp:0.55,coreColor:0x5a4400},
     };
     const canvas=document.getElementById('orb-canvas');
     const W=220,H=220,DPR=Math.min(window.devicePixelRatio||1,2);
@@ -1025,7 +1025,7 @@
       meridianLines.forEach((line,i)=>{
         line.material.color.setHex(line._isMain?curColor:curDim);
         const base=line._isMain?0.5:0.15;
-        const boost=isIdle?0:0.28*Math.sin(time*2.5+i*0.45)*curPulse*4;
+        const boost=isIdle?0:(currentKey==='processing'?1.8:0.28)*Math.sin(time*2.5+i*0.45)*curPulse*4;
         line.material.opacity=Math.max(0.04,Math.min(0.95,base+boost));
       });
       parallelLines.forEach((line,i)=>{
@@ -1048,7 +1048,7 @@
       dotMeshes.forEach((d,i)=>{
         d.material.color.setHex(curColor);
         let op=0.45+0.3*Math.sin(time*1.8+i*0.35);
-        if(!isIdle)op+=curPulse*Math.sin(time*3+i*0.5)*0.5;
+        if(!isIdle)op+=curPulse*Math.sin(time*(currentKey==='processing'?6:3)+i*0.5)*(currentKey==='processing'?1.2:0.5);
         d.material.opacity=Math.max(0.08,Math.min(0.95,op));
       });
       poleMat.color.setHex(curColor);
