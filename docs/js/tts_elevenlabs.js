@@ -13,7 +13,13 @@ window._SCALL_TTS_LOADED = true;
 // IDs de ElevenLabs — voces en español colombiano/latino
 // Para encontrar más: https://api.elevenlabs.io/v1/voices
 var ELEVENLABS_VOICES = {
-  // Voz principal SCALL — Alejandro colombiano, expresivo y cálido
+  // Voz principal SCALL — personalizada por el usuario
+  'scall_principal': {
+    id:          'VmejBeYhbrcTPwDniox7', // Voz personalizada SCALL
+    name:        'SCALL Voice',
+    description: 'Voz principal configurada para SCALL'
+  },
+  // Alejandro colombiano como segunda opción
   'alejandro_co': {
     id:          'pqHfZKP75CvOlQylNhV4', // Alejandro - Colombian-Latino male
     name:        'Alejandro (Colombia)',
@@ -35,7 +41,7 @@ var ELEVENLABS_VOICES = {
 
 // Modelo de ElevenLabs — eleven_multilingual_v2 es el mejor para español
 var EL_MODEL    = 'eleven_multilingual_v2';
-var EL_VOICE_ID = ELEVENLABS_VOICES['alejandro_co'].id;
+var EL_VOICE_ID = ELEVENLABS_VOICES['scall_principal'].id;
 var EL_BASE_URL = 'https://api.elevenlabs.io/v1/text-to-speech/';
 
 // Configuración de voz — ajustar a gusto
