@@ -19,11 +19,16 @@ var ELEVENLABS_VOICES = {
     name:        'SCALL Voice',
     description: 'Voz principal configurada para SCALL'
   },
-  // Voz femenina SCALL
-  'femenina': {
-    id:          'sM4f2a6lmttmqTug8V7W',
-    name:        'Voz Femenina SCALL',
-    description: 'Voz femenina personalizada para SCALL'
+  // Voces femeninas — disponibles en plan gratuito
+  'ligia': {
+    id:          'Xb7hH8MSUJpSbSDYk0k2',
+    name:        'Ligia Mendez (Española)',
+    description: 'Mujer madura, clara y calmada'
+  },
+  'lourdes': {
+    id:          'pFZP5JQG7iQjIQuC4Bku',
+    name:        'Lourdes (Latina)',
+    description: 'Femenina, cálida y natural'
   },
   // Alejandro colombiano como segunda opción
   'alejandro_co': {
