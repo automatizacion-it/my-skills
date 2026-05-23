@@ -851,6 +851,58 @@ async function ejecutarHabilidad(texto) {
     }
   }
 
+  // ── Intents modo orbe ────────────────────────────────────────────
+  const ORBE_INTENTS = [
+    {
+      name: 'orbe_ocultar',
+      match: function(c) {
+        return (c.includes('solo orbe') || c.includes('oculta') || c.includes('esconde') ||
+                c.includes('esconder') || c.includes('ocultar') || c.includes('modo orbe') ||
+                c.includes('pantalla limpia') || c.includes('quita los menu') ||
+                c.includes('quitar menu') || c.includes('sin menu')) &&
+               (!c.includes('muestra') && !c.includes('mostrar'));
+      },
+      action: function() {
+        var menu   = document.getElementById('side-menu');
+        var status = document.getElementById('side-status');
+        var btn    = document.getElementById('btn-modo-orbe');
+        if (menu)   menu.style.setProperty('display','none','important');
+        if (status) status.style.setProperty('display','none','important');
+        if (btn)    btn.innerHTML = '&#9776;';
+        localStorage.setItem('scall_modo_orbe','1');
+        if (typeof responderVoz === 'function') responderVoz('Listo, menús ocultos. Solo el orbe.');
+      }
+    },
+    {
+      name: 'orbe_mostrar',
+      match: function(c) {
+        return (c.includes('muestra') || c.includes('mostrar') || c.includes('vuelve') ||
+                c.includes('regresa') || c.includes('activa') || c.includes('abre')) &&
+               (c.includes('menu') || c.includes('panel') || c.includes('lateral') ||
+                c.includes('todo') || c.includes('normal'));
+      },
+      action: function() {
+        var menu   = document.getElementById('side-menu');
+        var status = document.getElementById('side-status');
+        var btn    = document.getElementById('btn-modo-orbe');
+        if (menu)   menu.style.removeProperty('display');
+        if (status) status.style.removeProperty('display');
+        if (btn)    btn.innerHTML = '&#8861;';
+        localStorage.setItem('scall_modo_orbe','0');
+        if (typeof responderVoz === 'function') responderVoz('Menús visibles de nuevo.');
+      }
+    }
+  ];
+
+  for (var ob = 0; ob < ORBE_INTENTS.length; ob++) {
+    if (ORBE_INTENTS[ob].match(comandoLower)) {
+      logMessage('[Intent ORBE] → [' + ORBE_INTENTS[ob].name + ']');
+      ORBE_INTENTS[ob].action(comandoLower);
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      return;
+    }
+  }
+
   for (var si = 0; si < SCALL_IDENTITY_INTENTS.length; si++) {
     if (SCALL_IDENTITY_INTENTS[si].match(comandoLower)) {
       logMessage('[Intent SCALL] → [' + SCALL_IDENTITY_INTENTS[si].name + ']');
