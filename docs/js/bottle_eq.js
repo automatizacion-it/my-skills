@@ -266,53 +266,110 @@ function dibujarBotella(ctx, bot, W, H, energy) {
   ctx.fillStyle=refGrad;
   ctx.beginPath(); ctx.ellipse(cx,baseY+5,bw*0.55,10,0,0,Math.PI*2); ctx.fill();
 
-  // ── DIFUSOR DE AROMA ────────────────────────────────────────────
-  // Vapor suave que sube en espirales — como difusor de esencia
-  var numVapor = Math.floor(3 + energy * 6);
-  for (var vp=0; vp<numVapor; vp++) {
-    var vpSeed    = vp * 1.618 + cx * 0.01;
-    var vpProg    = ((beqT * 0.30 + vpSeed) % 1);
-    var vpHeight  = 55 + energy * 75;
-    // Espiral suave: oscila más conforme sube
-    var vpX2 = cx + Math.sin(beqT*0.9 + vpSeed*2.8) * (3 + vpProg*14) +
-                    Math.cos(beqT*1.3 + vpSeed*1.4) * (2 + vpProg*6);
-    var vpY2 = topY - vpProg * vpHeight;
-    var vpRad = (1.5 + vpProg * 22) * (0.2 + energy*0.8);
-    var vpA   = (1 - vpProg) * (0.09 + energy*0.08);
-    if (vpA < 0.004 || vpRad < 0.5) continue;
+  // ── NUBE DE AROMA — humo suave bañado por la aurora boreal ────────
+  var aromaLevel = Math.max(0, energy - 0.06);
 
-    // Color casi blanco con tinte del aceite
-    var vR = Math.min(255, Math.round(bot.col[0]*0.35 + 175));
-    var vG = Math.min(255, Math.round(bot.col[1]*0.35 + 175));
-    var vB = Math.min(255, Math.round(bot.col[2]*0.35 + 175));
-
-    ctx.save();
-    ctx.globalAlpha = vpA;
-    ctx.shadowColor = 'rgba('+vR+','+vG+','+vB+',0.35)';
-    ctx.shadowBlur  = vpRad * 1.2;
-    ctx.fillStyle   = 'rgba('+vR+','+vG+','+vB+','+vpA+')';
-    ctx.beginPath(); ctx.arc(vpX2, vpY2, Math.max(0.5, vpRad), 0, Math.PI*2); ctx.fill();
-    ctx.restore();
+  // Inicializar partículas de humo persistentes por botella
+  if (!bot.smokeParticles) {
+    bot.smokeParticles = [];
+    for (var spi=0; spi<22; spi++) {
+      bot.smokeParticles.push({
+        x: cx, y: topY,
+        age:  Math.random(),
+        vx:  (Math.random()-0.5)*0.3,
+        vy:  -(Math.random()*0.5+0.2),
+        r:    Math.random()*8+4,
+        seed: Math.random()*100,
+        auroraIdx: Math.floor(Math.random()*5)
+      });
+    }
   }
 
-  // Halo de difusión en la boca — pulso suave que se expande
-  var haloProg = (beqT * 1.2 + cx*0.005) % 1;
-  var haloA    = (1 - haloProg) * (0.08 + energy*0.1);
-  var haloR    = neck/2 + haloProg * (10 + energy*18);
-  if (haloA > 0.004) {
-    ctx.save();
-    ctx.globalAlpha = haloA;
-    ctx.strokeStyle = 'rgba('+
-      Math.min(255,Math.round(bot.col[0]*0.4+160))+','+
-      Math.min(255,Math.round(bot.col[1]*0.4+160))+','+
-      Math.min(255,Math.round(bot.col[2]*0.4+160))+',1)';
-    ctx.lineWidth   = 1;
-    ctx.shadowColor = 'rgba('+bot.col[0]+','+bot.col[1]+','+bot.col[2]+',0.4)';
-    ctx.shadowBlur  = 5 + energy*7;
-    ctx.beginPath();
-    ctx.ellipse(cx, topY - 4, Math.max(1,haloR), Math.max(0.3,haloR*0.3), 0, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.restore();
+  // Colores de la aurora que tiñen el humo
+  var ASMT = [[0,210,140],[0,180,220],[80,60,200],[0,220,180],[140,60,220]];
+
+  if (aromaLevel > 0) {
+    bot.smokeParticles.forEach(function(sp) {
+      // Envejecer — más rápido cuanta más energía
+      sp.age += 0.003 + aromaLevel * 0.014;
+
+      if (sp.age >= 1) {
+        // Renacer en la boca del tapón
+        sp.x    = cx + (Math.random()-0.5) * neck * 0.7;
+        sp.y    = topY - 2;
+        sp.age  = 0;
+        sp.vx   = (Math.random()-0.5) * 0.5;
+        sp.vy   = -(Math.random()*0.4 + 0.15 + aromaLevel*0.45);
+        sp.r    = Math.random()*7 + 4;
+        sp.seed = Math.random()*100;
+        sp.auroraIdx = Math.floor(Math.random()*5);
+      }
+
+      // Física: sube, deriva y oscila suavemente
+      sp.x  += sp.vx + Math.sin(beqT*0.6 + sp.seed + sp.age*2.5) * (0.5 + aromaLevel*0.8);
+      sp.y  += sp.vy * (1 + aromaLevel*0.6);
+      sp.vx *= 0.993;
+      sp.r  += 0.18 + aromaLevel*0.28; // crece al subir
+
+      // Opacidad: nace, alcanza pico, desaparece suavemente
+      var lifeA = sp.age < 0.12
+        ? sp.age / 0.12
+        : 1 - ((sp.age - 0.12) / 0.88);
+      var baseA = lifeA * (0.055 + aromaLevel * 0.095);
+      if (baseA < 0.003 || sp.r < 1) return;
+
+      // Color: blanco casi puro + tinte aurora según qué tan alto está
+      // El humo cambia de color conforme sube — como si la aurora lo coloreara
+      var heightRatio = Math.max(0, Math.min(1, (topY - sp.y) / (bh * 0.6)));
+      var ai2 = Math.floor(heightRatio * ASMT.length);
+      ai2 = Math.min(ASMT.length-1, ai2);
+      var ac = ASMT[ai2];
+
+      // Humo blanco teñido muy suavemente por la aurora
+      var sR = Math.min(255, Math.round(218 + ac[0]*0.06));
+      var sG = Math.min(255, Math.round(222 + ac[1]*0.06));
+      var sB = Math.min(255, Math.round(228 + ac[2]*0.06));
+
+      // Gradiente radial — difuminado suave como humo real
+      var sg = ctx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, sp.r);
+      sg.addColorStop(0,   'rgba('+sR+','+sG+','+sB+','+baseA+')');
+      sg.addColorStop(0.45,'rgba('+sR+','+sG+','+sB+','+(baseA*0.5)+')');
+      sg.addColorStop(1,   'rgba('+sR+','+sG+','+sB+',0)');
+
+      ctx.save();
+      // Reflejo sutil del color de la aurora en el humo
+      ctx.shadowColor = 'rgba('+ac[0]+','+ac[1]+','+ac[2]+','+( baseA*0.8 )+')';
+      ctx.shadowBlur  = sp.r * 0.9;
+      ctx.fillStyle   = sg;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+  } else {
+    // Sin energía — detener las partículas
+    if (bot.smokeParticles) {
+      bot.smokeParticles.forEach(function(sp) { sp.age = 1; });
+    }
+  }
+
+  // Halo suave en la boca — el punto de salida del aroma
+  if (aromaLevel > 0.02) {
+    var haloProg = (beqT * 0.85 + cx*0.004) % 1;
+    var haloA    = (1 - haloProg) * aromaLevel * 0.12;
+    var haloRad  = neck/2 + haloProg * (5 + aromaLevel*10);
+    if (haloA > 0.003) {
+      ctx.save();
+      ctx.globalAlpha = haloA;
+      ctx.strokeStyle = 'rgba(220,232,245,1)';
+      ctx.lineWidth   = 0.7;
+      ctx.shadowColor = 'rgba('+bot.col[0]+','+bot.col[1]+','+bot.col[2]+',0.4)';
+      ctx.shadowBlur  = 4 + aromaLevel*5;
+      ctx.beginPath();
+      ctx.ellipse(cx, topY-3, Math.max(1,haloRad), Math.max(0.3,haloRad*0.25), 0, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // Labels
