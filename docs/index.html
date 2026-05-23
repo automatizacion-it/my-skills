@@ -219,7 +219,19 @@
       <span class="smi-label">Config</span>
     </button>
 
+    <button class="side-menu-item" id="smBottleEQ"
+      onclick="sideMenuActivar(this); toggleBEQ()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3h6M8 3l-1 5H4l1 10a2 2 0 002 2h10a2 2 0 002-2l1-10h-3L16 3"/>
+          <path d="M8 12q2 3 8 0"/>
+        </svg>
+      </span>
+      <span class="smi-label">Botellas</span>
+    </button>
+
     <button class="side-menu-item" id="smViz"
+
       onclick="sideMenuActivar(this); toggleViz()">
       <span class="smi-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -798,6 +810,7 @@
   <script src="js/sismos.js"></script>        <!-- Monitoreo sísmico en tiempo real -->
   <script src="js/equalizer.js"></script>        <!-- Ecualizador neural -->
   <script src="js/visualizer.js"></script>       <!-- Human Visualizer -->
+  <script src="js/bottle_eq.js"></script>        <!-- Bottle Equalizer -->
   <script src="js/tts_elevenlabs.js"></script>   <!-- ElevenLabs TTS — voz expresiva -->
   <script src="js/claude_tools.js"></script>  <!-- Claude Tool Use — acceso a módulos -->
   <!-- 7. Motor principal -->

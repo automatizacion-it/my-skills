@@ -637,6 +637,17 @@ async function ejecutarHabilidad(texto) {
   // ── ORBE PRIMERO — antes que cualquier otro intent ─────────────────
   // ── EQ por voz ───────────────────────────────────────────────────
   // ── Visualizer por voz ──────────────────────────────────────────
+  // ── Bottle EQ por voz ──────────────────────────────────────────
+  if ((comandoLower.includes('botella') || comandoLower.includes('aceite') ||
+       comandoLower.includes('escarcha') || comandoLower.includes('lampara') ||
+       (comandoLower.includes('ecualiz') && comandoLower.includes('botell'))) &&
+      typeof toggleBEQ === 'function') {
+    toggleBEQ();
+    if (typeof responderVoz === 'function') responderVoz('Abriendo el ecualizador de botellas.');
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
   if ((comandoLower.includes('visualiz') || comandoLower.includes('figuras') ||
        comandoLower.includes('bailar') || comandoLower.includes('personas') ||
        (comandoLower.includes('show') && comandoLower.includes('music')) ||
