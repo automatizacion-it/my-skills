@@ -219,7 +219,25 @@
       <span class="smi-label">Config</span>
     </button>
 
+    <button class="side-menu-item" id="smEQ"
+      onclick="sideMenuActivar(this); toggleEQ()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4"  y1="8"  x2="4"  y2="16"/>
+          <line x1="9"  y1="5"  x2="9"  y2="19"/>
+          <line x1="14" y1="9"  x2="14" y2="15"/>
+          <line x1="19" y1="3"  x2="19" y2="21"/>
+          <line x1="2"  y1="12" x2="6"  y2="12"/>
+          <line x1="7"  y1="12" x2="11" y2="12"/>
+          <line x1="12" y1="12" x2="16" y2="12"/>
+          <line x1="17" y1="12" x2="21" y2="12"/>
+        </svg>
+      </span>
+      <span class="smi-label">Ecualiz.</span>
+    </button>
+
     <button class="side-menu-item" id="smColombia"
+
       onclick="sideMenuActivar(this); abrirPanelColombia()">
       <span class="smi-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -760,6 +778,7 @@
   <script src="js/bluetooth.js"></script>    <!-- Bluetooth + amplificador -->
   <script src="js/colombia.js"></script>       <!-- Módulo Colombia mis 10 cosas -->
   <script src="js/sismos.js"></script>        <!-- Monitoreo sísmico en tiempo real -->
+  <script src="js/equalizer.js"></script>        <!-- Ecualizador neural -->
   <script src="js/tts_elevenlabs.js"></script>   <!-- ElevenLabs TTS — voz expresiva -->
   <script src="js/claude_tools.js"></script>  <!-- Claude Tool Use — acceso a módulos -->
   <!-- 7. Motor principal -->

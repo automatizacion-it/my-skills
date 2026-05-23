@@ -635,6 +635,17 @@ async function ejecutarHabilidad(texto) {
   // ══════════════════════════════════════════════════════════════
   const comandoLower = texto.toLowerCase();
   // ── ORBE PRIMERO — antes que cualquier otro intent ─────────────────
+  // ── EQ por voz ───────────────────────────────────────────────────
+  if ((comandoLower.includes('ecualiz') || comandoLower.includes('equaliz') ||
+       comandoLower.includes('neural') || comandoLower.includes('frecuencia') ||
+       (comandoLower.includes('musica') && comandoLower.includes('visual'))) &&
+      typeof toggleEQ === 'function') {
+    toggleEQ();
+    if (typeof responderVoz === 'function') responderVoz('Abriendo ecualizador neural.');
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
   var _oc = comandoLower;
   var _esOcultar = (_oc.includes('solo orbe') || _oc.includes('modo orbe') ||
                     _oc.includes('pantalla limpia') || _oc.includes('sin menu') ||
