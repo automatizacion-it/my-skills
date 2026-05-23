@@ -266,6 +266,55 @@ function dibujarBotella(ctx, bot, W, H, energy) {
   ctx.fillStyle=refGrad;
   ctx.beginPath(); ctx.ellipse(cx,baseY+5,bw*0.55,10,0,0,Math.PI*2); ctx.fill();
 
+  // ── DIFUSOR DE AROMA ────────────────────────────────────────────
+  // Vapor suave que sube en espirales — como difusor de esencia
+  var numVapor = Math.floor(3 + energy * 6);
+  for (var vp=0; vp<numVapor; vp++) {
+    var vpSeed    = vp * 1.618 + cx * 0.01;
+    var vpProg    = ((beqT * 0.30 + vpSeed) % 1);
+    var vpHeight  = 55 + energy * 75;
+    // Espiral suave: oscila más conforme sube
+    var vpX2 = cx + Math.sin(beqT*0.9 + vpSeed*2.8) * (3 + vpProg*14) +
+                    Math.cos(beqT*1.3 + vpSeed*1.4) * (2 + vpProg*6);
+    var vpY2 = topY - vpProg * vpHeight;
+    var vpRad = (1.5 + vpProg * 22) * (0.2 + energy*0.8);
+    var vpA   = (1 - vpProg) * (0.09 + energy*0.08);
+    if (vpA < 0.004 || vpRad < 0.5) continue;
+
+    // Color casi blanco con tinte del aceite
+    var vR = Math.min(255, Math.round(bot.col[0]*0.35 + 175));
+    var vG = Math.min(255, Math.round(bot.col[1]*0.35 + 175));
+    var vB = Math.min(255, Math.round(bot.col[2]*0.35 + 175));
+
+    ctx.save();
+    ctx.globalAlpha = vpA;
+    ctx.shadowColor = 'rgba('+vR+','+vG+','+vB+',0.35)';
+    ctx.shadowBlur  = vpRad * 1.2;
+    ctx.fillStyle   = 'rgba('+vR+','+vG+','+vB+','+vpA+')';
+    ctx.beginPath(); ctx.arc(vpX2, vpY2, Math.max(0.5, vpRad), 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Halo de difusión en la boca — pulso suave que se expande
+  var haloProg = (beqT * 1.2 + cx*0.005) % 1;
+  var haloA    = (1 - haloProg) * (0.08 + energy*0.1);
+  var haloR    = neck/2 + haloProg * (10 + energy*18);
+  if (haloA > 0.004) {
+    ctx.save();
+    ctx.globalAlpha = haloA;
+    ctx.strokeStyle = 'rgba('+
+      Math.min(255,Math.round(bot.col[0]*0.4+160))+','+
+      Math.min(255,Math.round(bot.col[1]*0.4+160))+','+
+      Math.min(255,Math.round(bot.col[2]*0.4+160))+',1)';
+    ctx.lineWidth   = 1;
+    ctx.shadowColor = 'rgba('+bot.col[0]+','+bot.col[1]+','+bot.col[2]+',0.4)';
+    ctx.shadowBlur  = 5 + energy*7;
+    ctx.beginPath();
+    ctx.ellipse(cx, topY - 4, Math.max(1,haloR), Math.max(0.3,haloR*0.3), 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // Labels
   ctx.fillStyle='rgba(255,255,255,.5)';
   ctx.font='bold '+Math.max(9,bw*0.18)+'px monospace';
@@ -457,15 +506,91 @@ function iniciarBEQ() {
       ctx.fillStyle=glow; ctx.fillRect(0,0,W2,H2);
     });
 
-    // Partículas ambientales
-    for(var pi=0;pi<6;pi++){
-      var px2=(Math.sin(beqT*.2+pi*.8)*.4+.5)*W2;
-      var py2=(Math.cos(beqT*.15+pi*1.1)*.3+.35)*H2;
-      ctx.globalAlpha=.12+beqSmooth.energy*.18;
-      ctx.fillStyle='hsl('+(pi*60+beqT*20)%360+',100%,70%)';
-      ctx.beginPath(); ctx.arc(px2,py2,1+beqSmooth.energy*2,0,Math.PI*2); ctx.fill();
+    // ── AURORA BOREAL DE FONDO ──────────────────────────────────────
+    var ae = 0.4 + beqSmooth.energy*0.5 + beqSmooth.bass*0.2;
+
+    // Estrellas fijas
+    if (!beqPanel._stars) {
+      beqPanel._stars = [];
+      for (var si=0; si<100; si++) {
+        beqPanel._stars.push({
+          x: Math.random()*W2, y: Math.random()*H2*0.82,
+          r: Math.random()*1.1+0.2, tw: Math.random()*5+2, ph: Math.random()*Math.PI*2
+        });
+      }
     }
-    ctx.globalAlpha=1;
+    beqPanel._stars.forEach(function(st) {
+      ctx.globalAlpha = 0.35 + Math.sin(beqT*st.tw+st.ph)*0.3 + beqSmooth.energy*0.15;
+      ctx.fillStyle   = '#fff';
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // 5 bandas de aurora — colores fríos y suaves
+    var AURORA = [
+      [0,210,140],   // verde menta
+      [0,180,220],   // azul hielo
+      [80,60,200],   // índigo
+      [0,220,180],   // turquesa
+      [140,60,220]   // lila suave
+    ];
+    AURORA.forEach(function(col, ai) {
+      var bandY  = H2*(0.06 + ai*0.1);
+      var bandH  = H2*(0.16 + beqSmooth.mid*0.1 + ai*0.02);
+      var ph2    = ai*1.3 + beqT*(0.1 + ai*0.03);
+      var alpha2 = (0.07 + beqSmooth.energy*0.12 + Math.sin(beqT*0.25+ai*0.9)*0.04) * ae;
+
+      for (var xi=0; xi<W2; xi+=3) {
+        var nx2  = xi/W2;
+        var wave =
+          Math.sin(nx2*3.8 + ph2)*0.5 +
+          Math.sin(nx2*6.5 + ph2*1.2 + ai)*0.25 +
+          Math.sin(nx2*11  + ph2*0.6)*0.15 +
+          Math.sin(nx2*1.8 + beqT*0.4)*beqSmooth.bass*0.25;
+
+        var tY  = bandY + wave*28*ae;
+        var bY2 = tY + bandH*(0.5 + Math.sin(nx2*2.8+ph2)*0.25 + beqSmooth.mid*0.25);
+        var lA  = alpha2*(0.4 + Math.sin(nx2*4.5+ph2)*0.4);
+
+        var lg = ctx.createLinearGradient(0, tY, 0, bY2);
+        lg.addColorStop(0,'rgba('+col[0]+','+col[1]+','+col[2]+',0)');
+        lg.addColorStop(0.3,'rgba('+col[0]+','+col[1]+','+col[2]+','+lA.toFixed(3)+')');
+        lg.addColorStop(0.65,'rgba('+col[0]+','+col[1]+','+col[2]+','+(lA*0.55).toFixed(3)+')');
+        lg.addColorStop(1,'rgba('+col[0]+','+col[1]+','+col[2]+',0)');
+        ctx.fillStyle = lg;
+        ctx.fillRect(xi, tY, 3, Math.max(1, bY2-tY));
+      }
+    });
+
+    // Resplandor central suave
+    var gA = 0.025 + beqSmooth.energy*0.04;
+    var grd = ctx.createRadialGradient(W2/2, H2*0.28, 0, W2/2, H2*0.28, W2*0.65);
+    grd.addColorStop(0,'rgba(0,200,140,'+gA.toFixed(3)+')');
+    grd.addColorStop(0.5,'rgba(60,40,180,'+(gA*0.5).toFixed(3)+')');
+    grd.addColorStop(1,'transparent');
+    ctx.fillStyle = grd; ctx.fillRect(0,0,W2,H2);
+
+    // Partículas de nieve — sutiles
+    if (!beqPanel._snow) {
+      beqPanel._snow = [];
+      for (var pi2=0; pi2<30; pi2++) {
+        beqPanel._snow.push({
+          x:Math.random()*W2, y:Math.random()*H2,
+          vx:(Math.random()-.5)*.25, vy:Math.random()*.35+0.08,
+          r:Math.random()*1.2+0.2, ph:Math.random()*Math.PI*2
+        });
+      }
+    }
+    beqPanel._snow.forEach(function(p) {
+      p.x += p.vx + Math.sin(beqT*0.4+p.ph)*0.3;
+      p.y += p.vy + beqSmooth.energy*0.2;
+      if (p.y > H2) { p.y = -4; p.x = Math.random()*W2; }
+      if (p.x < 0) p.x = W2; if (p.x > W2) p.x = 0;
+      ctx.globalAlpha = 0.25 + beqSmooth.air*0.2;
+      ctx.fillStyle   = 'rgba(200,240,255,0.75)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
 
     // Botellas
     BEQ_BOTTLES.forEach(function(b){
