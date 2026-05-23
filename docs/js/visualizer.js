@@ -204,24 +204,42 @@ function drawFigura(ctx, W, H, cx, cy, scale, phase, hue, energy, modo) {
 function crearPanelViz() {
   vizPanel = document.createElement('div');
   vizPanel.id = 'scall-viz-panel';
+  // Posición inicial: esquina superior derecha sin tapar el orbe
+  var _vizLeft = window.innerWidth  - 580;
+  var _vizTop  = 60;
+  var _vizW    = 520;
+
   vizPanel.style.cssText = [
-    'position:fixed','top:50px','left:50%','transform:translateX(-50%)',
-    'width:560px','max-width:98vw',
+    'position:fixed',
+    'top:'  + _vizTop  + 'px',
+    'left:' + _vizLeft + 'px',
+    'width:' + _vizW + 'px',
+    'min-width:300px',
+    'min-height:200px',
     'background:#000',
-    'border:1px solid rgba(0,212,255,0.15)',
+    'border:1px solid rgba(0,212,255,0.18)',
     'border-radius:18px',
     'box-shadow:0 0 80px rgba(0,212,255,0.06),0 30px 80px rgba(0,0,0,0.9)',
     'z-index:2500',
     'display:none','flex-direction:column',
-    'overflow:hidden'
+    'overflow:hidden',
+    'resize:both'
   ].join(';');
 
   vizPanel.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;' +
-    'padding:10px 16px 8px;background:rgba(0,0,0,.5);">' +
-      '<span style="font-size:10px;letter-spacing:.18em;color:rgba(0,212,255,.45);font-family:DM Mono,monospace;">SCALL — HUMAN VISUALIZER</span>' +
-      '<button onclick="cerrarViz()" style="background:transparent;border:1px solid rgba(255,255,255,.1);' +
-        'color:rgba(255,255,255,.35);width:26px;height:26px;border-radius:7px;cursor:pointer;">✕</button>' +
+    '<div id="viz-drag-bar" style="display:flex;align-items:center;justify-content:space-between;' +
+    'padding:8px 12px;background:rgba(0,0,0,.7);cursor:grab;user-select:none;flex-shrink:0;">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="font-size:9px;color:rgba(0,212,255,.25);letter-spacing:.06em;">⣿</span>' +
+        '<span style="font-size:10px;letter-spacing:.16em;color:rgba(0,212,255,.45);font-family:DM Mono,monospace;">SCALL — HUMAN VISUALIZER</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:5px;align-items:center;">' +
+        '<button onclick="vizResize(&quot;sm&quot;)"  title="Pequeno"  style="' + vizIconBtn() + '">&#9633;</button>' +
+        '<button onclick="vizResize(&quot;md&quot;)"  title="Mediano"  style="' + vizIconBtn() + '">&#9632;</button>' +
+        '<button onclick="vizResize(&quot;lg&quot;)"  title="Grande"   style="' + vizIconBtn() + '">&#x26F6;</button>' +
+        '<button onclick="cerrarViz()" style="background:transparent;border:1px solid rgba(255,255,255,.1);' +
+          'color:rgba(255,255,255,.35);width:26px;height:26px;border-radius:7px;cursor:pointer;font-size:14px;">✕</button>' +
+      '</div>' +
     '</div>' +
     '<canvas id="viz-main-c" style="width:100%;display:block;"></canvas>' +
     '<div style="display:flex;gap:6px;padding:8px 14px;background:rgba(0,0,0,.6);flex-wrap:wrap;">' +
@@ -234,6 +252,78 @@ function crearPanelViz() {
     '</div>';
 
   document.body.appendChild(vizPanel);
+}
+
+function vizIconBtn() {
+  return 'background:transparent;border:1px solid rgba(255,255,255,.08);' +
+         'color:rgba(255,255,255,.3);width:24px;height:24px;border-radius:6px;' +
+         'cursor:pointer;font-size:13px;font-family:monospace;line-height:1;padding:0;';
+}
+
+function vizResize(size) {
+  if (!vizPanel) return;
+  var w, h;
+  if (size === 'sm') { w = 340; h = 260; }
+  if (size === 'md') { w = 520; h = 380; }
+  if (size === 'lg') { w = Math.min(860, window.innerWidth-40); h = Math.min(600, window.innerHeight-80); }
+  vizPanel.style.width  = w + 'px';
+  // Centrar horizontalmente al cambiar tamaño
+  var left = Math.max(10, (window.innerWidth - w) / 2);
+  vizPanel.style.left = left + 'px';
+  // Reiniciar canvas con nuevo tamaño
+  setTimeout(function() {
+    if (vizVisible) { detenerVizAnim(); iniciarViz(); }
+  }, 50);
+}
+
+function vizActivarDrag(panel) {
+  var bar = document.getElementById('viz-drag-bar');
+  if (!bar) return;
+  var dx = 0, dy = 0, dragging = false;
+
+  bar.addEventListener('mousedown', function(e) {
+    dragging = true;
+    dx = e.clientX - panel.getBoundingClientRect().left;
+    dy = e.clientY - panel.getBoundingClientRect().top;
+    bar.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var newLeft = e.clientX - dx;
+    var newTop  = e.clientY - dy;
+    // Límites de pantalla
+    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth  - panel.offsetWidth));
+    newTop  = Math.max(0, Math.min(newTop,  window.innerHeight - panel.offsetHeight));
+    panel.style.left = newLeft + 'px';
+    panel.style.top  = newTop  + 'px';
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (dragging) { dragging = false; bar.style.cursor = 'grab'; }
+  });
+
+  // Touch para móvil
+  bar.addEventListener('touchstart', function(e) {
+    var touch = e.touches[0];
+    dragging = true;
+    dx = touch.clientX - panel.getBoundingClientRect().left;
+    dy = touch.clientY - panel.getBoundingClientRect().top;
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    var touch = e.touches[0];
+    var newLeft = Math.max(0, Math.min(touch.clientX - dx, window.innerWidth  - panel.offsetWidth));
+    var newTop  = Math.max(0, Math.min(touch.clientY - dy, window.innerHeight - panel.offsetHeight));
+    panel.style.left = newLeft + 'px';
+    panel.style.top  = newTop  + 'px';
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchend', function() { dragging = false; });
 }
 
 function vizBtnStyle(active) {
@@ -485,14 +575,19 @@ function abrirViz() {
   vizPanel.style.display = 'flex';
   vizVisible = true;
   vizConectar();
+  vizActivarDrag(vizPanel);
   setTimeout(iniciarViz, 50);
   _vizLog('[VIZ] Visualizador abierto');
+}
+
+function detenerVizAnim() {
+  if (vizAnimId) { cancelAnimationFrame(vizAnimId); vizAnimId = null; }
 }
 
 function cerrarViz() {
   if (vizPanel) vizPanel.style.display = 'none';
   vizVisible = false;
-  if (vizAnimId) { cancelAnimationFrame(vizAnimId); vizAnimId = null; }
+  detenerVizAnim();
 }
 
 function toggleViz() { if (vizVisible) cerrarViz(); else abrirViz(); }
@@ -505,6 +600,7 @@ window.abrirViz       = abrirViz;
 window.cerrarViz      = cerrarViz;
 window.toggleViz      = toggleViz;
 window.cambiarModoViz = cambiarModoViz;
+window.vizResize      = vizResize;
 
 window.addEventListener('load', function() {
   _vizLog('[VIZ] Human Visualizer listo');
