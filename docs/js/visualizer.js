@@ -204,17 +204,12 @@ function drawFigura(ctx, W, H, cx, cy, scale, phase, hue, energy, modo) {
 function crearPanelViz() {
   vizPanel = document.createElement('div');
   vizPanel.id = 'scall-viz-panel';
-  // Posición inicial: esquina superior derecha sin tapar el orbe
-  var _vizLeft = window.innerWidth  - 580;
-  var _vizTop  = 60;
-  var _vizW    = 520;
-
   vizPanel.style.cssText = [
     'position:fixed',
-    'top:'  + _vizTop  + 'px',
-    'left:' + _vizLeft + 'px',
-    'width:' + _vizW + 'px',
-    'min-width:300px',
+    'top:60px',
+    'left:10px',
+    'width:420px',
+    'min-width:280px',
     'min-height:200px',
     'background:#000',
     'border:1px solid rgba(0,212,255,0.18)',
@@ -278,52 +273,53 @@ function vizResize(size) {
 
 function vizActivarDrag(panel) {
   var bar = document.getElementById('viz-drag-bar');
-  if (!bar) return;
-  var dx = 0, dy = 0, dragging = false;
+  if (!bar) { _vizLog('[VIZ] ⚠️ drag bar no encontrado'); return; }
 
-  bar.addEventListener('mousedown', function(e) {
-    dragging = true;
-    dx = e.clientX - panel.getBoundingClientRect().left;
-    dy = e.clientY - panel.getBoundingClientRect().top;
+  var isDragging = false;
+  var startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+  function onStart(ex, ey) {
+    isDragging = true;
+    startX    = ex;
+    startY    = ey;
+    var rect  = panel.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop  = rect.top;
+    // Quitar transform para que left/top sean absolutas
+    panel.style.transform = 'none';
     bar.style.cursor = 'grabbing';
-    e.preventDefault();
-  });
+    _vizLog('[VIZ] Drag iniciado');
+  }
 
-  document.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    var newLeft = e.clientX - dx;
-    var newTop  = e.clientY - dy;
-    // Límites de pantalla
+  function onMove(ex, ey) {
+    if (!isDragging) return;
+    var newLeft = startLeft + (ex - startX);
+    var newTop  = startTop  + (ey - startY);
     newLeft = Math.max(0, Math.min(newLeft, window.innerWidth  - panel.offsetWidth));
-    newTop  = Math.max(0, Math.min(newTop,  window.innerHeight - panel.offsetHeight));
+    newTop  = Math.max(0, Math.min(newTop,  window.innerHeight - 40));
     panel.style.left = newLeft + 'px';
     panel.style.top  = newTop  + 'px';
-  });
+  }
 
-  document.addEventListener('mouseup', function() {
-    if (dragging) { dragging = false; bar.style.cursor = 'grab'; }
-  });
+  function onEnd() {
+    isDragging = false;
+    bar.style.cursor = 'grab';
+  }
 
-  // Touch para móvil
+  bar.addEventListener('mousedown',  function(e) { onStart(e.clientX, e.clientY); e.preventDefault(); });
+  document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+  document.addEventListener('mouseup',   onEnd);
+
   bar.addEventListener('touchstart', function(e) {
-    var touch = e.touches[0];
-    dragging = true;
-    dx = touch.clientX - panel.getBoundingClientRect().left;
-    dy = touch.clientY - panel.getBoundingClientRect().top;
-    e.preventDefault();
+    var t = e.touches[0]; onStart(t.clientX, t.clientY); e.preventDefault();
   }, { passive: false });
-
   document.addEventListener('touchmove', function(e) {
-    if (!dragging) return;
-    var touch = e.touches[0];
-    var newLeft = Math.max(0, Math.min(touch.clientX - dx, window.innerWidth  - panel.offsetWidth));
-    var newTop  = Math.max(0, Math.min(touch.clientY - dy, window.innerHeight - panel.offsetHeight));
-    panel.style.left = newLeft + 'px';
-    panel.style.top  = newTop  + 'px';
-    e.preventDefault();
+    if (!isDragging) return;
+    var t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault();
   }, { passive: false });
+  document.addEventListener('touchend', onEnd);
 
-  document.addEventListener('touchend', function() { dragging = false; });
+  _vizLog('[VIZ] Drag activado ✅');
 }
 
 function vizBtnStyle(active) {
@@ -571,12 +567,17 @@ function iniciarViz() {
 // ══════════════════════════════════════════════════════════════════════
 
 function abrirViz() {
-  if (!vizPanel) crearPanelViz();
+  if (!vizPanel) {
+    crearPanelViz();
+    // Esperar a que el DOM esté listo antes de activar drag
+    setTimeout(function() {
+      vizActivarDrag(vizPanel);
+    }, 100);
+  }
   vizPanel.style.display = 'flex';
   vizVisible = true;
   vizConectar();
-  vizActivarDrag(vizPanel);
-  setTimeout(iniciarViz, 50);
+  setTimeout(iniciarViz, 80);
   _vizLog('[VIZ] Visualizador abierto');
 }
 
