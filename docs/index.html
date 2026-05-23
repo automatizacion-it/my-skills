@@ -219,7 +219,25 @@
       <span class="smi-label">Config</span>
     </button>
 
+    <button class="side-menu-item" id="smViz"
+      onclick="sideMenuActivar(this); toggleViz()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="5" r="1.5"/>
+          <line x1="12" y1="6.5" x2="12" y2="12"/>
+          <line x1="12" y1="12" x2="8"  y2="17"/>
+          <line x1="12" y1="12" x2="16" y2="17"/>
+          <line x1="8"  y1="9"  x2="12" y2="10"/>
+          <line x1="16" y1="9"  x2="12" y2="10"/>
+          <line x1="8"  y1="17" x2="7"  y2="20"/>
+          <line x1="16" y1="17" x2="17" y2="20"/>
+        </svg>
+      </span>
+      <span class="smi-label">Visualiz.</span>
+    </button>
+
     <button class="side-menu-item" id="smEQ"
+
       onclick="sideMenuActivar(this); toggleEQ()">
       <span class="smi-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -779,6 +797,7 @@
   <script src="js/colombia.js"></script>       <!-- Módulo Colombia mis 10 cosas -->
   <script src="js/sismos.js"></script>        <!-- Monitoreo sísmico en tiempo real -->
   <script src="js/equalizer.js"></script>        <!-- Ecualizador neural -->
+  <script src="js/visualizer.js"></script>       <!-- Human Visualizer -->
   <script src="js/tts_elevenlabs.js"></script>   <!-- ElevenLabs TTS — voz expresiva -->
   <script src="js/claude_tools.js"></script>  <!-- Claude Tool Use — acceso a módulos -->
   <!-- 7. Motor principal -->

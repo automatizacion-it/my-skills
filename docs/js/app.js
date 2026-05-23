@@ -636,6 +636,18 @@ async function ejecutarHabilidad(texto) {
   const comandoLower = texto.toLowerCase();
   // ── ORBE PRIMERO — antes que cualquier otro intent ─────────────────
   // ── EQ por voz ───────────────────────────────────────────────────
+  // ── Visualizer por voz ──────────────────────────────────────────
+  if ((comandoLower.includes('visualiz') || comandoLower.includes('figuras') ||
+       comandoLower.includes('bailar') || comandoLower.includes('personas') ||
+       (comandoLower.includes('show') && comandoLower.includes('music')) ||
+       (comandoLower.includes('muestra') && comandoLower.includes('baile'))) &&
+      typeof toggleViz === 'function') {
+    toggleViz();
+    if (typeof responderVoz === 'function') responderVoz('Abriendo el visualizador. ¡A bailar!');
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
   if ((comandoLower.includes('ecualiz') || comandoLower.includes('equaliz') ||
        comandoLower.includes('neural') || comandoLower.includes('frecuencia') ||
        (comandoLower.includes('musica') && comandoLower.includes('visual'))) &&
