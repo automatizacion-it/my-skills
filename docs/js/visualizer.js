@@ -292,32 +292,155 @@ function iniciarViz() {
     var beat = vizDetectBeat();
     if (beat) vizFlash = 0.13; else vizFlash *= 0.83;
 
-    // Fondo trail
-    c2.fillStyle = 'rgba(0,0,0,0.32)';
-    c2.fillRect(0, 0, W2, H2);
+    // ── FONDO: cielo nocturno ────────────────────────────────────────
+    var skyGrad = c2.createLinearGradient(0,0,0,H2);
+    skyGrad.addColorStop(0,'#000510');
+    skyGrad.addColorStop(0.5,'#010d14');
+    skyGrad.addColorStop(1,'#000a08');
+    c2.fillStyle = skyGrad;
+    c2.fillRect(0,0,W2,H2);
 
-    // Flash beat
+    // ── ESTRELLAS fijas ──────────────────────────────────────────────
+    if (!vizPanel._stars) {
+      vizPanel._stars = [];
+      for (var si=0; si<120; si++) {
+        vizPanel._stars.push({
+          x: Math.random()*W2, y: Math.random()*H2*0.85,
+          r: Math.random()*1.2+0.2,
+          tw: Math.random()*6+2, ph: Math.random()*Math.PI*2
+        });
+      }
+    }
+    vizPanel._stars.forEach(function(st) {
+      var twinkle = 0.4 + Math.sin(vizT2*st.tw+st.ph)*0.4 + vizSmooth.energy*0.2;
+      c2.globalAlpha = twinkle;
+      c2.fillStyle   = '#fff';
+      c2.beginPath(); c2.arc(st.x, st.y, st.r, 0, Math.PI*2); c2.fill();
+    });
+    c2.globalAlpha = 1;
+
+    // ── AURORA BOREAL ────────────────────────────────────────────────
+    // 5 bandas de luz ondulante en el cielo
+    var auroraColors = [
+      [0,  255, 150],  // verde esmeralda
+      [0,  200, 255],  // cyan hielo
+      [120,  0, 255],  // violeta profundo
+      [0,  255, 200],  // turquesa
+      [180, 80, 255]   // lila
+    ];
+    var auroraEnergy = 0.45 + vizSmooth.energy*0.55 + vizSmooth.bass*0.3;
+
+    for (var ai=0; ai<5; ai++) {
+      var col = auroraColors[ai];
+      var bandY  = H2*(0.08 + ai*0.09);
+      var bandH2 = H2*(0.18 + vizSmooth.mid*0.12 + ai*0.02);
+      var phase2 = ai*1.26 + vizT2*(0.12+ai*0.04);
+      var alpha2 = (0.10 + vizSmooth.energy*0.18 + Math.sin(vizT2*0.3+ai*0.8)*0.06) * auroraEnergy;
+
+      for (var col2=0; col2<3; col2++) {
+        var xOff = col2 * W2/3;
+        var wOff = W2/3 + W2*0.1;
+
+        // Cortina de luz: múltiples líneas verticales suavizadas
+        for (var xi=0; xi<W2; xi+=3) {
+          var nx   = xi/W2;
+          var wave =
+            Math.sin(nx*4.2 + phase2)*0.5 +
+            Math.sin(nx*7.8 + phase2*1.3 + ai)*0.25 +
+            Math.sin(nx*12  + phase2*0.7 + col2)*0.15 +
+            Math.sin(nx*2.1 + vizT2*0.5)*vizSmooth.bass*0.3;
+
+          var topY  = bandY + wave*30*auroraEnergy;
+          var botY  = topY + bandH2*(0.5 + Math.sin(nx*3+phase2)*0.3 + vizSmooth.mid*0.3);
+          var lineA = alpha2*(0.5+Math.sin(nx*5+phase2)*0.5);
+
+          var lg = c2.createLinearGradient(0, topY, 0, botY);
+          lg.addColorStop(0,'rgba('+col[0]+','+col[1]+','+col[2]+',0)');
+          lg.addColorStop(0.25,'rgba('+col[0]+','+col[1]+','+col[2]+','+lineA.toFixed(3)+')');
+          lg.addColorStop(0.6,'rgba('+col[0]+','+col[1]+','+col[2]+','+(lineA*0.6).toFixed(3)+')');
+          lg.addColorStop(1,'rgba('+col[0]+','+col[1]+','+col[2]+',0)');
+
+          c2.fillStyle = lg;
+          c2.fillRect(xi, topY, 3, botY-topY);
+        }
+      }
+    }
+
+    // Resplandor central de la aurora — se intensifica con el beat
+    var auroraGlow = c2.createRadialGradient(W2/2, H2*0.3, 0, W2/2, H2*0.3, W2*0.7);
+    var glowA = 0.03 + vizSmooth.energy*0.06 + vizFlash*0.1;
+    auroraGlow.addColorStop(0,'rgba(0,255,160,'+glowA.toFixed(3)+')');
+    auroraGlow.addColorStop(0.4,'rgba(80,0,255,'+(glowA*0.5).toFixed(3)+')');
+    auroraGlow.addColorStop(1,'transparent');
+    c2.fillStyle = auroraGlow;
+    c2.fillRect(0,0,W2,H2);
+
+    // ── Flash beat ───────────────────────────────────────────────────
     if (vizFlash > 0.01) {
-      c2.fillStyle = 'rgba(255,255,255,' + vizFlash.toFixed(3) + ')';
+      c2.fillStyle = 'rgba(100,255,200,' + (vizFlash*0.4).toFixed(3) + ')';
       c2.fillRect(0, 0, W2, H2);
     }
 
-    // Partículas de fondo
-    for (var i=0; i<3; i++) {
-      var px = (Math.sin(vizT2*0.3+i*2.1)*0.38+0.5)*W2;
-      var py = (Math.cos(vizT2*0.22+i*1.7)*0.3+0.5)*H2;
-      var pr = 25 + vizSmooth.energy*70;
-      var gr = c2.createRadialGradient(px,py,0,px,py,pr);
-      var hh = (vizT2*22+i*120)%360;
-      gr.addColorStop(0,'hsla('+hh+',100%,60%,0.035)'); gr.addColorStop(1,'transparent');
-      c2.fillStyle=gr; c2.beginPath(); c2.arc(px,py,pr,0,Math.PI*2); c2.fill();
+    // ── NIEVE / PARTÍCULAS flotantes ─────────────────────────────────
+    if (!vizPanel._particles) {
+      vizPanel._particles = [];
+      for (var pi=0; pi<40; pi++) {
+        vizPanel._particles.push({
+          x: Math.random()*W2, y: Math.random()*H2,
+          vx: (Math.random()-0.5)*0.3, vy: Math.random()*0.4+0.1,
+          r: Math.random()*1.5+0.3, ph: Math.random()*Math.PI*2
+        });
+      }
     }
+    vizPanel._particles.forEach(function(p) {
+      p.x += p.vx + Math.sin(vizT2*0.5+p.ph)*0.4;
+      p.y += p.vy + vizSmooth.energy*0.3;
+      if (p.y > H2) { p.y = -5; p.x = Math.random()*W2; }
+      if (p.x < 0) p.x = W2; if (p.x > W2) p.x = 0;
+      c2.globalAlpha = 0.35 + vizSmooth.air*0.3;
+      c2.fillStyle   = 'rgba(180,240,255,0.8)';
+      c2.beginPath(); c2.arc(p.x, p.y, p.r, 0, Math.PI*2); c2.fill();
+    });
+    c2.globalAlpha = 1;
 
-    // Onda de suelo
-    c2.strokeStyle='rgba(0,212,255,0.12)'; c2.lineWidth=1;
+    // ── REFLEJO EN SUELO HELADO ──────────────────────────────────────
+    var groundY = H2*0.86;
+    var iceGrad = c2.createLinearGradient(0, groundY, 0, H2);
+    iceGrad.addColorStop(0,'rgba(0,40,60,0.5)');
+    iceGrad.addColorStop(1,'rgba(0,10,20,0.8)');
+    c2.fillStyle = iceGrad;
+    c2.fillRect(0, groundY, W2, H2-groundY);
+
+    // Línea del horizonte helado
+    c2.strokeStyle = 'rgba(0,200,180,0.15)';
+    c2.lineWidth   = 1;
+    c2.beginPath(); c2.moveTo(0,groundY); c2.lineTo(W2,groundY); c2.stroke();
+
+    // Reflejo de aurora en el hielo
+    c2.save();
+    c2.globalAlpha = 0.12;
+    c2.scale(1,-0.25);
+    c2.translate(0, -H2*4.44);
+    for (var ari=0; ari<5; ari++) {
+      var rcol = auroraColors[ari];
+      var rphase = ari*1.26 + vizT2*(0.12+ari*0.04);
+      c2.strokeStyle = 'rgba('+rcol[0]+','+rcol[1]+','+rcol[2]+',0.3)';
+      c2.lineWidth = 2;
+      c2.beginPath();
+      for (var rx=0; rx<=W2; rx+=4) {
+        var rnx = rx/W2;
+        var ry  = H2*0.3 + Math.sin(rnx*4.2+rphase)*25 + Math.sin(rnx*8+rphase*1.3+ari)*12;
+        rx===0?c2.moveTo(rx,ry):c2.lineTo(rx,ry);
+      }
+      c2.stroke();
+    }
+    c2.restore();
+
+    // ── ONDA DE SUELO ────────────────────────────────────────────────
+    c2.strokeStyle='rgba(0,220,180,0.18)'; c2.lineWidth=1.2;
     c2.beginPath();
     for(var x2=0;x2<=W2;x2+=2){
-      var wy=H2*0.88+Math.sin(x2*0.025+vizT2*2)*5*vizSmooth.bass+Math.sin(x2*0.05+vizT2*3)*3*vizSmooth.mid;
+      var wy=groundY+Math.sin(x2*0.025+vizT2*2)*4*vizSmooth.bass+Math.sin(x2*0.05+vizT2*3)*2*vizSmooth.mid;
       x2===0?c2.moveTo(x2,wy):c2.lineTo(x2,wy);
     }
     c2.stroke();
