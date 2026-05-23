@@ -634,6 +634,40 @@ async function ejecutarHabilidad(texto) {
   // ejecutan directamente sin gastar la IA ni la cuota de API.
   // ══════════════════════════════════════════════════════════════
   const comandoLower = texto.toLowerCase();
+  // ── ORBE PRIMERO — antes que cualquier otro intent ─────────────────
+  var _oc = comandoLower;
+  var _esOcultar = (_oc.includes('solo orbe') || _oc.includes('modo orbe') ||
+                    _oc.includes('pantalla limpia') || _oc.includes('sin menu') ||
+                    (_oc.includes('oculta') && (_oc.includes('menu') || _oc.includes('panel') || _oc.includes('todo'))) ||
+                    (_oc.includes('esconde') && (_oc.includes('menu') || _oc.includes('panel'))) ||
+                    (_oc.includes('quita') && _oc.includes('menu')));
+  var _esMostrar = ((_oc.includes('muestra') || _oc.includes('mostrar') ||
+                     _oc.includes('regresa') || _oc.includes('vuelve')) &&
+                    (_oc.includes('menu') || _oc.includes('panel') || _oc.includes('todo') || _oc.includes('normal')));
+
+  if (_esOcultar || _esMostrar) {
+    var _menu   = document.getElementById('side-menu');
+    var _status = document.getElementById('side-status');
+    var _btn    = document.getElementById('btn-modo-orbe');
+    if (_esOcultar) {
+      if (_menu)   _menu.style.setProperty('display','none','important');
+      if (_status) _status.style.setProperty('display','none','important');
+      if (_btn)    _btn.innerHTML = '&#9776;';
+      localStorage.setItem('scall_modo_orbe','1');
+      logMessage('[Intent ORBE] → ocultar menús');
+      if (typeof responderVoz === 'function') responderVoz('Listo. Solo el orbe.');
+    } else {
+      if (_menu)   _menu.style.removeProperty('display');
+      if (_status) _status.style.removeProperty('display');
+      if (_btn)    _btn.innerHTML = '&#8861;';
+      localStorage.setItem('scall_modo_orbe','0');
+      logMessage('[Intent ORBE] → mostrar menús');
+      if (typeof responderVoz === 'function') responderVoz('Menús visibles.');
+    }
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
   const INTENTS_PRIORITARIOS = [
     // Música
     'musica_play', 'musica_play_query', 'musica_electronica', 'musica_relajante',
