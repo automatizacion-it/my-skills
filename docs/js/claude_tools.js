@@ -177,6 +177,19 @@ var SCALL_TOOLS = [
     input_schema: { type: 'object', properties: {} }
   },
   {
+    name: 'google_drive',
+    description: 'Busca, lista o abre archivos en Google Drive del usuario. Usalo cuando pidan buscar documentos, archivos, hojas de calculo, presentaciones o fotos en Drive.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        accion: { type: 'string', enum: ['buscar','recientes','abrir','tipo','conectar'], description: 'Accion a ejecutar' },
+        query:  { type: 'string', description: 'Termino de busqueda o nombre del archivo' },
+        tipo:   { type: 'string', enum: ['documentos','hojas','presentaciones','pdfs','imagenes','carpetas'] }
+      },
+      required: ['accion']
+    }
+  },
+  {
     name: 'programar_cumpleanos',
     description: 'Registra el cumpleanos o evento especial de una persona.',
     input_schema: {
@@ -427,6 +440,19 @@ function ejecutarHerramienta(nombre, input) {
       return { ok:true, ia_activa:ia, alarmas:nAl, mqtt:mqtt,
                hora:new Date().toLocaleTimeString('es-CO'),
                fecha:new Date().toLocaleDateString('es-CO') };
+    }
+
+    case 'google_drive': {
+      var ga = input.accion;
+      if (!gdriveConectado() && ga !== 'conectar') {
+        if (typeof abrirPanelDrive === 'function') abrirPanelDrive();
+        return { ok: false, mensaje: 'Conecta Google Drive primero. Panel abierto.' };
+      }
+      if (ga === 'conectar')  { if (typeof abrirPanelDrive  === 'function') abrirPanelDrive(); }
+      if (ga === 'recientes') { if (typeof gdriveRecientes  === 'function') gdriveRecientes(); abrirPanelDrive(); }
+      if (ga === 'buscar' && input.query) { if (typeof gdriveBuscar === 'function') { gdriveBuscar(input.query); abrirPanelDrive(); } }
+      if (ga === 'tipo'   && input.tipo)  { if (typeof gdriveBuscarTipo === 'function') { gdriveBuscarTipo(input.tipo); abrirPanelDrive(); } }
+      return { ok: true, accion: ga };
     }
 
     case 'programar_cumpleanos': {

@@ -637,6 +637,30 @@ async function ejecutarHabilidad(texto) {
   // ── ORBE PRIMERO — antes que cualquier otro intent ─────────────────
   // ── EQ por voz ───────────────────────────────────────────────────
   // ── Visualizer por voz ──────────────────────────────────────────
+  // ── Google Drive por voz ────────────────────────────────────────
+  if (comandoLower.includes('drive') || comandoLower.includes('mis archivos') ||
+      (comandoLower.includes('busca') && (comandoLower.includes('archivo') || comandoLower.includes('documento') || comandoLower.includes('carpeta'))) ||
+      (comandoLower.includes('abre') && comandoLower.includes('drive'))) {
+    if (!gdriveConectado()) {
+      if (typeof abrirPanelDrive === 'function') abrirPanelDrive();
+      if (typeof responderVoz === 'function') responderVoz('Conecta tu Google Drive primero. Te abrí el panel.');
+    } else {
+      if (typeof abrirPanelDrive === 'function') abrirPanelDrive();
+      // Extraer término de búsqueda
+      var driveQuery = comandoLower
+        .replace(/busca(r)?|en drive|en mi drive|mis archivos|abre|archivo|documento/gi,'').trim();
+      if (driveQuery.length > 2 && typeof gdriveBuscar === 'function') {
+        gdriveBuscar(driveQuery);
+        if (typeof responderVoz === 'function') responderVoz('Buscando "' + driveQuery + '" en tu Drive.');
+      } else {
+        if (typeof gdriveRecientes === 'function') gdriveRecientes();
+        if (typeof responderVoz === 'function') responderVoz('Abriendo tus archivos recientes de Drive.');
+      }
+    }
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
   // ── Bottle EQ por voz ──────────────────────────────────────────
   if ((comandoLower.includes('botella') || comandoLower.includes('aceite') ||
        comandoLower.includes('escarcha') || comandoLower.includes('lampara') ||
