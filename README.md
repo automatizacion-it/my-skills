@@ -1,54 +1,54 @@
-# 🧠 My Claude Skills
+# SCALL — Asistente de Voz Inteligente
 
-Repositorio de skills personalizadas para automatizar tareas con la API de Claude.
+Aplicación web de asistente de voz inteligente desplegada en GitHub Pages.
+Control por voz de múltiples funcionalidades: música, alarmas, clima, navegación,
+Google Drive, traducción, noticias y más.
 
-## ¿Qué es una skill?
+## Demo
 
-Una skill es un archivo `SKILL.md` que Claude lee **antes** de ejecutar una tarea.
-Contiene instrucciones precisas, restricciones y ejemplos para que Claude produzca
-resultados consistentes y de alta calidad.
+Desplegada en GitHub Pages (rama `main` → carpeta `docs/`).
+
+## Funcionalidades
+
+- Reproducción de música (Spotify, Radio)
+- Alarmas y recordatorios de cumpleaños
+- Clima y noticias en tiempo real
+- Navegación GPS y rutas
+- Integración con Google Drive
+- Traducción de idiomas
+- Síntesis de voz (ElevenLabs TTS)
+- Información de sismos (Colombia)
+- Visualizador de audio y ecualizador
+- Botón SOS de emergencia
 
 ## Estructura
 
 ```
 my-skills/
-├── skills/
-│   ├── redactar-email/
-│   │   └── SKILL.md
-│   ├── analizar-documento/
-│   │   └── SKILL.md
-│   └── generar-reporte/
-│       └── SKILL.md
-├── scripts/
-│   └── run_skill.py       # Script para invocar skills via API
-├── docs/
-│   └── como-crear-skills.md
-└── README.md
+├── docs/                   # Aplicación SCALL (GitHub Pages)
+│   ├── index.html          # App principal
+│   ├── css/styles.css      # Estilos
+│   └── js/                 # Módulos de funcionalidades
+│       ├── app.js           # Orquestador principal
+│       ├── intents.js       # Procesamiento de comandos
+│       ├── radio.js         # Reproducción de audio
+│       ├── clima.js         # Clima
+│       ├── gdrive.js        # Google Drive
+│       ├── tts_elevenlabs.js# Síntesis de voz
+│       └── ...              # 30+ módulos
+├── .github/workflows/
+│   └── deploy.yml          # CI/CD: push a main → GitHub Pages automático
+└── deploy_scall.bat        # Deploy manual Windows
 ```
 
-## Uso rápido
+## Deploy
 
-```python
-from scripts.run_skill import run_skill
+**Automático**: Cualquier push a `main` despliega `docs/` en GitHub Pages.
 
-resultado = run_skill(
-    skill="redactar-email",
-    input="Escribe un email a un cliente para hacer seguimiento de una propuesta"
-)
-print(resultado)
-```
+**Manual (Windows)**: Ejecutar `deploy_scall.bat` — copia archivos desde `Downloads/` a `docs/`,
+hace commit y push automáticamente.
 
-## Cómo agregar una skill nueva
+## Skills
 
-1. Crea una carpeta en `skills/nombre-de-tu-skill/`
-2. Agrega un archivo `SKILL.md` siguiendo la plantilla en `docs/`
-3. Pruébala con `run_skill.py`
-4. Haz commit y push
-
-## Skills disponibles
-
-| Skill | Descripción |
-|-------|-------------|
-| `redactar-email` | Redacta emails profesionales con tono y estructura correcta |
-| `analizar-documento` | Extrae puntos clave, riesgos y resumen de documentos |
-| `generar-reporte` | Genera reportes estructurados a partir de datos crudos |
+Las skills de Claude fueron migradas a:
+**[my-new-skill](https://github.com/automatizacion-it/my-new-skill)**
