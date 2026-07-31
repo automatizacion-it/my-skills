@@ -696,12 +696,13 @@ async function ejecutarHabilidad(texto) {
   var _oc = comandoLower;
   var _esOcultar = (_oc.includes('solo orbe') || _oc.includes('modo orbe') ||
                     _oc.includes('pantalla limpia') || _oc.includes('sin menu') ||
-                    (_oc.includes('oculta') && (_oc.includes('menu') || _oc.includes('panel') || _oc.includes('todo'))) ||
-                    (_oc.includes('esconde') && (_oc.includes('menu') || _oc.includes('panel'))) ||
-                    (_oc.includes('quita') && _oc.includes('menu')));
-  var _esMostrar = ((_oc.includes('muestra') || _oc.includes('mostrar') ||
+                    (_oc.includes('oculta') && (_oc.includes('menu') || _oc.includes('menú') || _oc.includes('panel') || _oc.includes('todo'))) ||
+                    (_oc.includes('esconde') && (_oc.includes('menu') || _oc.includes('menú') || _oc.includes('panel'))) ||
+                    (_oc.includes('quita') && (_oc.includes('menu') || _oc.includes('menú'))));
+  var _esMostrar = ((_oc.includes('muestra') || _oc.includes('muéstrame') || _oc.includes('muéstrenme') ||
+                     _oc.includes('mostrar') || _oc.includes('mostrame') ||
                      _oc.includes('regresa') || _oc.includes('vuelve')) &&
-                    (_oc.includes('menu') || _oc.includes('panel') || _oc.includes('todo') || _oc.includes('normal')));
+                    (_oc.includes('menu') || _oc.includes('menú') || _oc.includes('panel') || _oc.includes('todo') || _oc.includes('normal')));
 
   if (_esOcultar || _esMostrar) {
     var _menu   = document.getElementById('side-menu');
