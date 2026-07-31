@@ -7,25 +7,8 @@
 // UTILIDADES PANEL
 // ══════════════════════════════════════════════════════════════════════
 
-function togglePanel(id) {
-  const panels = document.querySelectorAll('.skill-panel');
-  panels.forEach(p => {
-    if (p.id === id) {
-      const visible = p.style.display !== 'none';
-      p.style.display = visible ? 'none' : 'block';
-      if (!visible) initPanel(id);
-    } else {
-      p.style.display = 'none';
-    }
-  });
-}
-
-function initPanel(id) {
-  if (id === 'alarmaPanel')   initAlarmaPanel();
-  if (id === 'noticiasPanel') initNoticiasPanel();
-  if (id === 'climaPanel')    initClimaPanel();
-  if (id === 'corpusPanel')   renderCorpus();
-}
+// togglePanel/initPanel: la definición activa vive en alarms.js (se carga después
+// y la reemplaza). Se deja fuera de aquí para no mantener dos copias.
 
 function switchTab(tabId, panelId, btn) {
   const panel = document.getElementById(panelId);
@@ -37,210 +20,6 @@ function switchTab(tabId, panelId, btn) {
 
 function _sv(m) { typeof responderVoz === 'function' ? responderVoz(m) : console.warn(m); }
 function _sl(m) { typeof logMessage   === 'function' ? logMessage(m)   : console.log(m); }
-
-// ══════════════════════════════════════════════════════════════════════
-// ⏰ ALARMAS
-// ══════════════════════════════════════════════════════════════════════
-
-const ALARMAS_KEY  = 'scall_alarmas';
-const SONIDO_KEY   = 'scall_sonido';
-let alarmasActivas = {};
-let sonidoOn       = true;
-
-function getSonido() { return localStorage.getItem(SONIDO_KEY) !== 'off'; }
-function toggleSonido() {
-  sonidoOn = !sonidoOn;
-  localStorage.setItem(SONIDO_KEY, sonidoOn ? 'on' : 'off');
-  const btn = document.getElementById('soundToggle');
-  if (btn) { btn.textContent = sonidoOn ? 'ON' : 'OFF'; btn.className = 'sound-toggle ' + (sonidoOn ? 'on' : 'off'); }
-}
-
-function getAlarmas() {
-  try { return JSON.parse(localStorage.getItem(ALARMAS_KEY)) || []; } catch { return []; }
-}
-function saveAlarmas(l) { localStorage.setItem(ALARMAS_KEY, JSON.stringify(l)); }
-
-// Calendario
-function initAlarmaPanel() {
-  sonidoOn = getSonido();
-  const btn = document.getElementById('soundToggle');
-  if (btn) { btn.textContent = sonidoOn ? 'ON' : 'OFF'; btn.className = 'sound-toggle ' + (sonidoOn ? 'on' : 'off'); }
-  renderCalendario();
-  renderAlarmaLista();
-  pedirPermisoNotificacion();
-}
-
-function renderCalendario() {
-  const el = document.getElementById('alarmCalendar');
-  if (!el) return;
-  const hoy  = new Date();
-  const year = hoy.getFullYear();
-  const month= hoy.getMonth();
-  const MESES= ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const DIAS = ['D','L','M','X','J','V','S'];
-  const primer = new Date(year, month, 1).getDay();
-  const total  = new Date(year, month + 1, 0).getDate();
-
-  let html = `<div class="cal-header">${MESES[month]} ${year}</div>`;
-  html += '<div class="cal-grid">';
-  DIAS.forEach(d => html += `<div class="cal-cell cal-day-name">${d}</div>`);
-  for (let i = 0; i < primer; i++) html += '<div class="cal-cell"></div>';
-  for (let d = 1; d <= total; d++) {
-    const isHoy = d === hoy.getDate();
-    html += `<div class="cal-cell${isHoy ? ' cal-hoy' : ''}" onclick="seleccionarDia(${d})" id="calDia${d}">${d}</div>`;
-  }
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-let diaSeleccionado = new Date().getDate();
-function seleccionarDia(d) {
-  document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('cal-sel'));
-  const el = document.getElementById('calDia' + d);
-  if (el) el.classList.add('cal-sel');
-  diaSeleccionado = d;
-}
-
-function guardarAlarmaUI() {
-  const hora    = parseInt(document.getElementById('alarmHora').value);
-  const minuto  = parseInt(document.getElementById('alarmMin').value);
-  const tipo    = document.getElementById('alarmTipo').value;
-  const mensaje = document.getElementById('alarmMsg').value.trim() || tipoMensaje(tipo);
-  const repetir = document.getElementById('alarmRepetir').checked;
-
-  crearAlarma({ hora, minuto, tipo, mensaje, repetir });
-  document.getElementById('alarmMsg').value = '';
-  renderAlarmaLista();
-}
-
-function tipoMensaje(tipo) {
-  if (tipo === 'medicamento') return 'Es hora de tomar tu medicamento.';
-  if (tipo === 'recordatorio') return 'Tienes un recordatorio.';
-  return 'Alarma activa.';
-}
-
-function crearAlarma({ hora, minuto, tipo = 'alarma', mensaje, repetir = false }) {
-  const lista = getAlarmas();
-  const id    = Date.now();
-  lista.push({ id, hora, minuto, mensaje, tipo, repetir, activa: true });
-  saveAlarmas(lista);
-  iniciarChequeoAlarma({ id, hora, minuto, mensaje, tipo, repetir });
-  _sv(`Alarma de ${tipo} configurada para las ${hora} con ${minuto}.`);
-  _sl(`[ALARMA] ✅ ${tipo} → ${String(hora).padStart(2,'0')}:${String(minuto).padStart(2,'0')}`);
-}
-
-function iniciarChequeoAlarma(a) {
-  if (alarmasActivas[a.id]) clearInterval(alarmasActivas[a.id]);
-  alarmasActivas[a.id] = setInterval(() => {
-    const n = new Date();
-    if (n.getHours() === a.hora && n.getMinutes() === a.minuto && n.getSeconds() < 20) {
-      dispararAlarma(a);
-      if (!a.repetir) {
-        clearInterval(alarmasActivas[a.id]);
-        delete alarmasActivas[a.id];
-        saveAlarmas(getAlarmas().map(x => x.id === a.id ? { ...x, activa: false } : x));
-        renderAlarmaLista();
-      }
-    }
-  }, 10000);
-}
-
-function dispararAlarma(a) {
-  const emojis = { alarma:'⏰', recordatorio:'📌', medicamento:'💊' };
-  const e = emojis[a.tipo] || '⏰';
-  if (sonidoOn) _sv(a.mensaje);
-  _sl(`[ALARMA] ${e} DISPARADA: "${a.mensaje}"`);
-  if (Notification.permission === 'granted')
-    new Notification(`SCALL ${e}`, { body: a.mensaje, icon: '/favicon.ico' });
-
-  const toast = document.createElement('div');
-  toast.className = 'alarm-toast';
-  toast.innerHTML = `<span style="font-size:1.8rem">${e}</span><div><strong>${a.mensaje}</strong><small>${String(a.hora).padStart(2,'0')}:${String(a.minuto).padStart(2,'0')}</small></div><button onclick="this.parentElement.remove()">✕</button>`;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 15000);
-}
-
-function eliminarAlarma(id) {
-  if (alarmasActivas[id]) { clearInterval(alarmasActivas[id]); delete alarmasActivas[id]; }
-  saveAlarmas(getAlarmas().filter(a => a.id !== id));
-  renderAlarmaLista();
-}
-
-function renderAlarmaLista() {
-  const el = document.getElementById('alarmaLista');
-  if (!el) return;
-  const lista = getAlarmas();
-  if (lista.length === 0) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem;text-align:center;padding:12px;">Sin alarmas</p>'; return; }
-  const emojis = { alarma:'⏰', recordatorio:'📌', medicamento:'💊' };
-  el.innerHTML = lista.map(a => `
-    <div class="alarm-item ${a.activa ? '' : 'alarm-inactive'}">
-      <span>${emojis[a.tipo]||'⏰'}</span>
-      <div class="alarm-item-info">
-        <strong>${String(a.hora).padStart(2,'0')}:${String(a.minuto).padStart(2,'0')}</strong>
-        <small>${a.mensaje}</small>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        ${a.repetir ? '<span style="font-size:0.6rem;color:var(--glow);font-family:monospace;">↺</span>' : ''}
-        <button onclick="eliminarAlarma(${a.id})" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:0.72rem;">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// Parser voz alarma
-function parsearAlarmaVoz(cmd) {
-  const m = cmd.match(/(\d{1,2})(?:\s*y\s*(\d{1,2}))?\s*(?:de\s+la\s+(mañana|tarde|noche))?/);
-  if (!m) return null;
-  let hora = parseInt(m[1]), min = parseInt(m[2]||'0');
-  if (m[3]==='tarde'||m[3]==='noche') { if(hora<12) hora+=12; }
-  let tipo='alarma', mensaje='';
-  if (cmd.includes('medicamento')||cmd.includes('pastilla')) { tipo='medicamento'; mensaje='Toma tu medicamento.'; }
-  else if (cmd.includes('recordatorio')||cmd.includes('recuérdame')) { tipo='recordatorio'; mensaje='Tienes un recordatorio.'; }
-  else if (cmd.includes('despierta')) { mensaje='¡Buenos días! Hora de levantarse.'; }
-  return { hora, minuto: min, tipo, mensaje, repetir: cmd.includes('todos los días') };
-}
-
-// Temporizador
-let timerInt = null, timerSeg = 0;
-function iniciarTimer(seg) {
-  if (timerInt) clearInterval(timerInt);
-  timerSeg = seg;
-  _sv(`Temporizador de ${formatSeg(seg)} iniciado.`);
-  timerInt = setInterval(() => {
-    timerSeg--;
-    if (timerSeg <= 0) {
-      clearInterval(timerInt); timerInt = null;
-      _sv('¡El temporizador terminó!');
-      if (Notification.permission==='granted') new Notification('SCALL ⏱',{body:'¡Terminó!'});
-    }
-  }, 1000);
-}
-function parsearTimer(cmd) {
-  let t = 0;
-  const h=cmd.match(/(\d+)\s*hora/), m=cmd.match(/(\d+)\s*minuto/), s=cmd.match(/(\d+)\s*segundo/);
-  if(h) t+=parseInt(h[1])*3600; if(m) t+=parseInt(m[1])*60; if(s) t+=parseInt(s[1]);
-  return t;
-}
-function formatSeg(s) {
-  const m=Math.floor(s/60), sec=s%60;
-  return `${m>0?m+' minutos ':''} ${sec>0?sec+' segundos':''}`.trim();
-}
-
-// Cronómetro
-let cronInt=null, cronSeg=0, cronActivo=false;
-function iniciarCronometro() {
-  if(cronActivo){_sv('El cronómetro ya corre.');return;}
-  cronSeg=0; cronActivo=true;
-  cronInt=setInterval(()=>cronSeg++,1000);
-  _sv('Cronómetro iniciado.');
-}
-function pausarCronometro() { if(cronInt){clearInterval(cronInt);cronInt=null;} cronActivo=false; _sv(`Cronómetro pausado en ${formatSeg(cronSeg)}.`); }
-function reiniciarCronometro() { pausarCronometro(); cronSeg=0; _sv('Cronómetro reiniciado.'); }
-function leerCronometro() { _sv(`El cronómetro lleva ${formatSeg(cronSeg)}.`); }
-
-function pedirPermisoNotificacion() {
-  if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
-}
 
 // ══════════════════════════════════════════════════════════════════════
 // 📰 NOTICIAS
@@ -501,24 +280,9 @@ async function traducirUI() {
   }
 }
 
-// Desde voz
-const IDIOMAS_VOZ = { 'inglés':'en','ingles':'en','francés':'fr','frances':'fr','portugués':'pt','portugues':'pt','alemán':'de','aleman':'de','italiano':'it','chino':'zh','japonés':'ja','japones':'ja' };
-
-async function traducirTexto(cmd) {
-  let texto = '', lang = 'en';
-  for (const [nombre, cod] of Object.entries(IDIOMAS_VOZ)) {
-    if (cmd.includes(nombre)) { lang = cod; break; }
-  }
-  const m = cmd.match(/traduce?\s+(.+?)\s+al?\s+\w+/i) || cmd.match(/cómo\s+se\s+dice\s+(.+?)\s+en/i);
-  if (m) texto = m[1].trim();
-  if (!texto) { _sv('¿Qué quieres traducir? Di por ejemplo: traduce hola al inglés.'); return; }
-
-  try {
-    const res  = await fetch('https://libretranslate.com/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q:texto,source:'auto',target:lang,format:'text'})});
-    const data = await res.json();
-    if (data.translatedText) _sv(`${texto} en ese idioma se dice: ${data.translatedText}`);
-  } catch { _sv('No pude conectarme al traductor.'); }
-}
+// traducirTexto (comando de voz): la definición activa vive en traductor.js
+// (más idiomas, más patrones de extracción, fallback también si la API
+// responde con error además de si falla la red, y toast visual).
 
 // ══════════════════════════════════════════════════════════════════════
 // 📋 CORPUS DE ENTRENAMIENTO
@@ -578,13 +342,5 @@ function limpiarCorpus() {
   renderCorpus();
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════════════════════
-
-window.addEventListener('load', () => {
-  pedirPermisoNotificacion();
-  sonidoOn = getSonido();
-  // Reactivar alarmas guardadas
-  getAlarmas().filter(a=>a.activa).forEach(a=>iniciarChequeoAlarma(a));
-});
+// El listener de 'load' que reactiva alarmas y pide permiso de notificaciones
+// vive en alarms.js — no se duplica aquí.

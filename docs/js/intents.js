@@ -28,12 +28,6 @@ const intents = [
     }
   },
   {
-    name: "clima",
-    description: "Consultar el clima (Ej: '¿Cómo está el clima?')",
-    match: (c) => c.includes('clima') || c.includes('tiempo hace') || c.includes('lloverá'),
-    action: () => responderVoz("Como estoy operando en modo local sin acceso a internet, te sugiero mirar por la ventana. ¡Seguro hace un día excelente!")
-  },
-  {
     name: "chiste",
     description: "Pedir un chiste (Ej: 'Cuéntame un chiste')",
     match: (c) => c.includes('chiste') || c.includes('broma') || c.includes('hazme reír'),
@@ -356,7 +350,11 @@ const intents = [
     name: "noticias_consultar",
     description: "Ver noticias (Ej: 'Dime las noticias', 'Titulares')",
     match: (c) => c.includes('noticias') || c.includes('qué pasó') || c.includes('titulares') || c.includes('actualidad'),
-    action: () => { togglePanel('noticiasPanel'); responderVoz('Abriendo noticias.'); }
+    action: () => {
+      togglePanel('noticiasPanel');
+      if (typeof consultarNoticias === 'function') consultarNoticias('general');
+      else responderVoz('Abriendo noticias.');
+    }
   },
   // ── Traductor ─────────────────────────────────────────────────────────
   {

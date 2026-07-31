@@ -36,17 +36,18 @@ my-skills/
 │       ├── gdrive.js        # Google Drive
 │       ├── tts_elevenlabs.js# Síntesis de voz
 │       └── ...              # 30+ módulos
-├── .github/workflows/
-│   └── deploy.yml          # CI/CD: push a main → GitHub Pages automático
-└── deploy_scall.bat        # Deploy manual Windows
+└── .github/workflows/
+    └── deploy.yml          # CI/CD: push a main → GitHub Pages automático
 ```
 
 ## Deploy
 
-**Automático**: Cualquier push a `main` despliega `docs/` en GitHub Pages.
+**Automático**: Cualquier push a `main` despliega `docs/` en GitHub Pages tal
+cual está en el repo (el workflow no inyecta API keys ni ninguna otra variable).
 
-**Manual (Windows)**: Ejecutar `deploy_scall.bat` — copia archivos desde `Downloads/` a `docs/`,
-hace commit y push automáticamente.
+**Manual**: no hay script de deploy en el repo por ahora. El flujo típico es
+editar/descargar los archivos correspondientes en `docs/`, `git add`, `git commit`
+y `git push` a `main`.
 
 ## Skills
 

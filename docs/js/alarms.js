@@ -228,12 +228,6 @@ function seleccionarSonidoUI(nombre) {
   });
 }
 
-function toggleSonido() {
-  // Compatibilidad con botón legacy — ahora usa el checkbox
-  const cb = document.getElementById('alarmSonidoOn');
-  if (cb) { cb.checked = !cb.checked; sonidoActivado = cb.checked; }
-}
-
 // ══════════════════════════════════════════════════════════════════════
 // CRUD ALARMAS
 // ══════════════════════════════════════════════════════════════════════
@@ -833,7 +827,8 @@ function pedirPermisoNotificacion() {
     Notification.requestPermission();
 }
 
-// togglePanel centralizado — reemplaza el de ui.js si existe
+// togglePanel centralizado — única definición activa (reemplaza la de skills.js)
+// IMPORTANTE: cada panel debe inicializar su propio contenido aquí al abrirse.
 window.togglePanel = function(id) {
   const paneles = ['alarmaPanel','noticiasPanel','climaPanel','tradPanel','corpusPanel'];
   const target  = document.getElementById(id);
@@ -850,6 +845,9 @@ window.togglePanel = function(id) {
       renderizarListaAlarmas();
       if (typeof actualizarContadorAlarmas === 'function') actualizarContadorAlarmas();
     }
+    if (id === 'noticiasPanel' && typeof initNoticiasPanel === 'function') initNoticiasPanel();
+    if (id === 'climaPanel'    && typeof initClimaPanel    === 'function') initClimaPanel();
+    if (id === 'corpusPanel'   && typeof renderCorpus       === 'function') renderCorpus();
   }
 };
 

@@ -6,30 +6,104 @@ Aplicación web SCALL — asistente de voz inteligente desplegada en GitHub Page
 La carpeta `docs/` contiene toda la aplicación y es lo que se despliega.
 
 > Las skills de Claude fueron migradas a [my-new-skill](https://github.com/automatizacion-it/my-new-skill).
+> `docs/` **no** tiene carpeta `skills/` — todo el frontend vive en `index.html` + `css/` + `js/`.
 
-## Estructura
+## Estructura real (verificada)
 
 ```
 my-skills/
-├── docs/                    # App SCALL completa (GitHub Pages)
-│   ├── index.html           # Punto de entrada
-│   ├── css/styles.css       # Estilos globales
-│   ├── js/                  # 30+ módulos JavaScript
-│   └── skills/              # UIs de skills (HTML)
+├── docs/                       # App SCALL completa (GitHub Pages)
+│   ├── index.html              # Punto de entrada — incluye funciones inline críticas
+│   │                            # (sideMenuActivar, togglePanel-stub, toggleModoOrbe)
+│   ├── css/styles.css          # Estilos globales
+│   ├── musica_intents.txt      # Notas/borrador de intents de música
+│   └── js/                     # 24 módulos JavaScript, todos cargados vía <script src>
+│       ├── config.js            # Plantilla de API keys (vacía, ver nota abajo)
+│       ├── ui.js
+│       ├── skills.js            # Noticias(panel)/Clima(panel)/Traductor(panel-UI)/Corpus
+│       ├── spotify.js, radio.js
+│       ├── cumpleanos.js, sos.js
+│       ├── alarms.js            # Módulo de alarmas — ÚNICA fuente de verdad (IIFE, expone
+│       │                         # funciones a window). Define también el togglePanel activo.
+│       ├── rutas.js, intents_rutas.js
+│       ├── intents_alarmas.js, intents_musica.js, intents.js
+│       ├── bluetooth.js, colombia.js, sismos.js
+│       ├── equalizer.js, visualizer.js
+│       ├── gdrive.js, bottle_eq.js
+│       ├── tts_elevenlabs.js, claude_tools.js
+│       ├── noticias.js          # Lectura de noticias por voz (consultarNoticias)
+│       ├── traductor.js         # Traductor por voz — versión completa (fallback + toast)
+│       └── app.js               # Orquestador principal — SIEMPRE va último
 ├── .github/workflows/
-│   └── deploy.yml           # Push a main → deploy automático
-└── deploy_scall.bat         # Deploy manual desde Windows
+│   └── deploy.yml              # Push a main → deploy automático a GitHub Pages
+└── README.md
 ```
+
+**Nota:** `deploy_scall.bat` mencionado en versiones anteriores de este documento
+**no existe en el repo**. Si tu flujo de trabajo real es "descargar archivos a
+`Downloads/` y moverlos manualmente a `docs/`", trátalo como proceso manual —
+no hay script que lo automatice todavía.
 
 ## Deploy
 
-**Automático**: Push a `main` → GitHub Actions despliega `docs/` en GitHub Pages.
-
-**Manual**: Ejecutar `deploy_scall.bat` — copia archivos de `Downloads/` a `docs/`, commit y push.
+**Automático**: Push a `main` → GitHub Actions (`deploy.yml`) sube `docs/` tal
+cual a GitHub Pages. **No hay ningún paso que inyecte secrets** — ver nota sobre
+`config.js` abajo.
 
 ## Archivos importantes
 
-- `docs/js/config.js` — excluido de git (claves API). Crearlo manualmente en local o
-  configurarlo como secret en GitHub Actions para producción.
-- `docs/js/app.js` — orquestador principal de la app
-- `docs/js/intents.js` — procesamiento de comandos de voz
+- `docs/js/config.js` — plantilla con API keys vacías (Gemini/YouTube/MQTT).
+  El comentario interno explica que el workflow actual NO las rellena; cada
+  usuario debe configurarlas vía el modal ⚙️ (se guardan en `localStorage`,
+  por dispositivo). Si se quiere automatizar esto con GitHub Secrets, falta
+  agregar un paso al workflow — no existe hoy.
+- `docs/js/app.js` — orquestador principal de la app, siempre debe cargar último.
+- `docs/js/intents.js` — array `intents[]`, comandos de voz. Dos pasadas de
+  matching: una prioritaria (`INTENTS_PRIORITARIOS` en `app.js`, evita IA) y
+  un fallback (`ejecutarIntentLocal`, primer match gana).
+- `docs/js/alarms.js` — se carga como IIFE y expone funciones a `window`
+  explícitamente al final del archivo. **Redefine `window.togglePanel`**,
+  por lo que es la fuente de verdad real para abrir/cerrar cualquier panel
+  (alarma, noticias, clima, traductor, corpus), no solo el de alarmas.
+
+## ⚠️ Patrón de riesgo — scripts globales sin módulos
+
+Todos los `.js` de `docs/js/` se cargan como `<script src>` clásicos (sin
+`type="module"`), compartiendo el mismo scope global. Si dos archivos declaran
+una función con el mismo nombre, **el que carga después gana silenciosamente**
+— no hay error en consola. Antes de crear un archivo nuevo o renombrar una
+función, revisa que el nombre no exista ya en otro módulo:
+
+```bash
+grep -rn "^function nombreFuncion" docs/js/*.js
+```
+
+Y antes de agregar un `<script src="js/nuevo.js">`, confirma en qué orden
+carga respecto a los módulos con los que podría chocar.
+
+## Sesión de auditoría y limpieza (2026-07-30)
+
+Se encontraron y corrigieron varios problemas de este patrón:
+
+1. **Bug crítico de `togglePanel`**: `alarms.js` redefinía `window.togglePanel`
+   pero solo inicializaba el panel de alarmas — al abrir Noticias/Clima/Corpus
+   quedaban vacíos porque `initNoticiasPanel()`/`initClimaPanel()`/`renderCorpus()`
+   nunca se llamaban. **Corregido**: `alarms.js` ahora inicializa los 4 paneles.
+2. **Calendario de alarmas no respondía al clic**: causado por el mismo patrón
+   de shadowing (dos versiones de `renderCalendario()`, la ganadora no incluía
+   los `onclick`/`id` que necesitaba `seleccionarDia()`). Se resolvió al
+   eliminar la versión vieja/duplicada de `skills.js`.
+3. Se eliminó ~200 líneas de código muerto en `skills.js` (CRUD de alarmas,
+   timer, cronómetro, `togglePanel`/`initPanel` viejos, `traducirTexto` viejo)
+   que `alarms.js`/`traductor.js` ya cubrían con versiones más completas.
+4. Se eliminó una declaración duplicada de `toggleSonido()` dentro del propio
+   `alarms.js` (la primera nunca se ejecutaba).
+5. `clima.js` y `radio_intents.js` — existían en el repo pero nunca se cargaban
+   en `index.html`. Se confirmó que eran **verdaderamente redundantes**
+   (sus funciones ya estaban cubiertas, en el caso de radio incluso con una
+   versión mejor ya integrada en `intents.js`) y se **eliminaron**.
+6. `noticias.js` y `traductor.js` — también huérfanos, pero **no** redundantes:
+   tenían funcionalidad real que faltaba (lectura de noticias por voz, mejor
+   fallback de traducción). Se **integraron**: se agregaron sus `<script src>`
+   a `index.html` y se conectó `noticias_consultar` en `intents.js` para que
+   realmente invoque `consultarNoticias()`.
