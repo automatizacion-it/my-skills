@@ -126,3 +126,36 @@ Se encontraron y corrigieron varios problemas de este patrón:
    (Estándar/Botellas/Humano) siguen siendo paneles flotantes independientes
    — `equalizer.js`, `bottle_eq.js`, `visualizer.js` no se tocaron por dentro,
    solo cambió desde dónde se abren.
+
+## Sesión 3 (2026-07-31) — Menú de usuario (capa de personalización)
+
+9. **Nuevo directorio `docs/js/user-menu/`** con `menu_usuario.js`. Agrega un
+   panel "Mi Menú" (botón nuevo en el menú lateral, `toggleMenuUsuario()`)
+   donde el usuario puede crear accesos personalizados sin tocar código:
+   - Nombre del ítem (texto libre)
+   - Acción a ejecutar — elegida de `ACCIONES_DISPONIBLES`, un catálogo fijo
+     de 16 funciones ya existentes en la app (togglePanel de cada panel,
+     abrir Bluetooth/Drive/Colombia/Sismos/Rutas, los 3 modos de
+     ecualizador, Config, SOS, Asistente). Todas sin parámetros.
+   - Frase de voz (intent) — al decirla, o al tocar el ítem en la lista,
+     se ejecuta la acción elegida.
+   - Persistencia: `localStorage['scall_menu_usuario']`, arreglo de
+     `{id, nombre, accionId, intent}`.
+   - **Puente con el motor de voz**: `registrarIntentsUsuario()` inyecta
+     (`push`) los intents del usuario directamente en el arreglo global
+     `intents` (el mismo que usa `intents.js`), marcados con `_usuario:true`
+     para poder quitarlos y re-agregarlos sin duplicar en cada cambio. No
+     hace falta tocar `intents.js` ni `app.js` — el loop de fallback
+     `ejecutarIntentLocal()` ya revisa todo `intents[]`, así que los
+     detecta automáticamente. **Importante**: como no están en
+     `INTENTS_PRIORITARIOS`, solo se evalúan en el fallback, no en el paso
+     prioritario — esto es intencional y evita que un intent de usuario mal
+     escrito interfiera con los intents críticos del sistema.
+   - Requiere que `js/intents.js` cargue ANTES que
+     `js/user-menu/menu_usuario.js` en `index.html` (el arreglo `intents`
+     debe existir cuando se registra). `menu_usuario.js` se sincroniza en
+     `window.addEventListener('load', ...)`.
+   - Panel construido igual que `bottle_eq.js`/`visualizer.js` (creación
+     dinámica vía `createElement`, no vive en el HTML estático), pero
+     reutiliza la clase CSS `.skill-panel` en vez de estilos propios —
+     visualmente es consistente con Alarmas/Noticias/Clima/etc.

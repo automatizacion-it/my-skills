@@ -333,6 +333,18 @@
       <span id="sismoDot" style="width:5px;height:5px;border-radius:50%;background:#475569;margin-left:auto;flex-shrink:0;transition:all .3s;"></span>
     </button>
 
+    <button class="side-menu-item" id="smMenuUsuario"
+
+      onclick="sideMenuActivar(this); toggleMenuUsuario()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </span>
+      <span class="smi-label">Mi Menú</span>
+    </button>
+
     <!-- SOS al fondo -->
     <button class="side-menu-item smi-sos" id="sosBtn"
       onclick="activarSOS()">
@@ -846,6 +858,7 @@
   <script src="js/intents_alarmas.js"></script> <!-- alarmas, recordatorios, medicamentos, SOS -->
   <script src="js/intents_musica.js"></script>  <!-- géneros, artistas, volumen -->
   <script src="js/intents.js"></script>          <!-- resto de intents -->
+  <script src="js/user-menu/menu_usuario.js"></script>  <!-- Menú de usuario: ítems personalizados con intents de voz -->
 
   <script src="js/bluetooth.js"></script>    <!-- Bluetooth + amplificador -->
   <script src="js/colombia.js"></script>       <!-- Módulo Colombia mis 10 cosas -->
