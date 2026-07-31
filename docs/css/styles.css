@@ -862,6 +862,13 @@ h1 {
   flex-shrink: 0;
 }
 
+/* Submenu de Ecualiz. (Estándar/Botellas/Humano) */
+#eqSubmenu { margin-left: 14px; border-left: 1px solid rgba(0,212,255,0.1); }
+.side-submenu-item { width: calc(100% - 22px); padding: 6px 9px; }
+.side-submenu-item .smi-icon { width: 22px; height: 22px; }
+.side-submenu-item .smi-icon svg { width: 10px; height: 10px; }
+.side-submenu-item .smi-label { font-size: .64rem; }
+
 /* SOS */
 .smi-sos .smi-icon { border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.07); }
 .smi-sos .smi-icon svg { stroke: rgba(239,68,68,0.65); }

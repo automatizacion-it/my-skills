@@ -107,3 +107,22 @@ Se encontraron y corrigieron varios problemas de este patrón:
    fallback de traducción). Se **integraron**: se agregaron sus `<script src>`
    a `index.html` y se conectó `noticias_consultar` en `intents.js` para que
    realmente invoque `consultarNoticias()`.
+
+## Sesión 2 (2026-07-30, continuación)
+
+7. **Bug de acentos en "modo orbe"**: `comandoLower = texto.toLowerCase()` no
+   quita tildes. El comando de voz "muéstrame los menús" nunca activaba
+   `_esMostrar` porque `"muéstrame".includes("muestra")` es `false` (la é con
+   tilde no coincide con la e plana). Se agregaron las variantes con tilde
+   ('muéstrame', 'muéstrenme', 'menú'/'menús') a las listas de palabras clave
+   en `app.js`. **Nota de arquitectura**: este es un patrón de bug que puede
+   repetirse en cualquier otro intent que compare texto de voz sin normalizar
+   acentos — si vuelve a aparecer, considerar normalizar acentos globalmente
+   en `comandoLower` en vez de parchear caso por caso.
+8. **Submenu de Ecualizadores**: "Botellas" y "Visualiz." (Human Visualizer)
+   dejaron de ser botones independientes del menú lateral. Ahora son sub-ítems
+   dentro de un submenu colapsable bajo "Ecualiz." (`#eqSubmenu`, función
+   `toggleEQSubmenu()` en el script inline de `index.html`). Los 3 modos
+   (Estándar/Botellas/Humano) siguen siendo paneles flotantes independientes
+   — `equalizer.js`, `bottle_eq.js`, `visualizer.js` no se tocaron por dentro,
+   solo cambió desde dónde se abren.
