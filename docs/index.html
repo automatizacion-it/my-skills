@@ -858,7 +858,8 @@
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <!-- 2. Configuración (keys desde localStorage o GitHub Secrets) -->
-  <script src="js/config.js"></script>
+  <!-- config.js ya no existe (se dejó de trackear intencionalmente, ver .gitignore) -->
+  <!-- window.APP_CONFIG simplemente queda undefined; todo el código ya lo maneja con window.APP_CONFIG && ... -->
 
   <!-- 3. Módulos de UI y habilidades -->
   <script src="js/ui.js"></script>

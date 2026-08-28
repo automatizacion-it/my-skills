@@ -338,3 +338,46 @@ Se encontraron y corrigieron varios problemas de este patrón:
       "rock", "rock clásico") — las 5 resuelven al sub-intent correcto,
       confirmando que la opción específica no se confunde con la
       genérica.
+
+## Sesión 9 (2026-07-31) — Errores de consola en producción
+
+19. **Hallazgo importante**: `docs/js/chat/chat.js` **nunca llegó a
+    existir en el repo real** (confirmado con `git log --all -- docs/js/chat/`,
+    vacío) — el `<script src="js/chat/chat.js">` en `index.html` sí se
+    commiteó, pero el archivo en sí se perdió en algún punto del flujo
+    manual de copiar/pegar (ocurrió en la sesión del Chat, antes de que
+    existiera el flujo `Instalar-ArchivoSCALL`). Causaba un 404 real en
+    cada carga de página — el panel de Chat completo estaba roto en
+    producción sin que nadie lo notara hasta revisar la consola. Se
+    recuperó desde una copia de trabajo y se re-entregó.
+    - **Lección de proceso**: después de este hallazgo se comparó la copia
+      de trabajo completa contra un `git clone` fresco del repo real —
+      salió limpio salvo `chat.js` (ya corregido) y `config.js`
+      (intencionalmente ausente, ver abajo). Vale la pena repetir esta
+      comparación si vuelve a haber una sospecha de archivo faltante.
+20. **`docs/js/config.js` — 404 esperado, pero faltaba un ajuste.**
+    Tras el `git rm --cached` de la Sesión 6, el archivo ya no existe (por
+    diseño) y nunca va a volver a existir. El `<script src="js/config.js">`
+    en `index.html` seguía ahí, generando un 404 permanente en cada carga.
+    Se quitó el `<script>` — se verificó primero que las 7 referencias a
+    `window.APP_CONFIG` en todo el proyecto ya están protegidas con
+    `window.APP_CONFIG && ...`, así que quitar el tag no cambia ningún
+    comportamiento, solo silencia el error de consola.
+21. **`favicon.svg` — nunca existió.** Se creó uno simple (círculo con
+    degradé cian→violeta sobre fondo oscuro, usando `--glow`/`--glow2` de
+    `styles.css`) en `docs/favicon.svg`, coherente con la identidad visual
+    de la app.
+22. Errores de `doubleclick.net`/`googleads.g.doubleclick.net` en consola
+    son tracking interno de anuncios de YouTube (bloqueado por el propio
+    navegador) — no son del código de SCALL, se pueden ignorar siempre
+    que aparezcan cuando el reproductor de YouTube está activo (música o
+    la actividad de Video).
+23. **Pendiente de diagnosticar** (no resuelto esta sesión, falta info):
+    3 errores 400 de `api.elevenlabs.io/.../stream` en la misma sesión de
+    consola. Un 400 de ElevenLabs indica que el cuerpo de la petición no
+    era válido — candidatos más probables: texto vacío o demasiado largo
+    en un solo fragmento (revisar `partirEnParrafos()` de `actividad.js`
+    si el texto generado por la IA viene sin saltos de línea, produciría
+    un solo fragmento gigante), o cuota mensual de caracteres agotada
+    (el plan gratis son 10,000/mes). Se necesita saber qué estaba haciendo
+    el usuario justo antes del error para confirmar la causa.
