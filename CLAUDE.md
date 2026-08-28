@@ -435,3 +435,27 @@ Se encontraron y corrigieron varios problemas de este patrón:
     confirmarse** — la próxima vez que ocurra, el log de SCALL debería
     decir la razón exacta (cuota agotada, key inválida, etc.) en vez de
     tener que ir a inspeccionar la consola del navegador.
+
+## Sesión 11 (2026-07-31) — Log de errores persistente
+
+27. **`docs/js/error_log.js`** (nuevo): mismo patrón que el Corpus de
+    `skills.js` (que guarda frases de voz no reconocidas), pero para
+    **errores técnicos** — fallos de API, excepciones, etc. Se guardan en
+    `localStorage['scall_error_log']` (máx. 200), sobreviven a recargar la
+    página (a diferencia del panel "Log" en pantalla, que es efímero).
+    - `registrarError(origen, mensaje)` — punto de entrada único, pensado
+      para llamarse desde el `catch` de cualquier módulo.
+    - Panel nuevo "Errores" en el menú lateral (`togglePanelErrores()`),
+      mismo patrón visual que Corpus: lista con fecha/origen/mensaje,
+      botón "Exportar .txt" y "Limpiar". Punto rojo en el ícono del menú
+      si hay al menos un error guardado (`actualizarBadgeErrores()`).
+    - **Conectado por ahora solo en un lugar**: el `catch` de
+      `procesarCola()` en `tts_elevenlabs.js` (el mismo que ya loggeaba a
+      pantalla en la Sesión 10) ahora también llama
+      `registrarError('TTS/ElevenLabs', e.message)`. **Pendiente**: cablear
+      lo mismo en otros catches del proyecto (Sismos/USGS, Drive, YouTube,
+      etc.) si se quiere que el log capture errores de todos los módulos,
+      no solo de voz — hoy solo cubre ElevenLabs.
+    - Idea de uso: exportar el .txt periódicamente y pegarlo en una sesión
+      de Claude para revisar y corregir los errores acumulados en lote,
+      en vez de perseguirlos uno por uno en la consola del navegador.

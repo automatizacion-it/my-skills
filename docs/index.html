@@ -368,6 +368,19 @@
       <span class="smi-label">Actividad</span>
     </button>
 
+    <button class="side-menu-item" id="smErrores"
+
+      onclick="sideMenuActivar(this); togglePanelErrores()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </span>
+      <span class="smi-label">Errores</span>
+      <span id="erroresDot" style="display:none;width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 6px #ef4444;margin-left:auto;flex-shrink:0;"></span>
+    </button>
+
     <!-- SOS al fondo -->
     <button class="side-menu-item smi-sos" id="sosBtn"
       onclick="activarSOS()">
@@ -893,6 +906,7 @@
   <script src="js/visualizer.js"></script>       <!-- Human Visualizer -->
   <script src="js/gdrive.js"></script>           <!-- Google Drive -->
   <script src="js/bottle_eq.js"></script>        <!-- Bottle Equalizer -->
+  <script src="js/error_log.js"></script>          <!-- Log de errores persistente -->
   <script src="js/tts_elevenlabs.js"></script>   <!-- ElevenLabs TTS — voz expresiva -->
   <script src="js/claude_tools.js"></script>  <!-- Claude Tool Use — acceso a módulos -->
   <!-- 7. Motor principal -->
