@@ -313,3 +313,28 @@ Se encontraron y corrigieron varios problemas de este patrón:
       (`musica_play_query`, `musica_salsa`, etc.) — sigue exactamente
       igual que antes. Solo cambió qué pasa cuando la frase es
       puramente genérica.
+
+## Sesión 8 (2026-07-31) — Refinar el JSON de música (probado en vivo)
+
+18. El usuario confirmó que "pon música" ya dispara la pregunta en
+    producción. Se refinó `docs/data/intents_musica.json` con un ejemplo
+    real que dio: "romántica, planchas, rock de los 80".
+    - **"plancha"/"planchas"** agregado como sinónimo de `romantica`
+      (jerga colombiana para baladas lentas/música para bailar pegado).
+    - **Nueva opción `rock_80`**, específica para "rock de los 80" —
+      colocada ANTES de la opción genérica `rock` en el arreglo
+      `opciones`, porque `Array.find()` devuelve la PRIMERA coincidencia:
+      si `rock` (genérica) fuera evaluada primero, "rock de los 80"
+      matchearía ahí (contiene la palabra "rock") y nunca llegaría a la
+      opción específica. **Regla general para agregar opciones nuevas al
+      JSON**: la más específica siempre va primero en el arreglo.
+    - Pregunta reformulada más corta y natural: "¿Qué tipo de música
+      quieres? Por ejemplo: romántica, planchas, rock de los 80,
+      electrónica, salsa, vallenato, reggaetón, o lo que se te ocurra."
+      — ya no intenta leer las 15 opciones completas, da ejemplos y dice
+      "o lo que se te ocurra" (la búsqueda de sub-intent sigue cubriendo
+      las 15 opciones igual, la pregunta solo menciona algunas).
+    - Probado con 5 frases ("romántica", "planchas", "rock de los 80",
+      "rock", "rock clásico") — las 5 resuelven al sub-intent correcto,
+      confirmando que la opción específica no se confunde con la
+      genérica.
