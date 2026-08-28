@@ -634,6 +634,15 @@ async function ejecutarHabilidad(texto) {
   // ejecutan directamente sin gastar la IA ni la cuota de API.
   // ══════════════════════════════════════════════════════════════
   const comandoLower = texto.toLowerCase();
+
+  // ── ACLARACIÓN PENDIENTE — si SCALL acaba de preguntar algo (ej.
+  // "¿qué quieres escuchar?"), esta frase es la respuesta, no un comando
+  // nuevo. Va primero que cualquier otro intent.
+  if (typeof resolverRespuestaGrupo === 'function' && resolverRespuestaGrupo(texto)) {
+    if (window.scallOrb) window.scallOrb.setState('idle');
+    return;
+  }
+
   // ── ORBE PRIMERO — antes que cualquier otro intent ─────────────────
   // ── EQ por voz ───────────────────────────────────────────────────
   // ── Visualizer por voz ──────────────────────────────────────────

@@ -1,0 +1,20 @@
+{
+  "id": "musica",
+  "pregunta": "¿Qué quieres escuchar? Puedes decir: electrónica, relajante, para trabajar, para hacer ejercicio, salsa, vallenato, reggaetón, cumbia, pop, rock, jazz, romántica, instrumental, o popular.",
+  "opciones": [
+    { "id": "electronica",  "palabras": ["electronica", "electrónica", "eléctrica", "electrica", "electronic"], "query": "música electrónica" },
+    { "id": "relajante",    "palabras": ["relajante", "relajar", "dormir", "tranquila", "tranquilo", "calma", "ambient"], "query": "música relajante ambient" },
+    { "id": "trabajar",     "palabras": ["trabajar", "estudiar", "concentrar", "trabajo", "estudio", "focus"], "query": "música para trabajar concentración" },
+    { "id": "ejercicio",    "palabras": ["ejercicio", "ejercitar", "entrenar", "gym", "correr", "deporte"], "query": "música para entrenar gym workout" },
+    { "id": "salsa",        "palabras": ["salsa"], "query": "salsa colombiana clásica" },
+    { "id": "vallenato",    "palabras": ["vallenato"], "query": "vallenato colombiano" },
+    { "id": "reggaeton",    "palabras": ["reggaeton", "reggaetón", "regueton", "reguetón"], "query": "reggaeton hits 2024" },
+    { "id": "cumbia",       "palabras": ["cumbia"], "query": "cumbia colombiana popular" },
+    { "id": "pop",          "palabras": ["pop"], "query": "pop hits 2024" },
+    { "id": "rock",         "palabras": ["rock"], "query": "rock clásico hits" },
+    { "id": "jazz",         "palabras": ["jazz"], "query": "jazz suave instrumental" },
+    { "id": "romantica",    "palabras": ["romantica", "romántica", "romantic", "amor"], "query": "música romántica en español" },
+    { "id": "instrumental", "palabras": ["instrumental", "sin letra", "sin cantante"], "query": "música instrumental piano" },
+    { "id": "popular",      "palabras": ["popular", "exitos", "éxitos", "hits", "lo mejor"], "query": "música popular hits 2024" }
+  ]
+}

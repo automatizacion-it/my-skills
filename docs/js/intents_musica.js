@@ -20,7 +20,8 @@ const intentsMúsica = [
       return triggers.some(t => c.includes(t)) && !c.includes('radio') && !c.includes('emisora') && !c.includes('podcast');
     },
     action: () => {
-      if (typeof reproducirMusica === 'function') reproducirMusica('música popular');
+      if (typeof preguntarGrupo === 'function') preguntarGrupo('musica');
+      else if (typeof reproducirMusica === 'function') reproducirMusica('música popular');
     }
   },
 

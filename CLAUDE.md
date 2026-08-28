@@ -263,3 +263,53 @@ Se encontraron y corrigieron varios problemas de este patrón:
     condición. Mismo tipo de trampa que el bug de acentos de la Sesión 2,
     pero con substrings en vez de tildes — vale la pena tenerlo en cuenta
     al escribir cualquier `match` nuevo basado en `includes()`.
+
+## Sesión 7 (2026-07-31) — Grupos de intents con pregunta de aclaración
+
+17. **Nuevo concepto**: cuando una frase es genérica (ej. "pon música", sin
+    especificar género), en vez de asumir un valor por defecto, SCALL
+    **pregunta** — como un menú de contact center — y la **frase
+    siguiente** se interpreta como respuesta a esa pregunta puntual, no
+    como un comando nuevo. Antes no existía ningún concepto de "pregunta
+    pendiente"/contexto entre turnos de voz — cada frase se evaluaba sola.
+    - **`docs/data/intents_musica.json`** (nuevo directorio `data/`):
+      archivo de texto plano (JSON) — no código — con el intent principal
+      "música" y sus 14 sub-intents (electrónica, relajante, trabajar,
+      ejercicio, salsa, vallenato, reggaetón, cumbia, pop, rock, jazz,
+      romántica, instrumental, popular), cada uno con sus palabras clave
+      y el query de búsqueda que ya usaba el intent específico
+      correspondiente en `intents_musica.js`. Pensado para poder
+      editarse/ampliarse sin tocar JS.
+    - **`docs/js/intents_grupos.js`** (nuevo): carga el JSON por `fetch()`,
+      expone `preguntarGrupo(id)` (hace la pregunta y marca
+      `grupoPendiente`) y `resolverRespuestaGrupo(texto)` (si hay pregunta
+      pendiente, la resuelve contra las palabras clave del grupo y
+      ejecuta la acción; si no hay nada pendiente, devuelve `false` y no
+      cambia nada del comportamiento existente). Diseñado para agregar
+      más grupos después (radio, clima, etc.) sin tocar esta lógica —
+      solo un `.json` nuevo + una línea en `cargarTodosLosGrupos()`.
+    - **Enganche en `app.js`**: dentro de `ejecutarHabilidad()`, justo
+      después de calcular `comandoLower` y ANTES que cualquier otro
+      intent (incluso antes de ORBE), se llama a `resolverRespuestaGrupo()`.
+      Si devuelve `true`, la frase se consumió como respuesta y no sigue
+      el pipeline normal. Es el punto más temprano posible del pipeline.
+    - **`musica_play`** (el intent de "pon música" a secas, en
+      `intents_musica.js`) ahora llama `preguntarGrupo('musica')` en vez
+      de reproducir "música popular" por defecto directamente.
+    - **Nunca se queda atascado**: `grupoPendiente` se limpia ANTES de
+      intentar resolver la respuesta (no después), así que si el usuario
+      dice algo que no matchea ninguna opción, o cualquier cosa rara,
+      la siguiente frase ya vuelve a ser un comando normal — no hace
+      falta ningún "cancelar" explícito.
+    - Probado de punta a punta con una simulación de 3 turnos: pregunta,
+      respuesta reconocida, y confirmación de que una frase normal
+      posterior ya no se confunde con una respuesta pendiente.
+    - **Pendiente para el futuro** (mencionado explícitamente por el
+      usuario, no se construyó): 3 modos posibles para cómo se presenta
+      la pregunta — 100% voz (el actual), voz + opciones visibles en
+      pantalla, o 100% visual sin voz. Quedaría como una preferencia
+      guardada en `localStorage` que `preguntarGrupo()` consulte.
+    - **No se tocó** el resto de la cascada de intents de música
+      (`musica_play_query`, `musica_salsa`, etc.) — sigue exactamente
+      igual que antes. Solo cambió qué pasa cuando la frase es
+      puramente genérica.
