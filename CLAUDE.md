@@ -159,3 +159,71 @@ Se encontraron y corrigieron varios problemas de este patrón:
      dinámica vía `createElement`, no vive en el HTML estático), pero
      reutiliza la clase CSS `.skill-panel` en vez de estilos propios —
      visualmente es consistente con Alarmas/Noticias/Clima/etc.
+
+## Sesión 4 (2026-07-31) — Chat amigo-a-amigo (MQTT)
+
+10. **Nuevo directorio `docs/js/chat/`** con `chat.js`. Panel "Chat" (botón
+    nuevo en el menú lateral, `toggleChat()`) para mensajería en tiempo real
+    entre dos instancias de SCALL de amigos distintos.
+    - **Protocolo**: MQTT (librería `mqtt` ya cargada por CDN en `index.html`
+      para el broker de IoT — se reutiliza la misma librería, pero con una
+      **conexión y variable de cliente completamente separadas**
+      (`chatClient`, no `mqttClient`) y su **propio broker configurable**,
+      independiente del de IoT/ESP32. Fue decisión explícita del usuario.
+    - **Esquema de sala**: cada mensaje se publica/suscribe en el tópico
+      `scall/chat/<sala>`, donde `<sala>` pasa por `sanearSala()` (minúsculas,
+      espacios → guiones, solo `[a-z0-9-_]`). "Pizza 2026" y "pizza-2026"
+      terminan siendo la misma sala — probado con una simulación de dos
+      instancias.
+    - **Identidad**: cada instancia genera un `chatMiId` aleatorio persistido
+      en `localStorage` (`scall_chat_mi_id`) para distinguir "mis" burbujas
+      de las del amigo sin depender del nombre visible.
+    - **Config**: `localStorage['scall_chat_config']` (host, puerto, sala,
+      usuario/password opcionales, nombre visible). Vive dentro del propio
+      panel de Chat (⚙), no en el modal de Configuración general — mismo
+      patrón que la API key de OpenWeatherMap en el panel de Clima.
+    - **Historial**: persistido por sala en
+      `localStorage['scall_chat_historial_<sala>']`, recortado a 50 msjs.
+    - Los mensajes propios NO se renderizan de forma optimista al enviar —
+      solo se pintan cuando llegan de vuelta por la suscripción MQTT (el
+      broker hace eco al publicador), evitando duplicados/desincronía.
+
+## Sesión 5 (2026-07-31) — Actividad: Audiolibro / Clase / Video para TV
+
+11. **Nuevo directorio `docs/js/actividad/`** con `actividad.js`. Botón
+    "Actividad" en el menú lateral (`toggleActividad()`) que abre un panel
+    de 3 pasos: (1) elegir Audiolibro / Clase / Video, (2) elegir origen
+    del contenido (IA sobre un tema, o texto propio pegado — solo para
+    Audiolibro/Clase), (3) resultado.
+    - **No se construyó infraestructura nueva** — todo reusa módulos ya
+      existentes:
+      - Generación de texto: llama directo a la API de Gemini o Claude
+        (según `getActiveIA()`) usando las mismas keys/funciones que ya
+        usa `app.js` (`getApiKey`, `getClaudeKey`, `getClaudeModel`).
+      - Narración: reusa `encolarVoz()`/`detenerVoz()`/`colaVoz` de
+        `tts_elevenlabs.js` sin modificar ese archivo — el texto generado
+        se parte en párrafos (`partirEnParrafos`) y cada uno se encola,
+        así se reproducen en secuencia con el motor de voz que ya existe
+        (ElevenLabs con fallback a Web Speech).
+      - Video: reusa `buscarEnYouTube()` de `spotify.js` (ya usa la
+        YouTube Data API v3 con la key ya configurada) y lo embebe con un
+        **nuevo** `YT.Player` (`ytPlayerActividad`, variable propia — NO
+        se toca `ytPlayer` de `spotify.js` para no interferir con la
+        reproducción de música). Espera a que la API de YouTube esté lista
+        con `esperarYT()` (polling), sin redefinir el callback global
+        `window.onYouTubeIframeAPIReady` que ya reclama `spotify.js`.
+    - **Decisión de arquitectura sobre "video para el TV"**: investigamos
+      Google Cast SDK — un receiver personalizado (para diapositivas o
+      contenido propio) requiere registrarse en el Google Cast SDK
+      Developer Console (pago único ~5 USD) y alojar un receiver. Se optó
+      por la ruta sin fricción: el reproductor embebido de YouTube ya trae
+      su propio botón de Cast nativo, así que "proyectar en el Smart TV"
+      funciona hoy mismo con un Chromecast, sin ninguna cuenta ni
+      infraestructura adicional. Si más adelante se quiere una
+      presentación 100% propia en el TV, esa es la puerta que falta abrir
+      (registro pagado + receiver custom).
+    - Requiere que `js/spotify.js` y `js/tts_elevenlabs.js` ya existan como
+      funciones globales al momento de USARSE (se referencian dentro de
+      cuerpos de función, nunca en el nivel superior del archivo, así que
+      el orden exacto del `<script>` no es estrictamente crítico — igual
+      se colocó después de ambos por claridad).

@@ -345,6 +345,29 @@
       <span class="smi-label">Mi Menú</span>
     </button>
 
+    <button class="side-menu-item" id="smChat"
+
+      onclick="sideMenuActivar(this); toggleChat()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+        </svg>
+      </span>
+      <span class="smi-label">Chat</span>
+    </button>
+
+    <button class="side-menu-item" id="smActividad"
+
+      onclick="sideMenuActivar(this); toggleActividad()">
+      <span class="smi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+        </svg>
+      </span>
+      <span class="smi-label">Actividad</span>
+    </button>
+
     <!-- SOS al fondo -->
     <button class="side-menu-item smi-sos" id="sosBtn"
       onclick="activarSOS()">
@@ -859,6 +882,7 @@
   <script src="js/intents_musica.js"></script>  <!-- géneros, artistas, volumen -->
   <script src="js/intents.js"></script>          <!-- resto de intents -->
   <script src="js/user-menu/menu_usuario.js"></script>  <!-- Menú de usuario: ítems personalizados con intents de voz -->
+  <script src="js/chat/chat.js"></script>  <!-- Chat MQTT amigo-a-amigo (broker independiente del de IoT) -->
 
   <script src="js/bluetooth.js"></script>    <!-- Bluetooth + amplificador -->
   <script src="js/colombia.js"></script>       <!-- Módulo Colombia mis 10 cosas -->
@@ -871,6 +895,7 @@
   <script src="js/claude_tools.js"></script>  <!-- Claude Tool Use — acceso a módulos -->
   <!-- 7. Motor principal -->
   <script src="js/app.js"></script>
+  <script src="js/actividad/actividad.js"></script>  <!-- Actividad: Audiolibro / Clase / Video para TV -->
 
   <!-- ── Three.js Orbe Wireframe (sin cambios) ── -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
