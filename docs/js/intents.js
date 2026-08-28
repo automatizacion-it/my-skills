@@ -409,5 +409,30 @@ const intents = [
     description: "Ver corpus de entrenamiento",
     match: (c) => c.includes('corpus')||c.includes('frases no reconocidas')||c.includes('log de intents'),
     action: () => { togglePanel('corpusPanel'); responderVoz('Abriendo corpus.'); }
+  },
+  // ── Sismos ────────────────────────────────────────────────────────────
+  {
+    name: "sismo_activar",
+    description: "Activar monitoreo sísmico (Ej: 'Activa el monitoreo sísmico')",
+    match: (c) => !c.includes('desactiv') && (c.includes('activa')||c.includes('enciende')||c.includes('prende')) && (c.includes('monitoreo sísmico')||c.includes('monitoreo sismico')||c.includes('alertas de sismo')||c.includes('alerta sísmica')||c.includes('alerta sismica')),
+    action: () => { if (typeof activarMonitoreoSismico === 'function') activarMonitoreoSismico(); }
+  },
+  {
+    name: "sismo_desactivar",
+    description: "Desactivar monitoreo sísmico (Ej: 'Desactiva el monitoreo sísmico')",
+    match: (c) => (c.includes('desactiva')||c.includes('apaga')) && (c.includes('monitoreo sísmico')||c.includes('monitoreo sismico')||c.includes('alertas de sismo')||c.includes('alerta sísmica')||c.includes('alerta sismica')),
+    action: () => { if (typeof desactivarMonitoreoSismico === 'function') desactivarMonitoreoSismico(); }
+  },
+  {
+    name: "sismo_simular",
+    description: "Simular un sismo de prueba (Ej: 'Simula un sismo')",
+    match: (c) => (c.includes('simula')||c.includes('simular')||c.includes('prueba')) && (c.includes('sismo')||c.includes('terremoto')||c.includes('sísmic')||c.includes('sismic')),
+    action: () => { if (typeof simularSismo === 'function') simularSismo(); }
+  },
+  {
+    name: "sismo_panel",
+    description: "Ver panel de sismos (Ej: 'Muéstrame los sismos')",
+    match: (c) => (c.includes('sismo')||c.includes('terremoto')||c.includes('sísmic')||c.includes('sismic')) && (c.includes('muestra')||c.includes('muéstrame')||c.includes('abre')||c.includes('ver')||c.includes('panel')),
+    action: () => { if (typeof abrirPanelSismos === 'function') abrirPanelSismos(); }
   }
 ];

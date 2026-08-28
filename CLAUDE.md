@@ -227,3 +227,39 @@ Se encontraron y corrigieron varios problemas de este patrón:
       cuerpos de función, nunca en el nivel superior del archivo, así que
       el orden exacto del `<script>` no es estrictamente crítico — igual
       se colocó después de ambos por claridad).
+
+## Sesión 6 (2026-07-31) — Priorizar la alerta sísmica
+
+13. **Hallazgo**: `responderVoz` no es una función fija — `app.js`,
+    `tts_elevenlabs.js` y `ui.js` se la disputan en tiempo de ejecución
+    (la reemplazan condicionalmente según si hay key de ElevenLabs). Si la
+    versión activa en ese momento es la de ElevenLabs, el mensaje se
+    **encola** (`encolarVoz`/`colaVoz`) detrás de cualquier otra cosa que
+    ya esté sonando (música, radio, audiolibro/clase de Actividad). Una
+    alerta sísmica real podía quedar esperando en cola en vez de sonar
+    de inmediato. No se resolvió la causa raíz (la triple reasignación de
+    `responderVoz`, que sigue siendo frágil) — se resolvió el síntoma que
+    importa para seguridad: `sismos.js` ahora limpia todo antes de hablar.
+14. **`interrumpirTodoParaSismo()`** (nueva, en `sismos.js`), se llama al
+    inicio de `dispararAlertaSismica()`, antes de tocar el sonido de alerta
+    o hablar. Detiene, en este orden: la cola de voz (`detenerVoz()` +
+    vaciar `colaVoz`), `speechSynthesis.cancel()` nativo, la radio
+    (`detenerRadio()`), la música de YouTube (`detenerMusica()`), la
+    narración de Actividad (`detenerNarracionActividad()`) y pausa su
+    reproductor de YouTube (`ytPlayerActividad.pauseVideo()`). Todas las
+    llamadas están protegidas con `typeof === 'function'` y try/catch —
+    no rompe nada si algún módulo no está cargado. Probado con una
+    simulación que confirma las 6 interrupciones.
+15. **Eventos críticos (M ≥ 5.0)** ahora también llaman `abrirPanelSismos()`
+    automáticamente (antes solo sonaba/hablaba/notificaba sin mostrar nada
+    en pantalla).
+16. **4 intents de voz nuevos** en `intents.js`, agregados también a
+    `INTENTS_PRIORITARIOS` en `app.js` (se resuelven localmente, sin pasar
+    por el router de IA): `sismo_activar`, `sismo_desactivar`,
+    `sismo_simular`, `sismo_panel`. **Bug encontrado y corregido durante
+    las pruebas**: "desactiva" contiene "activa" como substring, así que
+    el match de `sismo_activar` (sin cuidado) disparaba con frases de
+    desactivación — se corrigió agregando `!c.includes('desactiv')` a su
+    condición. Mismo tipo de trampa que el bug de acentos de la Sesión 2,
+    pero con substrings en vez de tildes — vale la pena tenerlo en cuenta
+    al escribir cualquier `match` nuevo basado en `includes()`.

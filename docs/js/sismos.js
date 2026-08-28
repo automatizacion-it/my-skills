@@ -158,7 +158,35 @@ function consultarSGC() {
 // DISPARAR ALERTA
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// INTERRUMPIR TODO — la alerta sísmica tiene prioridad sobre cualquier
+// otra cosa que esté sonando (música, radio, audiolibro/clase de
+// Actividad, cola de voz)
+// ══════════════════════════════════════════════════════════════════════
+
+function interrumpirTodoParaSismo() {
+  // Cola de voz (ElevenLabs) y síntesis nativa del navegador
+  if (typeof detenerVoz === 'function') { try { detenerVoz(); } catch(e) {} }
+  if (typeof colaVoz !== 'undefined' && colaVoz && colaVoz.length) colaVoz.length = 0;
+  if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch(e) {} }
+
+  // Radio
+  if (typeof detenerRadio === 'function') { try { detenerRadio(); } catch(e) {} }
+
+  // Música (YouTube vía spotify.js)
+  if (typeof detenerMusica === 'function') { try { detenerMusica(); } catch(e) {} }
+
+  // Narración de Actividad (audiolibro/clase) y su video de YouTube
+  if (typeof detenerNarracionActividad === 'function') { try { detenerNarracionActividad(); } catch(e) {} }
+  if (typeof ytPlayerActividad !== 'undefined' && ytPlayerActividad && typeof ytPlayerActividad.pauseVideo === 'function') {
+    try { ytPlayerActividad.pauseVideo(); } catch(e) {}
+  }
+
+  _sisLog('[SISMOS] ⏸ Todo interrumpido — la alerta sísmica tiene prioridad');
+}
+
 function dispararAlertaSismica(magnitud, lugar, hora) {
+  interrumpirTodoParaSismo();
   tocarAlertaSismica(magnitud);
 
   var esCritico = magnitud >= SISMOS_CONFIG.magnitudCritica;
@@ -195,9 +223,10 @@ function dispararAlertaSismica(magnitud, lugar, hora) {
     });
   }
 
-  // Si es crítico: activar modo SOS de SCALL
+  // Si es crítico: mostrar el panel de inmediato y activar modo SOS de SCALL
   if (esCritico) {
-    _sisLog('[SISMOS] CRÍTICO — activando protocolo SOS');
+    _sisLog('[SISMOS] CRÍTICO — abriendo panel y activando protocolo SOS');
+    abrirPanelSismos();
     setTimeout(function() {
       if (typeof activarSOS === 'function') activarSOS();
     }, 4000);

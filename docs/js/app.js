@@ -765,7 +765,9 @@ async function ejecutarHabilidad(texto) {
     // Otras utilidades
     'clima_consultar', 'noticias_consultar',
     'traducir', 'cumpleanos_abrir', 'cumpleanos_hoy', 'cumpleanos_proximo',
-    'corpus_ver'
+    'corpus_ver',
+    // Sismos
+    'sismo_activar', 'sismo_desactivar', 'sismo_simular', 'sismo_panel'
   ];
 
   // Intents de Bluetooth inline (no requieren archivo separado)
