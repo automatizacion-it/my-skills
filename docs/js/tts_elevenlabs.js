@@ -91,6 +91,7 @@ async function procesarCola() {
       await hablarConWebSpeechPromise(msg);
     }
   } catch(e) {
+    _ttsLog('[TTS] ⚠️ ElevenLabs falló (' + e.message + ') — usando voz nativa de respaldo');
     await hablarConWebSpeechPromise(msg);
   }
   reproduciendo = false;

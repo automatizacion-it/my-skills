@@ -381,3 +381,57 @@ Se encontraron y corrigieron varios problemas de este patrón:
     un solo fragmento gigante), o cuota mensual de caracteres agotada
     (el plan gratis son 10,000/mes). Se necesita saber qué estaba haciendo
     el usuario justo antes del error para confirmar la causa.
+
+## Sesión 10 (2026-07-31) — El bug real: la fusión de intents_musica.js nunca funcionó
+
+25. **Hallazgo mayor, con stack traces del usuario como evidencia**: el
+    sistema de pregunta de aclaración de música (Sesiones 7-8) **nunca
+    funcionó en producción**, desde el primer día. La traza mostraba
+    `action @ intents.js:132` ejecutando `reproducirMusica` directo — NO
+    la versión con `preguntarGrupo` que está en `intents_musica.js`.
+    - **Causa raíz**: `intents.js` tiene su **propia copia**, previa a la
+      existencia de `intents_musica.js`, de 14 intents de
+      música/radio/podcast (incluyendo su propio `musica_play` viejo, que
+      reproduce "música popular" directo sin preguntar nada).
+      `intents_musica.js` (que carga antes) intenta guardar sus 23 intents
+      en `window._intentsMusicaPreload` para que `intents.js` los fusione
+      al cargar — pero **nada nunca leyó esa variable**. El comentario en
+      `intents_musica.js` ("Esto permite cargar intents_musica.js antes
+      que intents.js") documentaba la intención, pero la mitad que hace
+      la fusión real nunca se escribió del lado de `intents.js`.
+    - **Consecuencia real, más allá de la pregunta de aclaración**: los 14
+      géneros específicos de `intents_musica.js` (electrónica, salsa,
+      vallenato, reggaetón, cumbia, pop, rock, jazz, romántica,
+      instrumental, popular, relajante, trabajar, ejercicio) **nunca se
+      ejecutaron, ni un solo día** — quedaban completamente huérfanos.
+      Comandos como "pon salsa" probablemente caían al `musica_play_query`
+      genérico de `intents.js` (búsqueda de YouTube sin curar), no al
+      intent específico con su query cuidada.
+    - **Fix**: se agregó, al final de `intents.js` (justo después de
+      cerrar `const intents = [...]`), el bloque que faltaba: si existe
+      `window._intentsMusicaPreload`, se hace `intents.splice(...)`
+      reemplazando cualquier intent de `intents.js` que tenga el mismo
+      `name`, y agregando los que solo existen en `intents_musica.js`.
+    - **Probado con una simulación de dos scripts secuenciales** (no un
+      solo bloque concatenado — eso da un falso error de TDZ de `const`
+      que no ocurre en el navegador real, porque ahí cada `<script>` es
+      un programa completo que termina antes de que el siguiente
+      empiece). Confirmado: 62 intents finales, sin duplicados,
+      `musica_play` es la versión que pregunta, y los 14 géneros
+      específicos están presentes.
+    - **Lección para el futuro**: si se agrega otro archivo con el mismo
+      patrón "cargar antes, fusionar después" (`window._algoPreload`),
+      hay que verificar explícitamente que el lado receptor lo consuma —
+      quedó demostrado que es fácil escribir la mitad del mecanismo y
+      nunca notar que la otra mitad falta, porque el código no truena,
+      simplemente ejecuta silenciosamente el camino viejo.
+26. **`tts_elevenlabs.js` tragaba errores en silencio**: cuando ElevenLabs
+    fallaba (por la razón que fuera), `procesarCola()` caía a Web Speech
+    sin dejar ningún rastro del motivo real — solo se veía en la consola
+    del navegador como un 400 crudo, sin cuerpo de respuesta visible. Se
+    agregó un `_ttsLog()` en el `catch` para que el mensaje de error real
+    (`e.message`, que incluye el `detail` que devuelve la API) aparezca en
+    el log de SCALL. **La causa de los 400 de esta sesión sigue sin
+    confirmarse** — la próxima vez que ocurra, el log de SCALL debería
+    decir la razón exacta (cuota agotada, key inválida, etc.) en vez de
+    tener que ir a inspeccionar la consola del navegador.

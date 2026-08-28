@@ -436,3 +436,13 @@ const intents = [
     action: () => { if (typeof abrirPanelSismos === 'function') abrirPanelSismos(); }
   }
 ];
+
+// ── Fusionar los intents de música (intents_musica.js, carga ANTES que
+// este archivo) — sus versiones reemplazan a las que tengan el mismo
+// nombre aquí arriba, y se agregan las que solo existen allá (géneros
+// específicos: electrónica, salsa, vallenato, etc.) ──
+if (window._intentsMusicaPreload) {
+  const nombresMusica = window._intentsMusicaPreload.map(i => i.name);
+  const base = intents.filter(i => !nombresMusica.includes(i.name));
+  intents.splice(0, intents.length, ...window._intentsMusicaPreload, ...base);
+}
