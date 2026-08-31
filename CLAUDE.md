@@ -459,3 +459,44 @@ Se encontraron y corrigieron varios problemas de este patrón:
     - Idea de uso: exportar el .txt periódicamente y pegarlo en una sesión
       de Claude para revisar y corregir los errores acumulados en lote,
       en vez de perseguirlos uno por uno en la consola del navegador.
+
+## Sesión 12 (2026-08-28) — La causa real de los 400/401 de ElevenLabs: la UI del modal
+
+28. **Causa raíz final** de toda la saga de errores de ElevenLabs de las
+    últimas sesiones (400 en producción, luego 401 al probar la key
+    nueva): **no era la cuota, ni la voz, ni el modelo — era el propio
+    modal de Configuración de SCALL**, con dos bugs de UX que se
+    combinaban para que una key nueva pegada por el usuario nunca llegara
+    a probarse ni guardarse de verdad:
+    - **`probarVozElevenLabs()` (botón "▶ Probar") ignoraba por completo
+      el campo de texto** — llamaba a `getElevenLabsKey()`, que lee de
+      `localStorage`, nunca el valor recién pegado en el input. Resultado:
+      pegar una key nueva y darle "Probar" siempre probaba la key vieja
+      (o ninguna), sin importar qué se hubiera escrito.
+    - **El campo de ElevenLabs no lo guarda el botón "Guardar
+      Configuración"** (el grande del pie del modal) — ese botón
+      (`saveAssistantConfig()`) solo toca nombre del asistente,
+      Gemini y Claude. ElevenLabs tiene su PROPIO botón, "Activar voz"
+      (`guardarElevenLabsKey()`). Ni MQTT ni YouTube los toca tampoco —
+      cada integración tiene su propio botón de guardado, patrón que ya
+      existía pero que no está explicado en ningún lado de la UI.
+    - El campo también se limpia intencionalmente cada vez que se abre
+      el modal (`index.html` línea ~216, `if (key && elKey) key.value = ''`)
+      cuando ya hay una key guardada — para no mostrarla en texto plano.
+      Correcto en sí, pero sin ninguna explicación visible, se ve idéntico
+      a "se me borró lo que pegué".
+    - **Fix**: `probarVozElevenLabs()` ahora prueba primero el valor
+      actual del campo (lo recién pegado, aunque no se haya guardado
+      todavía con "Activar voz") y solo si está vacío cae a la key
+      guardada. Se agregó un `form-hint` visible bajo el campo explicando
+      qué botón usar. **No se tocó** el patrón de "cada integración
+      guarda con su propio botón" — es consistente con MQTT/YouTube, así
+      que unificar todo bajo "Guardar Configuración" habría sido un
+      cambio más grande e inconsistente con el resto del modal.
+    - **Lección**: los errores 400/401 en consola eran síntomas reales,
+      pero la causa nunca estuvo en el código de red o en la cuenta de
+      ElevenLabs — estaba en que la key correcta nunca llegaba a viajar
+      en la petición porque la UI nunca la capturó. Vale la pena, ante
+      errores de autenticación persistentes, verificar primero qué valor
+      concreto está usando el código (no asumir que "la key está mal")
+      antes de sospechar de la cuenta/servicio externo.

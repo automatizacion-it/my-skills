@@ -276,9 +276,13 @@ function detenerVoz() {
 // ── Cambiar voz desde el panel de config ─────────────────────────────
 function probarVozElevenLabs(texto) {
   texto = texto || '¡Hola! Soy SCALL, tu asistente personal de IIT. ¿En qué te puedo ayudar, parcero?';
-  var key = getElevenLabsKey();
+  // Prioridad: lo que hay AHORA MISMO en el campo (recién pegado, aunque
+  // no se haya guardado con "Activar voz" todavía) — si el campo está
+  // vacío, se usa la key ya guardada de antes.
+  var campo = document.getElementById('elevenLabsKeyInput');
+  var key = (campo && campo.value.trim()) || getElevenLabsKey();
   if (!key) {
-    alert('Primero activa tu ElevenLabs API Key.');
+    alert('Primero pega tu ElevenLabs API Key en el campo de arriba.');
     return;
   }
   // Forzar sincronización del select con el ID actual
