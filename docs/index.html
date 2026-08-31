@@ -199,23 +199,26 @@
   // Cargar voz guardada en el select al abrir Config
   setTimeout(function(){
     var sel = document.getElementById('elVoiceSelect');
+    var custom = document.getElementById('elVoiceCustomInput');
     var key = document.getElementById('elevenLabsKeyInput');
     var st  = document.getElementById('elStatus');
     var vozId = localStorage.getItem('scall_el_voice') || 'VmejBeYhbrcTPwDniox7';
     var elKey = localStorage.getItem('scall_elevenlabs_key') || '';
     if (sel) {
       sel.value = vozId;
-      // Si no existe la opción, forzar selección
+      // Si el ID guardado no es ninguna de las 6 voces predefinidas,
+      // es un ID personalizado — seleccionar esa opción y mostrar el campo
       if (sel.value !== vozId) {
-        var opt = document.createElement('option');
-        opt.value = vozId; opt.text = '🎙 ' + vozId.substring(0,8) + '...';
-        sel.insertBefore(opt, sel.firstChild);
-        sel.value = vozId;
+        sel.value = '__custom__';
+        if (custom) { custom.style.display = 'block'; custom.value = vozId; }
+      } else if (custom) {
+        custom.style.display = 'none';
       }
     }
     if (key && elKey) key.value = '';
     if (st) {
-      var nombre = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : vozId;
+      var nombre = (sel && sel.value === '__custom__') ? ('Personalizado: ' + vozId.substring(0,12) + '...')
+                 : (sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : vozId);
       st.textContent = elKey ? ('✅ Activo — ' + nombre) : '⚠️ Sin API Key';
     }
   }, 50);">
@@ -814,6 +817,12 @@
           <select id="elVoiceSelect" class="alarm-input" style="font-size:.78rem;"
             onchange="
               var id = this.value;
+              var custom = document.getElementById('elVoiceCustomInput');
+              if (id === '__custom__') {
+                if (custom) { custom.style.display = 'block'; custom.focus(); }
+                return;
+              }
+              if (custom) custom.style.display = 'none';
               localStorage.setItem('scall_el_voice', id);
               if(typeof setVozActual==='function') setVozActual(id);
               var st=document.getElementById('elStatus');
@@ -826,19 +835,35 @@
             <option value="pqHfZKP75CvOlQylNhV4">🇨🇴 Alejandro — Colombiano</option>
             <option value="SOYHLrjzK2X1ezoPC6cr">🌎 Horacio — Latino neutro</option>
             <option value="onwK4e9ZLuTAKqWW03F9">🎙 Eleguar — Dinámico expresivo</option>
+            <option value="__custom__">🔧 Personalizado (pegar ID)</option>
           </select>
+          <input type="text" id="elVoiceCustomInput" class="alarm-input"
+            placeholder="Pega aquí el Voice ID de ElevenLabs (lo encuentras en Voices → tu voz → Voice ID)"
+            style="display:none;margin-top:4px;font-size:.76rem;"
+            oninput="
+              var id = this.value.trim();
+              if (!id) return;
+              localStorage.setItem('scall_el_voice', id);
+              if(typeof setVozActual==='function') setVozActual(id);
+              var st=document.getElementById('elStatus');
+              if(st) st.textContent='🎙 Voz ID: '+id.substring(0,12)+'...';
+            ">
 
           <div style="display:flex;gap:6px;margin-top:4px;">
             <button class="btn btn-primary" onclick="
               var sel=document.getElementById('elVoiceSelect');
-              if(sel && sel.value){ localStorage.setItem('scall_el_voice',sel.value); if(typeof setVozActual==='function') setVozActual(sel.value); }
+              var custom=document.getElementById('elVoiceCustomInput');
+              var vozId=(sel.value==='__custom__')?(custom?custom.value.trim():''):sel.value;
+              if(vozId){ localStorage.setItem('scall_el_voice',vozId); if(typeof setVozActual==='function') setVozActual(vozId); }
               guardarElevenLabsKey();
             " style="flex:1;padding:8px;">
               Activar voz
             </button>
             <button onclick="
               var sel=document.getElementById('elVoiceSelect');
-              if(sel && sel.value){ localStorage.setItem('scall_el_voice',sel.value); if(typeof setVozActual==='function') setVozActual(sel.value); }
+              var custom=document.getElementById('elVoiceCustomInput');
+              var vozId=(sel.value==='__custom__')?(custom?custom.value.trim():''):sel.value;
+              if(vozId){ localStorage.setItem('scall_el_voice',vozId); if(typeof setVozActual==='function') setVozActual(vozId); }
               if(typeof probarVozElevenLabs==='function') probarVozElevenLabs();
             " style="flex:1;padding:8px;border-radius:9px;cursor:pointer;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:#a78bfa;font-size:.78rem;">
               ▶ Probar

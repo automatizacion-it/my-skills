@@ -500,3 +500,14 @@ Se encontraron y corrigieron varios problemas de este patrón:
       errores de autenticación persistentes, verificar primero qué valor
       concreto está usando el código (no asumir que "la key está mal")
       antes de sospechar de la cuenta/servicio externo.
+29. **Selector de voz personalizada**: el selector "Voz" solo tenía 6
+    opciones fijas (`<select>`), sin ninguna forma de pegar un Voice ID
+    distinto. Se agregó una 7ª opción "🔧 Personalizado (pegar ID)" que
+    revela un campo de texto (`#elVoiceCustomInput`) para pegar cualquier
+    ID de la cuenta de ElevenLabs del usuario. "Activar voz" y "Probar"
+    ahora resuelven el ID real (del select o del campo personalizado,
+    según cuál esté activo) antes de guardar/probar. Al reabrir el modal,
+    si el ID guardado no coincide con ninguna de las 6 voces predefinidas,
+    se selecciona automáticamente "Personalizado" y se rellena el campo
+    con el ID guardado (antes se insertaba una opción sintética en el
+    `<select>`, funcional pero menos clara para editar después).
