@@ -511,3 +511,22 @@ Se encontraron y corrigieron varios problemas de este patrón:
     se selecciona automáticamente "Personalizado" y se rellena el campo
     con el ID guardado (antes se insertaba una opción sintética en el
     `<select>`, funcional pero menos clara para editar después).
+30. **El bug que explica por qué nunca vimos la causa real**: el log de
+    SCALL (Sesión 10/11) mostraba `HTTP 401: [object Object]` en vez del
+    motivo — ElevenLabs manda `detail` como un **objeto anidado**
+    (`{status, message}`), no como texto plano. El código hacía
+    `'HTTP ' + status + ': ' + errorData.detail`, y al concatenar un
+    objeto en un string, JavaScript llama a su `.toString()` por
+    defecto, que para un objeto genérico literalmente da
+    `"[object Object]"`. Todas las sesiones anteriores intentando
+    diagnosticar el 400/401 estuvieron ciegas por este bug — el log
+    persistente y el `_ttsLog` que agregamos SÍ estaban funcionando,
+    pero mostraban basura en vez del mensaje real.
+    - **Fix** en `hablarConElevenLabs()`: si `errorData.detail` es un
+      objeto, se extrae `.message` (o `.status` si no hay message, o el
+      JSON completo como último recurso) en vez de concatenarlo directo.
+      Probado con 4 formatos distintos de respuesta de error.
+    - **Pendiente**: con este fix ya desplegado, el próximo error de
+      ElevenLabs en el panel "Errores" o en el Log debería decir la razón
+      real en texto legible (ej. "invalid_api_key", "quota_exceeded",
+      etc.) — ahí sabremos por fin qué le pasa a la cuenta/key.

@@ -186,7 +186,14 @@ async function hablarConElevenLabs(texto, apiKey) {
 
   if (!response.ok) {
     var errorData = await response.json().catch(function() { return {}; });
-    throw new Error('HTTP ' + response.status + ': ' + (errorData.detail || 'Error desconocido'));
+    var detalle = errorData.detail;
+    var detalleTexto;
+    if (detalle && typeof detalle === 'object') {
+      detalleTexto = detalle.message || detalle.status || JSON.stringify(detalle);
+    } else {
+      detalleTexto = detalle || 'Error desconocido';
+    }
+    throw new Error('HTTP ' + response.status + ': ' + detalleTexto);
   }
 
   // Convertir respuesta a blob y reproducir
