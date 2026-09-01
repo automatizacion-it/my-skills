@@ -221,6 +221,25 @@
                  : (sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : vozId);
       st.textContent = elKey ? ('✅ Activo — ' + nombre) : '⚠️ Sin API Key';
     }
+    // Proveedor de voz + voz de Gemini guardados
+    var proveedor = (typeof getTtsProveedor==='function') ? getTtsProveedor() : 'elevenlabs';
+    var btnEl = document.getElementById('ttsBtnElevenlabs');
+    var btnGemini = document.getElementById('ttsBtnGemini');
+    var secEl = document.getElementById('elevenlabsSection');
+    var secGemini = document.getElementById('geminiTtsSection');
+    var geminiSel = document.getElementById('geminiVoiceSelect');
+    if (geminiSel) geminiSel.value = (typeof getGeminiVoiceName==='function') ? getGeminiVoiceName() : 'Kore';
+    if (proveedor === 'gemini') {
+      if (btnGemini) btnGemini.classList.add('active');
+      if (btnEl) btnEl.classList.remove('active');
+      if (secGemini) secGemini.style.display = 'block';
+      if (secEl) secEl.style.display = 'none';
+    } else {
+      if (btnEl) btnEl.classList.add('active');
+      if (btnGemini) btnGemini.classList.remove('active');
+      if (secEl) secEl.style.display = 'block';
+      if (secGemini) secGemini.style.display = 'none';
+    }
   }, 50);">
       <span class="smi-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -807,8 +826,74 @@
 
       <hr class="modal-divider">
 
-        <!-- ElevenLabs TTS -->
+        <!-- Proveedor de voz -->
         <div class="form-group">
+          <label style="color:#a78bfa !important;">🔊 Proveedor de voz</label>
+          <div class="ai-selector">
+            <button class="ai-selector-btn" id="ttsBtnElevenlabs" onclick="
+              setTtsProveedor('elevenlabs');
+              document.getElementById('ttsBtnElevenlabs').classList.add('active');
+              document.getElementById('ttsBtnGemini').classList.remove('active');
+              document.getElementById('elevenlabsSection').style.display='block';
+              document.getElementById('geminiTtsSection').style.display='none';
+            ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1v11M8 5l4-4 4 4"/><rect x="5" y="12" width="14" height="9" rx="2"/></svg>
+              ElevenLabs
+            </button>
+            <button class="ai-selector-btn" id="ttsBtnGemini" onclick="
+              setTtsProveedor('gemini');
+              document.getElementById('ttsBtnGemini').classList.add('active');
+              document.getElementById('ttsBtnElevenlabs').classList.remove('active');
+              document.getElementById('geminiTtsSection').style.display='block';
+              document.getElementById('elevenlabsSection').style.display='none';
+            ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z"/></svg>
+              Gemini TTS
+            </button>
+          </div>
+          <p class="form-hint" style="margin-top:4px;">Gemini TTS usa la misma API Key de Gemini que ya tienes configurada — no necesita otra cuenta.</p>
+        </div>
+
+        <!-- Gemini TTS -->
+        <div class="form-group" id="geminiTtsSection" style="display:none;">
+          <label style="font-size:.6rem;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;">Voz de Gemini</label>
+          <select id="geminiVoiceSelect" class="alarm-input" style="font-size:.78rem;"
+            onchange="setGeminiVoiceName(this.value);">
+            <option value="Kore">Kore — Firme</option>
+            <option value="Puck">Puck — Alegre</option>
+            <option value="Charon">Charon — Informativo</option>
+            <option value="Aoede">Aoede — Relajado</option>
+            <option value="Leda">Leda — Juvenil</option>
+            <option value="Callirrhoe">Callirrhoe — Tranquilo</option>
+            <option value="Enceladus">Enceladus — Suave (respirado)</option>
+            <option value="Iapetus">Iapetus — Claro</option>
+            <option value="Umbriel">Umbriel — Tranquilo</option>
+            <option value="Algieba">Algieba — Suave</option>
+            <option value="Despina">Despina — Suave</option>
+            <option value="Erinome">Erinome — Claro</option>
+            <option value="Laomedeia">Laomedeia — Alegre</option>
+            <option value="Achernar">Achernar — Suave</option>
+            <option value="Alnilam">Alnilam — Firme</option>
+            <option value="Schedar">Schedar — Neutro</option>
+            <option value="Gacrux">Gacrux — Maduro</option>
+            <option value="Achird">Achird — Cercano</option>
+            <option value="Zubenelgenubi">Zubenelgenubi — Casual</option>
+            <option value="Vindemiatrix">Vindemiatrix — Gentil</option>
+            <option value="Sadaltager">Sadaltager — Con autoridad</option>
+            <option value="Sulafat">Sulafat — Cálido</option>
+          </select>
+          <button class="btn btn-primary" style="margin-top:6px;" onclick="
+            document.getElementById('geminiVoiceSelect').dispatchEvent(new Event('change'));
+            var apiKey = (typeof getApiKey==='function') ? getApiKey() : '';
+            if (!apiKey) { alert('Primero configura tu API Key de Gemini arriba.'); return; }
+            if (typeof hablarConGeminiTTS === 'function') {
+              hablarConGeminiTTS('Hola, soy SCALL usando la voz de Gemini.', apiKey).catch(function(e){ alert('Error: ' + e.message); });
+            }
+          ">▶ Probar voz de Gemini</button>
+        </div>
+
+        <!-- ElevenLabs TTS -->
+        <div class="form-group" id="elevenlabsSection">
           <label style="color:#a78bfa !important;">🎙 ElevenLabs — Voz expresiva</label>
           <input type="password" id="elevenLabsKeyInput" placeholder="sk_...">
           <p class="form-hint" style="margin-top:2px;">Pega tu key aquí y presiona "Activar voz" para guardarla (este campo no se guarda con el botón "Guardar Configuración" de más abajo — ese es solo para Gemini/Claude).</p>
@@ -830,13 +915,14 @@
               console.log('[TTS] Voz seleccionada:', id);
             ">
             <option value="VmejBeYhbrcTPwDniox7">⭐ SCALL Voice (principal)</option>
-            <option value="Xb7hH8MSUJpSbSDYk0k2">👩 Ligia Mendez — Española (free)</option>
-            <option value="pFZP5JQG7iQjIQuC4Bku">👩 Lourdes — Latina cálida (free)</option>
+            <option value="Xb7hH8MSUJpSbSDYk0k2">👩 Ligia Mendez — Española</option>
+            <option value="pFZP5JQG7iQjIQuC4Bku">👩 Lourdes — Latina cálida (✅ confirmada gratis)</option>
             <option value="pqHfZKP75CvOlQylNhV4">🇨🇴 Alejandro — Colombiano</option>
             <option value="SOYHLrjzK2X1ezoPC6cr">🌎 Horacio — Latino neutro</option>
             <option value="onwK4e9ZLuTAKqWW03F9">🎙 Eleguar — Dinámico expresivo</option>
             <option value="__custom__">🔧 Personalizado (pegar ID)</option>
           </select>
+          <p class="form-hint" style="margin-top:3px;">Algunas voces de la Voice Library de ElevenLabs requieren plan pago para usarse por API (error 402), aunque se vean disponibles en la web. "Lourdes" está confirmada como gratuita.</p>
           <input type="text" id="elVoiceCustomInput" class="alarm-input"
             placeholder="Pega aquí el Voice ID de ElevenLabs (lo encuentras en Voices → tu voz → Voice ID)"
             style="display:none;margin-top:4px;font-size:.76rem;"

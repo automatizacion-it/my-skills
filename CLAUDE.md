@@ -530,3 +530,69 @@ Se encontraron y corrigieron varios problemas de este patrón:
       ElevenLabs en el panel "Errores" o en el Log debería decir la razón
       real en texto legible (ej. "invalid_api_key", "quota_exceeded",
       etc.) — ahí sabremos por fin qué le pasa a la cuenta/key.
+
+## Sesión 13 (2026-08-31) — Gemini TTS como proveedor alternativo
+
+31. **`hablarConGeminiTTS()`** (nueva, en `tts_elevenlabs.js`) — usa la
+    función nativa de texto-a-voz de la API de Gemini
+    (`gemini-2.5-flash-preview-tts`, endpoint `generateContent` con
+    `responseModalities:["AUDIO"]`), **reutilizando la misma API Key de
+    Gemini** que ya usa el resto de la app (`getApiKey()` de `app.js`) —
+    cero cuentas o keys nuevas que gestionar.
+    - Gemini devuelve el audio como **PCM crudo sin encabezado** (16-bit,
+      mono, 24kHz) en base64, no un MP3 listo como ElevenLabs. Se agregó
+      `pcmBase64AWav()` para envolver ese PCM en un WAV mínimo válido que
+      `<audio>` sí puede reproducir. **Probado con `ffprobe`** (no solo
+      revisando los bytes a mano): confirma 24000 Hz, mono, PCM 16-bit,
+      duración exacta — el archivo generado es un WAV real y válido.
+    - **Selector de proveedor** nuevo en el modal de Configuración (arriba
+      de las secciones de voz), mismo patrón visual que el selector
+      Gemini/Claude para el cerebro de texto. Guarda en
+      `localStorage['scall_tts_proveedor']` ('elevenlabs' o 'gemini').
+      Al cambiar, se muestra/oculta la sección correspondiente
+      (`elevenlabsSection` / `geminiTtsSection`).
+    - **21 voces de Gemini** listadas en un `<select>` con su estilo
+      (Kore-Firme, Puck-Alegre, etc., traducidas del catálogo oficial de
+      30 — se omitieron algunas para no saturar el selector). Guardadas en
+      `localStorage['scall_gemini_voice']`.
+    - **`procesarCola()`** (el motor central de la cola de voz) ahora
+      consulta `getTtsProveedor()` antes de decidir a quién llamar —
+      ElevenLabs sigue siendo el default si no se ha elegido nada, así
+      que no cambia el comportamiento de nadie que no toque el selector
+      nuevo. El resto de la cadena (`encolarVoz`, `responderVozEL`, todo
+      lo que ya llama a estas dos) no se tocó — hereda el proveedor
+      automáticamente sin cambios.
+    - Botón "▶ Probar voz de Gemini" dedicado, igual que el de ElevenLabs,
+      para no tener que decir un comando de voz completo solo para oír
+      cómo suena una voz.
+
+## Sesión 14 (2026-08-31) — Resolución final del saga de ElevenLabs
+
+32. **Causa raíz definitiva, confirmada por el usuario** (gracias al fix
+    del "[object Object]" de la Sesión 12, que por fin dejó ver el
+    mensaje real de la API): eran **dos problemas distintos, no uno**:
+    - El usuario estaba pegando el **Key ID** de ElevenLabs (un
+      identificador) en vez de la **API Key real** (`sk_...`) — son dos
+      valores distintos en su dashboard, y la key real solo se muestra
+      **una vez** al crearla o rotarla. Mensaje real de la API:
+      `"API key ID used as API key - only valid API keys can be used."`
+    - Algunas de las 6 voces predefinidas del selector son parte de la
+      **Voice Library de pago** de ElevenLabs — se ven disponibles en la
+      web, pero un plan gratis no puede usarlas por API (`HTTP 402`).
+      Solo "Lourdes" quedó confirmada como gratuita en pruebas reales;
+      las demás (Ligia, Alejandro, Horacio, Eleguar) no se han confirmado
+      ninguna u otra forma.
+    - **`interpretarErrorEL(mensaje)`** (nueva en `tts_elevenlabs.js`):
+      reconoce estos dos patrones de error (y "invalid api key" genérico)
+      y los traduce a una frase clara y accionable en español, en vez del
+      texto crudo en inglés de la API. Conectada en `probarVozElevenLabs`
+      (lo que se ve en el status del modal) y en el `catch` de
+      `procesarCola` (lo que se guarda en el Log y en el panel Errores).
+    - Se quitó la etiqueta "(free)" de Ligia/Alejandro/Horacio/Eleguar en
+      el selector (nunca se confirmó que lo fueran) y se agregó
+      "(✅ confirmada gratis)" solo a Lourdes, más un `form-hint` general
+      explicando el problema de las voces de pago.
+    - **Estado actual**: con la key real (`sk_...`) puesta y una voz
+      gratuita seleccionada, ElevenLabs funciona correctamente
+      ("Voz funcionando — ID: pFZP5JQG7iQjIQuC4Bku", confirmado por el
+      usuario). El saga que empezó en la Sesión 9 queda cerrado.

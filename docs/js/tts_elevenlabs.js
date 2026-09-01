@@ -83,16 +83,27 @@ async function procesarCola() {
   if (reproduciendo || colaVoz.length === 0) return;
   reproduciendo = true;
   var msg = colaVoz.shift();
+  var proveedor = getTtsProveedor();
   try {
-    var key = getElevenLabsKey();
-    if (key && key.length > 10) {
-      await hablarConElevenLabs(msg, key);
+    if (proveedor === 'gemini') {
+      var geminiKey = (typeof getApiKey === 'function') ? getApiKey() : '';
+      if (geminiKey) {
+        await hablarConGeminiTTS(msg, geminiKey);
+      } else {
+        await hablarConWebSpeechPromise(msg);
+      }
     } else {
-      await hablarConWebSpeechPromise(msg);
+      var key = getElevenLabsKey();
+      if (key && key.length > 10) {
+        await hablarConElevenLabs(msg, key);
+      } else {
+        await hablarConWebSpeechPromise(msg);
+      }
     }
   } catch(e) {
-    _ttsLog('[TTS] ⚠️ ElevenLabs falló (' + e.message + ') — usando voz nativa de respaldo');
-    if (typeof registrarError === 'function') registrarError('TTS/ElevenLabs', e.message);
+    var claro = (proveedor === 'elevenlabs') ? interpretarErrorEL(e.message) : e.message;
+    _ttsLog('[TTS] ⚠️ ' + proveedor + ' falló (' + claro + ') — usando voz nativa de respaldo');
+    if (typeof registrarError === 'function') registrarError('TTS/' + proveedor, claro);
     await hablarConWebSpeechPromise(msg);
   }
   reproduciendo = false;
@@ -154,6 +165,145 @@ async function responderVozEL(mensaje) {
 
   // Encolar en lugar de disparar directo
   encolarVoz(mensaje);
+}
+
+// ── Gemini TTS — alternativa a ElevenLabs, misma API Key de Gemini ────
+var GEMINI_TTS_MODEL = 'gemini-2.5-flash-preview-tts';
+
+function getTtsProveedor() {
+  return localStorage.getItem('scall_tts_proveedor') || 'elevenlabs';
+}
+function setTtsProveedor(p) {
+  localStorage.setItem('scall_tts_proveedor', p);
+  _ttsLog('[TTS] Proveedor cambiado a: ' + p);
+}
+function getGeminiVoiceName() {
+  return localStorage.getItem('scall_gemini_voice') || 'Kore';
+}
+function setGeminiVoiceName(v) {
+  localStorage.setItem('scall_gemini_voice', v);
+}
+
+// Gemini devuelve PCM crudo (16-bit, mono, 24kHz) en base64, sin encabezado
+// de archivo — hay que envolverlo en un WAV mínimo para que <audio> lo
+// pueda reproducir.
+function pcmBase64AWav(base64Pcm, sampleRate, numChannels, bitsPerSample) {
+  sampleRate     = sampleRate     || 24000;
+  numChannels    = numChannels    || 1;
+  bitsPerSample  = bitsPerSample  || 16;
+
+  var binario   = atob(base64Pcm);
+  var pcmBytes  = new Uint8Array(binario.length);
+  for (var i = 0; i < binario.length; i++) pcmBytes[i] = binario.charCodeAt(i);
+
+  var byteRate    = sampleRate * numChannels * bitsPerSample / 8;
+  var blockAlign  = numChannels * bitsPerSample / 8;
+  var dataSize    = pcmBytes.length;
+  var buffer      = new ArrayBuffer(44 + dataSize);
+  var view        = new DataView(buffer);
+
+  function escribirStr(offset, str) {
+    for (var j = 0; j < str.length; j++) view.setUint8(offset + j, str.charCodeAt(j));
+  }
+
+  escribirStr(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  escribirStr(8, 'WAVE');
+  escribirStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  escribirStr(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  new Uint8Array(buffer, 44).set(pcmBytes);
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+async function hablarConGeminiTTS(texto, apiKey) {
+  if (audioActual) {
+    audioActual.pause();
+    audioActual.src = '';
+    audioActual = null;
+  }
+
+  var voiceName = getGeminiVoiceName();
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_TTS_MODEL + ':generateContent';
+
+  _ttsLog('[TTS] Gemini TTS → voz: ' + voiceName + ' (' + texto.length + ' chars)');
+
+  var response = await fetch(url, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: texto }] }],
+      generationConfig: {
+        responseModalities: ['AUDIO'],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
+      }
+    })
+  });
+
+  if (!response.ok) {
+    var errorData = await response.json().catch(function() { return {}; });
+    var detalle = (errorData.error && errorData.error.message) ? errorData.error.message : ('HTTP ' + response.status);
+    throw new Error(detalle);
+  }
+
+  var data   = await response.json();
+  var parte  = data.candidates && data.candidates[0] && data.candidates[0].content &&
+               data.candidates[0].content.parts && data.candidates[0].content.parts[0];
+  var base64Pcm = parte && parte.inlineData && parte.inlineData.data;
+  if (!base64Pcm) throw new Error('Gemini no devolvió audio (revisa el prompt o el modelo)');
+
+  var blob    = pcmBase64AWav(base64Pcm, 24000, 1, 16);
+  var blobUrl = URL.createObjectURL(blob);
+
+  audioActual = new Audio(blobUrl);
+
+  if (window._scallAudioCtx && window._scallGainNode) {
+    try {
+      var source = window._scallAudioCtx.createMediaElementSource(audioActual);
+      source.connect(window._scallGainNode);
+    } catch(e) {}
+  }
+
+  return new Promise(function(resolve, reject) {
+    audioActual.onended = function() {
+      URL.revokeObjectURL(blobUrl);
+      audioActual = null;
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      _ttsLog('[ORBE] 🟢 Voz Gemini terminada → idle');
+      resolve();
+    };
+    audioActual.onerror = function() {
+      URL.revokeObjectURL(blobUrl);
+      audioActual = null;
+      if (window.scallOrb) window.scallOrb.setState('idle');
+      reject(new Error('Error reproduciendo audio de Gemini'));
+    };
+    audioActual.play().catch(reject);
+  });
+}
+
+// ── Traduce errores comunes de ElevenLabs a mensajes claros y accionables ──
+function interpretarErrorEL(mensaje) {
+  if (!mensaje) return mensaje;
+  if (mensaje.indexOf('library voices') !== -1 || mensaje.indexOf('upgrade your subscription') !== -1) {
+    return 'Esta voz es de la Voice Library de pago — tu plan gratis no puede usarla por API. Prueba con otra voz (ej. "Lourdes"), o consigue el Voice ID de una voz gratuita/propia en tu cuenta.';
+  }
+  if (mensaje.indexOf('API key ID used as API key') !== -1) {
+    return 'Pegaste el Key ID, no la API Key real. En ElevenLabs → Developers → API Keys, copia el valor que empieza con "sk_" (solo se muestra una vez al crearla o rotarla).';
+  }
+  if (mensaje.toLowerCase().indexOf('invalid api key') !== -1 || mensaje.toLowerCase().indexOf('invalid_api_key') !== -1) {
+    return 'La API Key no es válida. Verifica que la copiaste completa y sin espacios.';
+  }
+  return mensaje;
 }
 
 // ── ElevenLabs TTS ────────────────────────────────────────────────────
@@ -304,8 +454,9 @@ function probarVozElevenLabs(texto) {
   hablarConElevenLabs(texto, key).then(function() {
     if (st) st.textContent = '✅ Voz funcionando — ID: ' + vozId;
   }).catch(function(err) {
-    _ttsLog('[TTS] Error prueba: ' + err.message);
-    if (st) st.textContent = '❌ Error: ' + err.message;
+    var claro = interpretarErrorEL(err.message);
+    _ttsLog('[TTS] Error prueba: ' + claro);
+    if (st) st.textContent = '❌ ' + claro;
     hablarConWebSpeech(texto);
   });
 }
