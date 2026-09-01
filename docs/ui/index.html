@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCALL · Taller de Intents</title>
+<style>
+  :root {
+    --bg: #060810; --surface: #111827; --surface2: #1a2236;
+    --glow: #00d4ff; --glow2: #7b61ff; --text: #e2e8f0; --text-muted: #64748b;
+    --green: #10b981; --red: #ef4444; --yellow: #f59e0b;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif;
+    padding: 20px; max-width: 1000px; margin: 0 auto;
+  }
+  h1 { font-size: 1.3rem; color: var(--glow); margin-bottom: 4px; }
+  .subt { color: var(--text-muted); font-size: .8rem; margin-bottom: 20px; }
+
+  /* Stepper visual */
+  .stepper { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+  .step {
+    flex: 1; min-width: 110px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font-size: .68rem; color: var(--text-muted);
+    text-align: center; transition: all .2s;
+  }
+  .step.activo { border-color: var(--glow); color: var(--glow); background: rgba(0,212,255,.08); }
+  .step.hecho { border-color: var(--green); color: var(--green); }
+  .step b { display: block; font-size: .62rem; opacity: .7; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .panel h2 { font-size: .85rem; color: var(--glow2); margin-bottom: 10px; }
+  label { font-size: .68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; display: block; margin: 8px 0 3px; }
+  input[type=text], textarea, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 10px; border-radius: 7px; font-size: .82rem; font-family: inherit;
+  }
+  textarea { resize: vertical; font-family: monospace; font-size: .74rem; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+  .btn {
+    background: var(--glow); color: #000; border: none; padding: 8px 14px; border-radius: 7px;
+    cursor: pointer; font-weight: 600; font-size: .78rem;
+  }
+  .btn.secundario { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn.peligro { background: var(--red); color: #fff; }
+  .btn:hover { filter: brightness(1.1); }
+  .opciones-tabla { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .opcion-fila { display: flex; gap: 6px; background: var(--surface2); padding: 8px; border-radius: 7px; }
+  .opcion-fila input { flex: 1; }
+  .opcion-fila button { flex: 0 0 auto; }
+
+  #jsonPreview { min-height: 160px; }
+
+  /* Simulador de chat */
+  #chatLog { min-height: 220px; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #05070d; border-radius: 8px; margin-bottom: 10px; }
+  .msg { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: .82rem; line-height: 1.4; }
+  .msg.user { align-self: flex-end; background: rgba(0,212,255,.15); border: 1px solid rgba(0,212,255,.3); }
+  .msg.scall { align-self: flex-start; background: rgba(123,97,255,.15); border: 1px solid rgba(123,97,255,.3); }
+  .msg.sistema { align-self: center; background: transparent; color: var(--text-muted); font-style: italic; font-size: .72rem; }
+  .estado-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; margin-bottom: 8px; }
+  .estado-badge.idle { background: rgba(100,116,139,.2); color: var(--text-muted); }
+  .estado-badge.preguntando { background: rgba(245,158,11,.2); color: var(--yellow); }
+  .estado-badge.confirmando { background: rgba(0,212,255,.2); color: var(--glow); }
+
+  /* Log de errores */
+  #logLista { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .log-item { font-size: .74rem; padding: 6px 9px; border-radius: 6px; border-left: 3px solid var(--text-muted); background: var(--surface2); }
+  .log-item.error { border-color: var(--red); }
+  .log-item.warn { border-color: var(--yellow); }
+  .log-item.ok { border-color: var(--green); }
+  .log-item small { color: var(--text-muted); display: block; margin-top: 2px; }
+
+  .hint { font-size: .72rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+  <h1>🛠 SCALL — Taller de Intents</h1>
+  <p class="subt">Espacio de pruebas totalmente aislado — nada de aquí toca la app principal hasta que tú decidas copiarlo.</p>
+
+  <div class="stepper">
+    <div class="step" data-paso="1"><b>Paso 1</b>Nombre del menú</div>
+    <div class="step" data-paso="2"><b>Paso 2</b>Nombre del intent</div>
+    <div class="step" data-paso="3"><b>Paso 3</b>Subintents</div>
+    <div class="step" data-paso="4"><b>Paso 4</b>JSON generado</div>
+    <div class="step" data-paso="5"><b>Paso 5</b>Probar / log</div>
+    <div class="step" data-paso="6"><b>Paso 6</b>Copiar a UI principal</div>
+  </div>
+
+  <div class="panel">
+    <h2>1–3. Definir el intent</h2>
+    <button class="btn secundario" onclick="cargarEjemploAudiolibro()">📖 Cargar ejemplo: Audiolibro</button>
+
+    <label>Nombre del menú</label>
+    <input type="text" id="campoMenu" placeholder="Ej: Audiolibro" oninput="actualizarTodo()">
+
+    <label>Nombre del intent</label>
+    <input type="text" id="campoIntent" placeholder="Ej: leer_audiolibro" oninput="actualizarTodo()">
+
+    <label>Frases que activan el intent (una por línea)</label>
+    <textarea id="campoDisparadores" rows="3" placeholder="quiero un audiolibro&#10;léeme un libro" oninput="actualizarTodo()"></textarea>
+
+    <label>Pregunta que hace SCALL</label>
+    <textarea id="campoPregunta" rows="2" placeholder="¿Qué libro quieres leer?..." oninput="actualizarTodo()"></textarea>
+
+    <div class="row" style="margin-top:8px;align-items:center;">
+      <label style="margin:0;flex:0 0 auto;"><input type="checkbox" id="campoConfirmar" onchange="actualizarTodo()" style="width:auto;"> Pedir confirmación antes de ejecutar</label>
+    </div>
+    <input type="text" id="campoMsgConfirmacion" placeholder="¿Confirmas que quieres {opcion}?" oninput="actualizarTodo()" style="margin-top:6px;">
+
+    <label style="margin-top:14px;">Opciones (subintents)</label>
+    <div class="opciones-tabla" id="opcionesTabla"></div>
+    <button class="btn secundario" style="margin-top:8px;" onclick="agregarOpcion()">+ Agregar opción</button>
+    <p class="hint">Cada opción necesita un nombre a mostrar y las palabras clave (separadas por coma) que la identifican cuando respondes.</p>
+  </div>
+
+  <div class="panel">
+    <h2>4. JSON generado</h2>
+    <textarea id="jsonPreview" readonly></textarea>
+    <button class="btn" style="margin-top:8px;" onclick="descargarJson()">⬇ Descargar JSON</button>
+  </div>
+
+  <div class="panel">
+    <h2>5. Simulador — probar la conversación</h2>
+    <span class="estado-badge idle" id="estadoBadge">idle</span>
+    <div id="chatLog"></div>
+    <div class="row">
+      <input type="text" id="inputSimulado" placeholder="Escribe lo que le dirías a SCALL..." onkeydown="if(event.key==='Enter') enviarMensaje();">
+      <button class="btn" style="flex:0 0 auto;" onclick="enviarMensaje()">Enviar</button>
+      <button class="btn secundario" style="flex:0 0 auto;" onclick="reiniciarSimulador()">↺ Reiniciar</button>
+    </div>
+    <p class="hint">Esto NO ejecuta nada real — cuando "ejecuta" la acción, solo lo describe en el chat. Sirve para validar que la conversación fluye bien antes de conectarlo a una función real.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Log de errores/pruebas (manual — tú decides cuándo revisarlo)</h2>
+    <div id="logLista"></div>
+    <div class="row" style="margin-top:8px;">
+      <button class="btn secundario" onclick="copiarLog()">📋 Copiar log</button>
+      <button class="btn secundario" onclick="descargarLog()">⬇ Descargar .txt</button>
+      <button class="btn peligro" onclick="limpiarLog()">Limpiar</button>
+    </div>
+    <p class="hint">Cuando quieras que Claude revise estos resultados, copia el log y pégalo en el chat — este taller no se conecta solo a ninguna IA.</p>
+  </div>
+
+  <div class="panel">
+    <h2>6. Cuando ya funcione bien</h2>
+    <p class="hint">No hay botón automático a propósito — cuando el simulador de arriba se comporte como esperas, pide en el chat con Claude que copie este intent a la UI principal (a <code>docs/data/</code> e <code>docs/js/intents_grupos.js</code>, siguiendo el mismo patrón que el de música). Así ningún intent llega a producción sin que tú lo hayas probado primero aquí.</p>
+  </div>
+
+<script>
+// ── Estado del taller ──
+var borrador = null;
+var estado = 'idle'; // idle | preguntando | confirmando
+var opcionElegida = null;
+var logEntradas = [];
+
+function normalizar(s) {
+  return (s || '').toLowerCase().trim();
+}
+
+// ── Construir el borrador desde el formulario ──
+function construirBorradorDesdeForm() {
+  var opciones = [];
+  document.querySelectorAll('.opcion-fila').forEach(function(fila) {
+    var nombre = fila.querySelector('.opcion-nombre').value.trim();
+    var palabrasTxt = fila.querySelector('.opcion-palabras').value.trim();
+    if (!nombre) return;
+    opciones.push({
+      id: normalizar(nombre).replace(/\s+/g, '_'),
+      nombre: nombre,
+      palabras: palabrasTxt.split(',').map(function(p){ return normalizar(p); }).filter(Boolean)
+    });
+  });
+
+  return {
+    menu: document.getElementById('campoMenu').value.trim(),
+    intent: document.getElementById('campoIntent').value.trim(),
+    disparadores: document.getElementById('campoDisparadores').value.split('\n').map(normalizar).filter(Boolean),
+    pregunta: document.getElementById('campoPregunta').value.trim(),
+    confirmar: document.getElementById('campoConfirmar').checked,
+    mensajeConfirmacion: document.getElementById('campoMsgConfirmacion').value.trim() || '¿Confirmas {opcion}?',
+    mensajeNoEntendido: 'No te entendí bien. Intenta de nuevo.',
+    mensajeCancelado: 'Listo, cancelado.',
+    opciones: opciones
+  };
+}
+
+function actualizarTodo() {
+  borrador = construirBorradorDesdeForm();
+  actualizarJsonPreview();
+  actualizarStepper();
+}
+
+function actualizarJsonPreview() {
+  document.getElementById('jsonPreview').value = JSON.stringify(borrador, null, 2);
+}
+
+function actualizarStepper() {
+  var pasos = document.querySelectorAll('.step');
+  pasos.forEach(function(p){ p.classList.remove('activo', 'hecho'); });
+  var completado = [
+    !!borrador.menu,
+    !!borrador.intent,
+    borrador.opciones.length > 0,
+    !!borrador.menu && !!borrador.intent && borrador.opciones.length > 0,
+    logEntradas.some(function(l){ return l.tipo === 'ok'; }),
+    false
+  ];
+  for (var i = 0; i < pasos.length; i++) {
+    if (completado[i]) pasos[i].classList.add('hecho');
+  }
+  var siguiente = completado.indexOf(false);
+  if (siguiente >= 0 && pasos[siguiente]) pasos[siguiente].classList.add('activo');
+}
+
+// ── Opciones dinámicas ──
+function agregarOpcion(nombre, palabras) {
+  var cont = document.getElementById('opcionesTabla');
+  var fila = document.createElement('div');
+  fila.className = 'opcion-fila';
+  fila.innerHTML =
+    '<input type="text" class="opcion-nombre" placeholder="Nombre (ej: El Principito)" value="' + (nombre||'') + '" oninput="actualizarTodo()">' +
+    '<input type="text" class="opcion-palabras" placeholder="Palabras clave, separadas por coma" value="' + (palabras||'') + '" oninput="actualizarTodo()">' +
+    '<button class="btn peligro" onclick="this.parentElement.remove(); actualizarTodo();">✕</button>';
+  cont.appendChild(fila);
+}
+
+function limpiarOpciones() {
+  document.getElementById('opcionesTabla').innerHTML = '';
+}
+
+// ── Ejemplo precargado: Audiolibro ──
+function cargarEjemploAudiolibro() {
+  document.getElementById('campoMenu').value = 'Audiolibro';
+  document.getElementById('campoIntent').value = 'leer_audiolibro';
+  document.getElementById('campoDisparadores').value = 'quiero un audiolibro\nléeme un libro\npon un audiolibro\nlee un audiolibro';
+  document.getElementById('campoPregunta').value = '¿Qué libro quieres leer? Puedo leerte: El Principito, Cien años de soledad, o Don Quijote.';
+  document.getElementById('campoConfirmar').checked = true;
+  document.getElementById('campoMsgConfirmacion').value = '¿Confirmas que quieres que te lea {opcion}?';
+  limpiarOpciones();
+  agregarOpcion('El Principito', 'principito');
+  agregarOpcion('Cien años de soledad', 'cien años, cien anos, soledad, garcia marquez, gabo');
+  agregarOpcion('Don Quijote', 'quijote, quijano');
+  actualizarTodo();
+  reiniciarSimulador();
+}
+
+// ── Simulador de conversación ──
+function agregarMensaje(tipo, texto) {
+  var log = document.getElementById('chatLog');
+  var div = document.createElement('div');
+  div.className = 'msg ' + tipo;
+  div.textContent = texto;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function actualizarBadgeEstado() {
+  var badge = document.getElementById('estadoBadge');
+  badge.className = 'estado-badge ' + estado;
+  badge.textContent = estado;
+}
+
+function registrarLog(tipo, mensaje) {
+  logEntradas.push({ tipo: tipo, mensaje: mensaje, ts: new Date().toLocaleTimeString('es-CO') });
+  renderLog();
+  actualizarStepper();
+}
+
+function renderLog() {
+  var cont = document.getElementById('logLista');
+  if (!logEntradas.length) {
+    cont.innerHTML = '<p class="hint">Sin entradas todavía. Prueba la conversación arriba.</p>';
+    return;
+  }
+  cont.innerHTML = logEntradas.slice().reverse().map(function(l) {
+    return '<div class="log-item ' + l.tipo + '">' + l.mensaje + '<small>' + l.ts + '</small></div>';
+  }).join('');
+}
+
+function enviarMensaje() {
+  var input = document.getElementById('inputSimulado');
+  var texto = input.value.trim();
+  if (!texto || !borrador) return;
+  agregarMensaje('user', texto);
+  input.value = '';
+  procesarTexto(texto);
+}
+
+function procesarTexto(texto) {
+  var c = normalizar(texto);
+  try {
+    if (estado === 'confirmando') {
+      if (c.indexOf('si') !== -1 || c.indexOf('sí') !== -1 || c.indexOf('confirmo') !== -1 || c.indexOf('claro') !== -1) {
+        ejecutarAccion(opcionElegida);
+      } else if (c.indexOf('no') !== -1 || c.indexOf('cancela') !== -1) {
+        agregarMensaje('scall', borrador.mensajeCancelado);
+        registrarLog('ok', 'Confirmación rechazada correctamente (flujo de cancelar funciona)');
+        resetEstado();
+      } else {
+        agregarMensaje('scall', 'Responde sí o no, por favor.');
+      }
+      return;
+    }
+
+    if (estado === 'preguntando') {
+      var opcion = borrador.opciones.filter(function(o) {
+        return o.palabras.some(function(p) { return c.indexOf(p) !== -1; });
+      })[0];
+      if (!opcion) {
+        agregarMensaje('scall', borrador.mensajeNoEntendido);
+        registrarLog('warn', 'No matcheó ninguna opción con: "' + texto + '"');
+        return;
+      }
+      opcionElegida = opcion;
+      if (borrador.confirmar) {
+        estado = 'confirmando';
+        agregarMensaje('scall', borrador.mensajeConfirmacion.replace('{opcion}', opcion.nombre));
+      } else {
+        ejecutarAccion(opcion);
+      }
+      actualizarBadgeEstado();
+      return;
+    }
+
+    // idle: buscar disparador
+    var disparo = borrador.disparadores.some(function(d) { return c.indexOf(d) !== -1; });
+    if (disparo) {
+      estado = 'preguntando';
+      agregarMensaje('scall', borrador.pregunta);
+      actualizarBadgeEstado();
+    } else {
+      agregarMensaje('sistema', '(esta frase no activa el intent — en la app real, otro intent la manejaría)');
+    }
+  } catch (e) {
+    registrarLog('error', 'Excepción: ' + e.message);
+    agregarMensaje('sistema', '❌ Error: ' + e.message);
+  }
+}
+
+function ejecutarAccion(opcion) {
+  agregarMensaje('scall', '🔊 Ejecutando: leyendo "' + opcion.nombre + '"... (simulacro — aquí iría la narración real, ej. encolarVoz de tts_elevenlabs.js)');
+  registrarLog('ok', 'Acción ejecutada correctamente: ' + opcion.id);
+  resetEstado();
+}
+
+function resetEstado() {
+  estado = 'idle';
+  opcionElegida = null;
+  actualizarBadgeEstado();
+}
+
+function reiniciarSimulador() {
+  document.getElementById('chatLog').innerHTML = '';
+  resetEstado();
+  agregarMensaje('sistema', 'Simulador reiniciado. Prueba diciendo: "' + (borrador && borrador.disparadores[0] || 'quiero un audiolibro') + '"');
+}
+
+// ── Log: copiar / descargar / limpiar ──
+function copiarLog() {
+  var texto = logEntradas.map(function(l){ return '[' + l.ts + '] (' + l.tipo + ') ' + l.mensaje; }).join('\n');
+  navigator.clipboard.writeText(texto || '(log vacío)').then(function() {
+    alert('Log copiado al portapapeles.');
+  });
+}
+
+function descargarLog() {
+  var texto = logEntradas.map(function(l){ return '[' + l.ts + '] (' + l.tipo + ') ' + l.mensaje; }).join('\n');
+  var blob = new Blob([texto || '(log vacío)'], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'taller_intents_log_' + Date.now() + '.txt';
+  a.click();
+}
+
+function limpiarLog() {
+  if (!confirm('¿Borrar el log de pruebas?')) return;
+  logEntradas = [];
+  renderLog();
+  actualizarStepper();
+}
+
+function descargarJson() {
+  if (!borrador || !borrador.intent) { alert('Completa al menos el nombre del intent primero.'); return; }
+  var blob = new Blob([JSON.stringify(borrador, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'intents_' + borrador.intent + '.json';
+  a.click();
+}
+
+// ── Inicio ──
+agregarOpcion();
+borrador = construirBorradorDesdeForm();
+actualizarJsonPreview();
+actualizarStepper();
+renderLog();
+agregarMensaje('sistema', 'Taller listo. Carga el ejemplo de Audiolibro o define tu propio intent arriba.');
+</script>
+</body>
+</html>

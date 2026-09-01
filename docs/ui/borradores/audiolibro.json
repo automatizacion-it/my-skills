@@ -1,0 +1,15 @@
+{
+  "menu": "Audiolibro",
+  "intent": "leer_audiolibro",
+  "disparadores": ["quiero un audiolibro", "léeme un libro", "pon un audiolibro", "lee un audiolibro", "audiolibro"],
+  "pregunta": "¿Qué libro quieres leer? Puedo leerte: El Principito, Cien años de soledad, o Don Quijote.",
+  "confirmar": true,
+  "mensajeConfirmacion": "¿Confirmas que quieres que te lea {opcion}?",
+  "mensajeNoEntendido": "No te entendí bien. Dime de nuevo, por ejemplo: quiero un audiolibro.",
+  "mensajeCancelado": "Listo, no leo nada por ahora.",
+  "opciones": [
+    { "id": "principito", "nombre": "El Principito", "palabras": ["principito"] },
+    { "id": "cien_anos", "nombre": "Cien años de soledad", "palabras": ["cien años", "cien anos", "soledad", "garcia marquez", "gabo"] },
+    { "id": "quijote", "nombre": "Don Quijote", "palabras": ["quijote", "quijano"] }
+  ]
+}

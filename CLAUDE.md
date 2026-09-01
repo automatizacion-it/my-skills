@@ -596,3 +596,37 @@ Se encontraron y corrigieron varios problemas de este patrón:
       gratuita seleccionada, ElevenLabs funciona correctamente
       ("Voz funcionando — ID: pFZP5JQG7iQjIQuC4Bku", confirmado por el
       usuario). El saga que empezó en la Sesión 9 queda cerrado.
+
+## Sesión 15 (2026-08-31) — Taller de Intents (docs/ui/)
+
+33. **Nuevo espacio de pruebas totalmente aislado**, en
+    `https://automatizacion-it.github.io/my-skills/ui/` — un HTML
+    autocontenido (`docs/ui/index.html`, sin dependencias de la app
+    principal) para construir y probar intents nuevos ANTES de tocar
+    producción. Sigue un proceso de 6 pasos documentado en
+    `docs/ui/README.md`: nombre del menú → nombre del intent → subintents
+    → JSON generado → probar (log manual) → copiar a la UI principal
+    (paso manual, sin automatizar a propósito).
+    - **Primer caso de prueba**: "Audiolibro" (`leer_audiolibro`) —
+      pregunta qué libro, espera la respuesta, **pide confirmación antes
+      de ejecutar** (novedad frente al sistema de música: ahí se ejecuta
+      directo tras la primera respuesta). Borrador guardado en
+      `docs/ui/borradores/audiolibro.json`.
+    - El taller genera el JSON en vivo desde un formulario (menú, intent,
+      disparadores, pregunta, checkbox de confirmación, tabla de
+      opciones), lo simula con un chat de prueba (sin ejecutar nada real
+      — la "acción" solo se describe en el chat), y lleva un log de
+      resultados **manual** (copiar/descargar, nunca se conecta solo a
+      ninguna IA — el usuario decide cuándo pegarlo en una sesión de
+      Claude).
+    - **Probado con jsdom** (DOM real simulado en Node, no solo lógica
+      aislada): 5 escenarios completos — disparador→pregunta,
+      pregunta→confirmación, confirmación→ejecución, cancelación
+      (responder "no"), y respuesta no reconocida. Los 5 pasaron
+      exactamente como se esperaba.
+    - **Patrón nuevo respecto a `intents_grupos.js`**: agrega un paso de
+      confirmación opcional (`"confirmar": true` en el JSON) antes de
+      ejecutar la acción — útil para acciones costosas/difíciles de
+      deshacer. `intents_grupos.js` (música) no lo tiene todavía; si este
+      patrón se valida bien aquí, sería candidato a incorporarse allá
+      también en el paso 6 (copiar a la UI principal).
