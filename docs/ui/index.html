@@ -131,11 +131,12 @@
     <span class="estado-badge idle" id="estadoBadge">idle</span>
     <div id="chatLog"></div>
     <div class="row">
-      <input type="text" id="inputSimulado" placeholder="Escribe lo que le dirías a SCALL..." onkeydown="if(event.key==='Enter') enviarMensaje();">
+      <input type="text" id="inputSimulado" placeholder="Escribe o usa el micrófono..." onkeydown="if(event.key==='Enter') enviarMensaje();">
+      <button class="btn secundario" id="btnMicrofono" style="flex:0 0 auto;" onclick="iniciarEscucha()">🎤 Hablar</button>
       <button class="btn" style="flex:0 0 auto;" onclick="enviarMensaje()">Enviar</button>
       <button class="btn secundario" style="flex:0 0 auto;" onclick="reiniciarSimulador()">↺ Reiniciar</button>
     </div>
-    <p class="hint">Esto NO ejecuta nada real — cuando "ejecuta" la acción, solo lo describe en el chat. Sirve para validar que la conversación fluye bien antes de conectarlo a una función real.</p>
+    <p class="hint">SCALL responde con la misma voz configurada en la app principal (ElevenLabs o Gemini TTS, según lo que tengas activo en ⚙️ Configuración) — esto NO ejecuta ninguna acción real, solo la describe en el chat.</p>
   </div>
 
   <div class="panel">
@@ -154,7 +155,69 @@
     <p class="hint">No hay botón automático a propósito — cuando el simulador de arriba se comporte como esperas, pide en el chat con Claude que copie este intent a la UI principal (a <code>docs/data/</code> e <code>docs/js/intents_grupos.js</code>, siguiendo el mismo patrón que el de música). Así ningún intent llega a producción sin que tú lo hayas probado primero aquí.</p>
   </div>
 
+<script src="../js/tts_elevenlabs.js"></script>
 <script>
+// ── Compatibilidad con tts_elevenlabs.js (misma lógica que app.js, sin cargar todo app.js) ──
+function getApiKey() {
+  var fromLocal = localStorage.getItem('geminiApiKey');
+  return (fromLocal && fromLocal.trim() !== '') ? fromLocal.trim() : '';
+}
+
+// ── Micrófono — reconocimiento de voz real (Web Speech API) ──
+var reconocimientoVoz = null;
+var microfonoActivo = false;
+
+function iniciarEscucha() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    alert('Este navegador no soporta reconocimiento de voz. Prueba en Chrome.');
+    return;
+  }
+  if (microfonoActivo) { detenerEscucha(); return; }
+
+  reconocimientoVoz = new SR();
+  reconocimientoVoz.lang = 'es-CO';
+  reconocimientoVoz.continuous = false;
+  reconocimientoVoz.interimResults = false;
+
+  reconocimientoVoz.onstart = function() {
+    microfonoActivo = true;
+    actualizarBotonMic();
+    agregarMensaje('sistema', '🎤 Escuchando...');
+  };
+
+  reconocimientoVoz.onresult = function(event) {
+    var texto = event.results[0][0].transcript;
+    document.getElementById('inputSimulado').value = texto;
+    enviarMensaje();
+  };
+
+  reconocimientoVoz.onerror = function(event) {
+    agregarMensaje('sistema', '❌ Error del micrófono: ' + event.error);
+    registrarLog('warn', 'Error de reconocimiento de voz: ' + event.error);
+  };
+
+  reconocimientoVoz.onend = function() {
+    microfonoActivo = false;
+    actualizarBotonMic();
+  };
+
+  reconocimientoVoz.start();
+}
+
+function detenerEscucha() {
+  if (reconocimientoVoz) reconocimientoVoz.stop();
+  microfonoActivo = false;
+  actualizarBotonMic();
+}
+
+function actualizarBotonMic() {
+  var btn = document.getElementById('btnMicrofono');
+  if (!btn) return;
+  btn.textContent = microfonoActivo ? '⏹ Detener' : '🎤 Hablar';
+  btn.style.background = microfonoActivo ? 'var(--red)' : '';
+}
+
 // ── Estado del taller ──
 var borrador = null;
 var estado = 'idle'; // idle | preguntando | confirmando
@@ -260,6 +323,10 @@ function agregarMensaje(tipo, texto) {
   div.textContent = texto;
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
+
+  if (tipo === 'scall' && typeof encolarVoz === 'function') {
+    encolarVoz(texto);
+  }
 }
 
 function actualizarBadgeEstado() {

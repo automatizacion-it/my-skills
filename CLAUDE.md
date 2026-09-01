@@ -630,3 +630,23 @@ Se encontraron y corrigieron varios problemas de este patrón:
       deshacer. `intents_grupos.js` (música) no lo tiene todavía; si este
       patrón se valida bien aquí, sería candidato a incorporarse allá
       también en el paso 6 (copiar a la UI principal).
+34. **Voz real + micrófono agregados al Taller**: el taller ya no es
+    100% mudo/de texto — ahora carga `../js/tts_elevenlabs.js` de verdad
+    (mismo archivo que usa la app principal), así que cuando "SCALL"
+    habla en el simulador, usa exactamente la misma configuración de voz
+    (ElevenLabs o Gemini TTS, la que esté activa) guardada en
+    `localStorage` — porque `docs/ui/` vive en el mismo dominio
+    (`automatizacion-it.github.io`), el `localStorage` se comparte con
+    la app principal automáticamente, sin ninguna sincronización manual.
+    - Se agregó `getApiKey()` (réplica exacta de la de `app.js`, sin
+      cargar las 1300+ líneas de ese archivo) para que la ruta de Gemini
+      TTS funcione dentro del taller.
+    - Botón **"🎤 Hablar"** con reconocimiento de voz real (Web Speech
+      API, `es-CO`) — al terminar de hablar, el texto reconocido se
+      procesa exactamente igual que si se hubiera escrito.
+    - **Límite de las pruebas automatizadas**: `speechSynthesis` y
+      `SpeechRecognition` son APIs exclusivas del navegador — jsdom no
+      las implementa, así que esa parte se confirmó por inspección de
+      código y viendo que el flujo llega correctamente al punto donde se
+      invocan, pero la prueba de audio/micrófono real solo se puede hacer
+      a mano en Chrome.
