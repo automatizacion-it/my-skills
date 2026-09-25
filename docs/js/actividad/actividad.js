@@ -171,11 +171,26 @@ async function crearActividad() {
 function mostrarVideoActividad(videoId) {
   document.getElementById('actResultado').innerHTML =
     '<div id="actYtContainer" style="width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;"></div>' +
-    '<p class="skill-hint" style="margin-top:6px;">Toca el ícono de Cast dentro del reproductor para enviarlo a tu Smart TV (Chromecast).</p>';
+    '<p class="skill-hint" style="margin-top:6px;">Toca el ícono de Cast dentro del reproductor para enviarlo a tu Smart TV (Chromecast).</p>' +
+    '<p class="skill-hint" id="actVideoAviso" style="display:none;color:#f59e0b;"></p>';
   esperarYT(function() {
     ytPlayerActividad = new YT.Player('actYtContainer', {
       videoId: videoId,
-      playerVars: { autoplay: 1, rel: 0 }
+      playerVars: { autoplay: 1, rel: 0 },
+      events: {
+        onError: function(e) {
+          var motivo = (e.data === 101 || e.data === 150)
+            ? 'el dueño del video bloqueó su reproducción fuera de YouTube (derechos de autor)'
+            : (e.data === 100) ? 'el video ya no existe o es privado'
+            : 'error desconocido (código ' + e.data + ')';
+          var aviso = document.getElementById('actVideoAviso');
+          if (aviso) {
+            aviso.style.display = 'block';
+            aviso.textContent = '⚠️ No se pudo reproducir aquí (' + motivo + ') — se abrió en una pestaña nueva.';
+          }
+          window.open('https://www.youtube.com/watch?v=' + videoId, '_blank');
+        }
+      }
     });
   });
 }

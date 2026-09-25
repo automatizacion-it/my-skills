@@ -70,6 +70,20 @@ window.onYouTubeIframeAPIReady = function () {
           ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
           ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
         }
+      },
+      onError: (e) => {
+        var videoId = ytQueue[ytQueueIndex];
+        var motivo = (e.data === 101 || e.data === 150)
+          ? 'el dueño del video bloqueó su reproducción fuera de YouTube (derechos de autor)'
+          : (e.data === 100) ? 'el video ya no existe o es privado'
+          : 'error desconocido (código ' + e.data + ')';
+        _logSafe('⚠️ No se pudo reproducir aquí (' + motivo + ') — abriendo en YouTube en una pestaña nueva.');
+        if (videoId) window.open('https://www.youtube.com/watch?v=' + videoId, '_blank');
+        // Si hay más canciones en la cola, seguir con la siguiente en vez de quedarse pegado
+        if (ytQueue.length > 1) {
+          ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
+          ytPlayer.loadVideoById(ytQueue[ytQueueIndex]);
+        }
       }
     }
   });

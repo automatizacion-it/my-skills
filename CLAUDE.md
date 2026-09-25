@@ -650,3 +650,32 @@ Se encontraron y corrigieron varios problemas de este patrón:
       código y viendo que el flujo llega correctamente al punto donde se
       invocan, pero la prueba de audio/micrófono real solo se puede hacer
       a mano en Chrome.
+
+## Sesión 16 (2026-09-11) — Videos bloqueados por YouTube (LatinAutor-UMPG y similares)
+
+35. **Reportado por el usuario**: al pedir música, algunas canciones
+    mostraban "Video no disponible — este video tiene contenido de
+    LatinAutor-UMPG, quien bloqueó su reproducción en este sitio web"
+    dentro del reproductor embebido pequeño de SCALL. Esto es una
+    restricción real de YouTube (código de error `150`, "el dueño del
+    video no permite reproducción embebida") — no hay forma de saltarla
+    desde el lado del embed, el dueño del contenido la puso a propósito.
+    - **Fix en `spotify.js`** (reproductor de música,
+      `ytPlayer = new YT.Player(...)`): se agregó `onError` — detecta
+      los códigos 100 (video privado/borrado) y 101/150 (embed
+      bloqueado), abre el video directamente en
+      `https://www.youtube.com/watch?v=<id>` en una **pestaña nueva**
+      (`window.open(..., '_blank')`), y si hay más canciones en la cola
+      (`ytQueue`), avanza automáticamente a la siguiente en vez de
+      quedarse con el reproductor roto en pantalla.
+    - **Mismo fix en `actividad.js`** (`mostrarVideoActividad`, el
+      `ytPlayerActividad` de la función Video de Actividad) — mismo
+      `onError`, mismo `window.open` en pestaña nueva, más un aviso
+      visible en el panel (`#actVideoAviso`) explicando qué pasó (aquí
+      no hay cola de la que avanzar, es un solo video por búsqueda).
+    - El ID del video que falló se toma de `ytQueue[ytQueueIndex]` (en
+      spotify.js) porque siempre se mantiene sincronizado con
+      `loadVideoById` — no hace falta rastrear el ID por separado.
+    - Probado con el código exacto agregado, simulando el error 150 real
+      reportado por el usuario: confirma que abre la URL correcta en
+      pestaña nueva y avanza la cola correctamente.
